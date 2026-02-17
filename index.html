@@ -5,129 +5,126 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: white; user-select: none; font-family: sans-serif; margin: 0; overflow: hidden; }
-        canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 260px; }
+        canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 280px; }
         .menu-card { background: #1e293b; border-radius: 16px; padding: 15px; border: 1px solid #475569; cursor: pointer; }
         .joypad { position: fixed; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; z-index: 50; }
-        .d-pad { display: grid; grid-template-columns: repeat(3, 55px); gap: 5px; }
-        .btn-direction { width: 55px; height: 55px; background: #1e293b; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #000; font-size: 24px; }
-        .btn-action { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 6px 0 #000; text-align: center; }
-        .btn-direction:active, .btn-action:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; background: #3b82f6; }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); gap: 8px; }
+        .btn-direction { width: 60px; height: 60px; background: #1e293b; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 0 #000; font-size: 28px; color: #94a3b8; }
+        .btn-action { width: 85px; height: 85px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 6px 0 #000; text-align: center; }
+        .btn-direction:active, .btn-action:active { transform: translateY(4px); box-shadow: 0 2px 0 #000; background: #3b82f6; color: white; }
         .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        input[type="checkbox"] { width: 24px; height: 24px; accent-color: #22c55e; }
     </style>
 </head>
 <body class="flex flex-col items-center">
 
-    <nav class="w-full flex justify-around bg-slate-900 border-b border-slate-800 p-2">
+    <nav id="nav-bar" class="w-full flex justify-around bg-slate-900 border-b border-slate-800 p-2">
         <button onclick="showScreen('screen-main')" id="tab-main" class="tab-active py-2 px-4 font-bold">ИГРЫ</button>
         <button onclick="showProfile()" id="tab-profile" class="py-2 px-4 font-bold text-slate-400">ПРОФИЛЬ</button>
     </nav>
 
-    <div id="screen-main" class="p-6 w-full space-y-3 max-w-md overflow-y-auto">
-        <h1 class="text-2xl font-black text-center mb-4 text-blue-400 italic">RETRO ARENA</h1>
-        
+    <div id="screen-main" class="p-6 w-full space-y-4 max-w-md">
+        <h1 class="text-3xl font-black text-center my-4 text-blue-400 italic">RETRO ARENA</h1>
         <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500">
-            <h2 class="font-bold">🎮 Обычная игра</h2>
-            <p class="text-xs text-slate-400">Против бота (бесплатно)</p>
+            <h2 class="text-xl font-bold">🎮 Обычная игра</h2>
+            <p class="text-sm text-slate-400">Бесплатно против бота</p>
         </div>
-
-        <div onclick="showMode('friend')" class="menu-card border-l-4 border-l-blue-500">
-            <h2 class="font-bold">👥 Поединок с другом</h2>
-            <p class="text-xs text-slate-400">Играй с товарищем по сети</p>
-        </div>
-
         <div onclick="showMode('tournament')" class="menu-card border-l-4 border-l-yellow-500">
-            <h2 class="font-bold">🏆 Турнир на Stars</h2>
-            <p class="text-sm text-slate-400 font-bold text-yellow-400">Призовой фонд: 90% ставок</p>
+            <h2 class="text-xl font-bold">🏆 Турнир</h2>
+            <p class="text-sm text-slate-400">Игра на звезды (Stars)</p>
         </div>
     </div>
 
     <div id="screen-profile" class="p-6 w-full hidden max-w-md text-center">
         <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl mb-6">
-            <div id="user-avatar" class="w-20 h-20 bg-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold">?</div>
-            <h2 id="user-name" class="text-xl font-bold mb-1">Загрузка...</h2>
-            <p class="text-yellow-400 text-2xl font-black mb-4">⭐ <span id="user-balance">0</span></p>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <div class="bg-slate-900 p-2 rounded-lg">Побед: <span class="text-green-400" id="stat-wins">0</span></div>
-                <div class="bg-slate-900 p-2 rounded-lg">Игр: <span class="text-blue-400" id="stat-total">0</span></div>
-            </div>
+            <div id="user-avatar" class="w-16 h-16 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center text-xl font-bold">?</div>
+            <h2 id="user-name" class="text-lg font-bold">Загрузка...</h2>
+            <p class="text-yellow-400 text-2xl font-black my-2">⭐ <span id="user-balance">0</span></p>
         </div>
-        
-        <div class="space-y-3">
-            <button onclick="topUpBalance()" class="w-full bg-yellow-500 py-4 rounded-2xl font-bold text-black flex items-center justify-center gap-2">
-                КУПИТЬ ЗВЕЗДЫ (STARS)
-            </button>
-            <button onclick="tg.close()" class="w-full bg-slate-700 py-4 rounded-2xl font-bold">ВЫЙТИ</button>
-        </div>
+        <button onclick="topUp()" class="w-full bg-yellow-500 py-4 rounded-2xl font-bold text-black mb-3">ПОПОЛНИТЬ БАЛАНС</button>
+        <button onclick="showScreen('screen-main')" class="w-full bg-slate-700 py-4 rounded-2xl font-bold">НАЗАД</button>
     </div>
 
     <div id="screen-setup" class="p-6 w-full hidden max-w-md">
-        <button onclick="goBack()" class="mb-4 text-blue-400">← К меню</button>
-        <h2 id="setup-title" class="text-xl font-bold mb-4">Настройка матча</h2>
-        <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-2">
-                <button id="opt-snake" onclick="setGame('snake')" class="p-3 rounded-xl bg-blue-600 border-2 border-white text-sm">SNAKE</button>
-                <button id="opt-tetris" onclick="setGame('tetris')" class="p-3 rounded-xl bg-slate-700 text-sm">TETRIS</button>
+        <button onclick="showScreen('screen-main')" class="mb-4 text-blue-400">← Назад</button>
+        <h2 class="text-2xl font-bold mb-6">Настройка</h2>
+        <div class="space-y-6">
+            <div class="flex gap-2">
+                <button id="opt-snake" onclick="setGame('snake')" class="flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white">SNAKE</button>
+                <button id="opt-tetris" onclick="setGame('tetris')" class="flex-1 p-4 rounded-xl bg-slate-700">TETRIS</button>
             </div>
-            
-            <div id="price-block" class="hidden">
-                <p class="text-sm font-semibold text-yellow-400 mb-2">Ставка (минимум 10 ⭐):</p>
-                <input type="number" id="tourney-price" value="10" min="10" class="w-full bg-slate-800 p-3 rounded-xl border border-yellow-500 outline-none text-center">
+            <div id="price-block" class="hidden bg-slate-800 p-4 rounded-xl">
+                <p class="mb-2 font-semibold text-yellow-400">Взнос за участие:</p>
+                <select id="tourney-price" class="w-full bg-slate-900 p-3 rounded-lg border border-slate-700">
+                    <option value="10">⭐ 10 Stars</option>
+                    <option value="50">⭐ 50 Stars</option>
+                    <option value="100">⭐ 100 Stars</option>
+                </select>
             </div>
-
-            <button onclick="handleMainAction()" id="action-btn" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-lg">НАЧАТЬ</button>
+            <button onclick="processLobbyEntry()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl">ПОИСК</button>
         </div>
     </div>
 
     <div id="screen-lobby" class="p-6 w-full hidden max-w-md text-center">
-        <h2 class="text-xl font-bold mb-8">ОЖИДАНИЕ СОПЕРНИКА</h2>
-        <div class="flex justify-around items-center mb-10">
-            <div class="text-center">
-                <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mb-2">Я</div>
-                <p class="text-xs">Вы</p>
-                <input type="checkbox" id="p-ready" onchange="checkReady()" class="w-6 h-6 mt-2 accent-green-500">
+        <button onclick="cancelLobby()" class="mb-4 text-blue-400 text-left block">← Отмена</button>
+        <h2 class="text-xl font-bold mb-6">ПОДГОТОВКА К МАТЧУ</h2>
+        <div class="space-y-4 mb-6">
+            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold">ME</div>
+                    <div class="text-left"><p class="font-bold">Вы</p></div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400">Готов</span>
+                    <input type="checkbox" id="player-ready" onchange="toggleReady()">
+                </div>
             </div>
-            <div class="text-3xl font-black italic">VS</div>
-            <div class="text-center">
-                <div id="opp-avatar" class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mb-2 animate-pulse">?</div>
-                <p class="text-xs" id="opp-name">Ожидание...</p>
-                <input type="checkbox" disabled id="o-ready" class="w-6 h-6 mt-2">
+            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700 opacity-60">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center font-bold">AI</div>
+                    <p class="font-bold">Бот</p>
+                </div>
+                <input type="checkbox" checked disabled>
             </div>
         </div>
-        <p id="lobby-msg" class="text-yellow-400">Поставьте галочку "Готов"</p>
-        <div id="countdown" class="hidden text-6xl font-black mt-4">3</div>
+        <div id="wait-timer" class="text-yellow-500 font-mono text-lg mb-2">Ожидание: 60с</div>
+        <div id="countdown" class="hidden text-6xl font-black">3</div>
     </div>
 
-    <div id="screen-game" class="hidden w-full h-screen bg-black">
-        <div class="flex justify-between p-4 bg-slate-900 border-b border-slate-700">
-            <div><p class="text-[10px] text-slate-400 uppercase">You</p><p id="my-score" class="text-xl font-mono font-bold text-green-400">0000</p></div>
-            <div><p class="text-[10px] text-slate-400 uppercase text-right">Opponent</p><p id="opp-score" class="text-xl font-mono font-bold text-red-400 text-right">0000</p></div>
+    <div id="screen-game" class="hidden w-full h-screen bg-black pt-2">
+        <div class="flex justify-between px-6 py-2 bg-slate-900 border-b border-slate-800">
+            <div><p class="text-[10px] text-slate-500">YOU</p><p id="my-score" class="text-xl font-mono text-green-400 font-bold">0</p></div>
+            <div class="text-right"><p class="text-[10px] text-slate-500">BOT</p><p id="opp-score" class="text-xl font-mono text-red-400 font-bold">0</p></div>
         </div>
         <div class="flex justify-center mt-4">
             <canvas id="mainCanvas"></canvas>
         </div>
         <div class="joypad">
             <div class="d-pad">
-                <div></div><button class="btn-direction" onmousedown="handleInput('up')">↑</button><div></div>
-                <button class="btn-direction" onmousedown="handleInput('left')">←</button>
-                <button class="btn-direction" onmousedown="handleInput('down')">↓</button>
-                <button class="btn-direction" onmousedown="handleInput('right')">→</button>
+                <div></div><button class="btn-direction" onmousedown="handleInput('up')" ontouchstart="handleInput('up')">↑</button><div></div>
+                <button class="btn-direction" onmousedown="handleInput('left')" ontouchstart="handleInput('left')">←</button>
+                <button class="btn-direction" onmousedown="handleInput('down')" ontouchstart="handleInput('down')">↓</button>
+                <button class="btn-direction" onmousedown="handleInput('right')" ontouchstart="handleInput('right')">→</button>
             </div>
-            <div class="actions">
-                <button class="btn-action bg-blue-500 text-xs" id="btn-rotate" onmousedown="handleInput('rotate')">ROTATE</button>
-            </div>
+            <button class="btn-action bg-blue-600" id="btn-rotate" onmousedown="handleInput('rotate')" ontouchstart="handleInput('rotate')">ROTATE</button>
         </div>
     </div>
 
     <div id="screen-results" class="hidden p-8 text-center w-full max-w-md">
-        <h2 class="text-4xl font-black mb-6">ИТОГ</h2>
-        <div class="bg-slate-800 p-6 rounded-3xl space-y-4 border border-slate-700">
-            <p class="text-2xl" id="res-msg">ПОБЕДА!</p>
-            <p class="text-sm text-slate-400">Вы заработали: <span id="res-profit">0</span> ⭐</p>
+        <h2 class="text-4xl font-black mb-6">ФИНАЛ</h2>
+        <div class="bg-slate-800 p-6 rounded-3xl space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between text-xl"><span>Ваш счет:</span> <span id="res-my" class="text-green-400 font-bold">0</span></div>
+            <div class="flex justify-between text-xl"><span>Бот:</span> <span id="res-opp" class="text-red-400 font-bold">0</span></div>
+            <div id="res-msg" class="text-3xl font-black pt-4 border-t border-slate-700 text-yellow-400">ПОБЕДА!</div>
         </div>
-        <button onclick="location.reload()" class="mt-8 w-full bg-blue-600 py-4 rounded-2xl font-bold">В МЕНЮ</button>
+        <div class="flex flex-col gap-3 mt-8">
+            <button onclick="processLobbyEntry()" class="w-full bg-green-500 py-4 rounded-xl font-bold text-lg">ИГРАТЬ СНОВА</button>
+            <button onclick="location.reload()" class="w-full bg-slate-700 py-4 rounded-xl font-bold text-slate-300">В МЕНЮ</button>
+        </div>
     </div>
 
     <script>
@@ -137,59 +134,85 @@
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         let gameLoop, currentGame = 'snake', currentMode = 'casual', myScore = 0, oppScore = 0;
-        let balance = parseInt(localStorage.getItem('user_balance')) || 100;
+        let balance = parseInt(localStorage.getItem('user_balance')) || 500;
+        let waitTimer, waitSeconds = 60;
 
-        // Init Profile
-        function showProfile() {
-            document.getElementById('user-name').innerText = tg.initDataUnsafe.user?.first_name || "Игрок";
-            document.getElementById('user-balance').innerText = balance;
-            document.getElementById('user-avatar').innerText = (tg.initDataUnsafe.user?.first_name || "P")[0].toUpperCase();
-            showScreen('screen-profile');
-            document.getElementById('tab-main').className = 'py-2 px-4 font-bold text-slate-400';
-            document.getElementById('tab-profile').className = 'tab-active py-2 px-4 font-bold';
-        }
-
+        // --- Navigation ---
         function showScreen(id) {
             ['screen-main', 'screen-profile', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-            if(id === 'screen-main') {
-                document.getElementById('tab-main').className = 'tab-active py-2 px-4 font-bold';
-                document.getElementById('tab-profile').className = 'py-2 px-4 font-bold text-slate-400';
-            }
+            document.getElementById('nav-bar').classList.toggle('hidden', id === 'screen-game' || id === 'screen-lobby');
         }
 
         function showMode(mode) {
             currentMode = mode;
             document.getElementById('price-block').classList.toggle('hidden', mode === 'casual');
-            document.getElementById('action-btn').innerText = (mode === 'friend' || mode === 'tournament') ? "СОЗДАТЬ ССЫЛКУ" : "К ЛОББИ";
             showScreen('screen-setup');
         }
 
         function setGame(game) {
             currentGame = game;
-            document.getElementById('opt-snake').classList.toggle('bg-blue-600', game==='snake');
-            document.getElementById('opt-tetris').classList.toggle('bg-blue-600', game==='tetris');
+            document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
+            document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
         }
 
-        function handleMainAction() {
-            if (currentMode === 'friend' || currentMode === 'tournament') {
-                const bet = document.getElementById('tourney-price').value;
-                tg.showPopup({
-                    title: 'Пригласить друга',
-                    message: `Отправить ссылку другу на игру со ставкой ${bet} Stars?`,
-                    buttons: [{type: 'ok', text: 'Отправить'}]
-                }, (id) => {
-                    tg.shareToChat(`Сразись со мной в ${currentGame}! Ставка: ${bet} Stars. https://t.me/share/url?url=YOUR_LINK`);
-                });
-            } else {
-                showScreen('screen-lobby');
-                // Auto-ready bot
-                setTimeout(() => { document.getElementById('o-ready').checked = true; }, 1000);
+        function showProfile() {
+            document.getElementById('user-name').innerText = tg.initDataUnsafe.user?.first_name || "Gamer";
+            document.getElementById('user-balance').innerText = balance;
+            showScreen('screen-profile');
+        }
+
+        // --- Lobby Logic ---
+        function processLobbyEntry() {
+            if(currentMode === 'tournament') {
+                const price = parseInt(document.getElementById('tourney-price').value);
+                if(balance < price) {
+                    tg.showAlert("Недостаточно Stars! Пожалуйста, пополните баланс.");
+                    return;
+                }
+                balance -= price;
+                localStorage.setItem('user_balance', balance);
+            }
+            enterLobby();
+        }
+
+        function enterLobby() {
+            showScreen('screen-lobby');
+            document.getElementById('player-ready').checked = false;
+            document.getElementById('countdown').classList.add('hidden');
+            waitSeconds = 60;
+            updateWaitTimer();
+            clearInterval(waitTimer);
+            waitTimer = setInterval(() => {
+                waitSeconds--;
+                updateWaitTimer();
+                if(waitSeconds <= 0) {
+                    cancelLobby();
+                    tg.showAlert("Время ожидания истекло. Средства возвращены.");
+                }
+            }, 1000);
+        }
+
+        function updateWaitTimer() {
+            document.getElementById('wait-timer').innerText = `Ожидание: ${waitSeconds}с`;
+        }
+
+        function toggleReady() {
+            if(document.getElementById('player-ready').checked) {
+                clearInterval(waitTimer);
+                document.getElementById('wait-timer').classList.add('hidden');
+                startCountdown();
             }
         }
 
-        function checkReady() {
-            if(document.getElementById('p-ready').checked) startCountdown();
+        function cancelLobby() {
+            if(currentMode === 'tournament') {
+                const price = parseInt(document.getElementById('tourney-price').value);
+                balance += price;
+                localStorage.setItem('user_balance', balance);
+            }
+            clearInterval(waitTimer);
+            showScreen('screen-setup');
         }
 
         function startCountdown() {
@@ -203,42 +226,41 @@
             }, 1000);
         }
 
-        function topUpBalance() {
-            // В реальном боте здесь вызывается платеж через Bot API
-            tg.showConfirm("Вы хотите купить 100 Stars за 1.99$?", (ok) => {
-                if(ok) {
-                    balance += 100;
-                    localStorage.setItem('user_balance', balance);
-                    showProfile();
-                }
-            });
-        }
-
-        function goBack() { showScreen('screen-main'); }
-
-        // --- GAME ENGINES ---
+        // --- Game Logic ---
         function initGame() {
             showScreen('screen-game');
             myScore = 0; oppScore = 0;
             if(currentGame === 'snake') initSnake(); else initTetris();
         }
 
-        // (Здесь вставляется тот же код логики Змейки и Тетриса, что и раньше)
-        // ... (Код логики игр опущен для краткости, используем рабочую версию из предыдущего шага) ...
-        
+        function finishGame() {
+            clearInterval(gameLoop);
+            document.getElementById('res-my').innerText = myScore;
+            document.getElementById('res-opp').innerText = oppScore;
+            const win = myScore >= oppScore;
+            document.getElementById('res-msg').innerText = win ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
+            if(win && currentMode === 'tournament') {
+                const prize = Math.floor(parseInt(document.getElementById('tourney-price').value) * 1.8);
+                balance += prize;
+                localStorage.setItem('user_balance', balance);
+            }
+            showScreen('screen-results');
+        }
+
+        // --- SNAKE ENGINE ---
         let snk, apple, sDir;
         function initSnake() {
             canvas.width = 300; canvas.height = 400;
             snk = [{x:10, y:15}, {x:10, y:16}]; apple = {x:5, y:5}; sDir = {x:0, y:-1};
             gameLoop = setInterval(() => {
                 const head = {x: snk[0].x + sDir.x, y: snk[0].y + sDir.y};
-                if(head.x<0 || head.x>=20 || head.y<0 || head.y>=26 || snk.some(p=>p.x===head.x&&p.y===head.y)) return finish();
+                if(head.x<0 || head.x>=20 || head.y<0 || head.y>=26 || snk.some(p=>p.x===head.x&&p.y===head.y)) return finishGame();
                 snk.unshift(head);
                 if(head.x === apple.x && head.y === apple.y) {
                     myScore += 10;
                     apple = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*26)};
                 } else snk.pop();
-                if(Math.random() > 0.985) oppScore += 10;
+                if(Math.random() > 0.98) oppScore += 10;
                 drawS();
             }, 150);
         }
@@ -250,33 +272,24 @@
             document.getElementById('opp-score').innerText = oppScore;
         }
 
-        let board, activePiece, piecePos;
-        const SHAPES = [[[1, 1, 1, 1]], [[1, 1], [1, 1]], [[0, 1, 0], [1, 1, 1]]];
+        // --- TETRIS ENGINE ---
+        let tPos;
         function initTetris() {
-            canvas.width = 200; canvas.height = 400;
-            board = Array(20).fill().map(() => Array(10).fill(0));
-            activePiece = SHAPES[Math.floor(Math.random()*3)]; piecePos = {x:3, y:0};
+            canvas.width = 240; canvas.height = 400;
+            tPos = {x:4, y:0};
             gameLoop = setInterval(() => {
-                piecePos.y++;
-                if(piecePos.y > 18) { piecePos.y = 0; myScore += 100; }
+                tPos.y++;
+                if(tPos.y > 18) { tPos.y = 0; myScore += 100; }
                 if(Math.random() > 0.99) oppScore += 100;
-                if(myScore > 500) finish();
+                if(myScore > 600) finishGame();
                 drawT();
-            }, 400);
+            }, 300);
         }
         function drawT() {
-            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,200,400);
-            ctx.fillStyle = '#3b82f6'; ctx.fillRect(piecePos.x*20, piecePos.y*20, 18, 18);
+            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,240,400);
+            ctx.fillStyle = '#3b82f6'; ctx.fillRect(tPos.x*24, tPos.y*20, 22, 18);
             document.getElementById('my-score').innerText = myScore;
             document.getElementById('opp-score').innerText = oppScore;
-        }
-
-        function finish() {
-            clearInterval(gameLoop);
-            showScreen('screen-results');
-            const win = myScore >= oppScore;
-            document.getElementById('res-msg').innerText = win ? "ВЫ ПОБЕДИЛИ!" : "ВЫ ПРОИГРАЛИ";
-            document.getElementById('res-profit').innerText = win ? document.getElementById('tourney-price').value : 0;
         }
 
         function handleInput(cmd) {
@@ -286,10 +299,23 @@
                 if(cmd === 'left' && sDir.x !== 1) sDir = {x:-1, y:0};
                 if(cmd === 'right' && sDir.x !== -1) sDir = {x:1, y:0};
             } else {
-                if(cmd === 'left' && piecePos.x > 0) piecePos.x--;
-                if(cmd === 'right' && piecePos.x < 8) piecePos.x++;
+                if(cmd === 'left' && tPos.x > 0) tPos.x--;
+                if(cmd === 'right' && tPos.x < 9) tPos.x++;
+                if(cmd === 'down') tPos.y++;
             }
         }
+
+        function topUp() {
+            tg.showConfirm("Купить 100 Stars за 1.99$?", (ok) => {
+                if(ok) { balance += 100; localStorage.setItem('user_balance', balance); showProfile(); }
+            });
+        }
+
+        // Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            const keyMap = {'ArrowUp':'up','ArrowDown':'down','ArrowLeft':'left','ArrowRight':'right',' ':'rotate'};
+            if(keyMap[e.key]) handleInput(keyMap[e.key]);
+        });
     </script>
 </body>
 </html>
