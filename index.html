@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mario Arena Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.min.js"></script>
+    <title>Mario TG Arena</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: #05080f; color: white; touch-action: none; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
@@ -15,28 +15,29 @@
 </head>
 <body class="p-6">
     <div class="w-full flex justify-between items-center mb-6">
-        <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl">⭐️ 150</div>
-        <div class="text-[10px] text-green-500 uppercase font-bold tracking-widest">Engine: JSNES V2</div>
+        <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
+            <span class="text-yellow-400 font-bold">⭐️</span>
+            <span class="font-black text-xl">150</span>
+        </div>
+        <div id="status" class="text-[10px] text-green-500 uppercase font-bold tracking-widest">System Active</div>
     </div>
 
     <canvas id="nes-canvas"></canvas>
 
-    <div id="status" class="mt-4 text-xs text-blue-400 font-mono italic">Ожидание инициализации...</div>
-
     <div class="mt-auto mb-10 w-full max-w-[400px] flex justify-between items-center">
         <div class="grid grid-cols-3 gap-2">
-            <div></div><div class="btn" onmousedown="nes.buttonDown(1,4)" onmouseup="nes.buttonUp(1,4)" ontouchstart="nes.buttonDown(1,4)">↑</div><div></div>
-            <div class="btn" onmousedown="nes.buttonDown(1,6)" onmouseup="nes.buttonUp(1,6)" ontouchstart="nes.buttonDown(1,6)">←</div>
-            <div class="btn" onmousedown="nes.buttonDown(1,5)" onmouseup="nes.buttonUp(1,5)" ontouchstart="nes.buttonDown(1,5)">↓</div>
-            <div class="btn" onmousedown="nes.buttonDown(1,7)" onmouseup="nes.buttonUp(1,7)" ontouchstart="nes.buttonDown(1,7)">→</div>
+            <div></div><div class="btn" onmousedown="nes.buttonDown(1,4)" onmouseup="nes.buttonUp(1,4)" ontouchstart="nes.buttonDown(1,4)" ontouchend="nes.buttonUp(1,4)">↑</div><div></div>
+            <div class="btn" onmousedown="nes.buttonDown(1,6)" onmouseup="nes.buttonUp(1,6)" ontouchstart="nes.buttonDown(1,6)" ontouchend="nes.buttonUp(1,6)">←</div>
+            <div class="btn" onmousedown="nes.buttonDown(1,5)" onmouseup="nes.buttonUp(1,5)" ontouchstart="nes.buttonDown(1,5)" ontouchend="nes.buttonUp(1,5)">↓</div>
+            <div class="btn" onmousedown="nes.buttonDown(1,7)" onmouseup="nes.buttonUp(1,7)" ontouchstart="nes.buttonDown(1,7)" ontouchend="nes.buttonUp(1,7)">→</div>
         </div>
         <div class="flex gap-4">
-            <div class="btn !rounded-full bg-blue-600 !w-20 !h-20" onmousedown="nes.buttonDown(1,1)" onmouseup="nes.buttonUp(1,1)" ontouchstart="nes.buttonDown(1,1)">B</div>
-            <div class="btn !rounded-full bg-red-600 !w-20 !h-20" onmousedown="nes.buttonDown(1,0)" onmouseup="nes.buttonUp(1,0)" ontouchstart="nes.buttonDown(1,0)">A</div>
+            <div class="btn !rounded-full bg-blue-600 !w-20 !h-20" onmousedown="nes.buttonDown(1,1)" onmouseup="nes.buttonUp(1,1)" ontouchstart="nes.buttonDown(1,1)" ontouchend="nes.buttonUp(1,1)">B</div>
+            <div class="btn !rounded-full bg-red-600 !w-20 !h-20" onmousedown="nes.buttonDown(1,0)" onmouseup="nes.buttonUp(1,0)" ontouchstart="nes.buttonDown(1,0)" ontouchend="nes.buttonUp(1,0)">A</div>
         </div>
     </div>
 
-    <button onclick="playNow()" id="pBtn" class="w-full py-5 bg-red-600 rounded-2xl font-black text-white shadow-2xl uppercase tracking-tighter animate-pulse">Играть сейчас!</button>
+    <button onclick="startGame()" id="pBtn" class="w-full py-5 bg-red-600 rounded-2xl font-black text-white shadow-2xl uppercase animate-pulse">Запустить игру</button>
 
     <script>
         const nes = new jsnes.NES({
@@ -52,21 +53,18 @@
         const img = ctx.createImageData(256, 240);
         const b32 = new Uint32Array(img.data.buffer);
 
-        async function playNow() {
+        function startGame() {
             document.getElementById('pBtn').style.display = 'none';
-            document.getElementById('status').innerText = 'Загрузка игровых данных...';
-            try {
-                // Прямой метод загрузки, работающий через облачный буфер
-                const r = await fetch('https://veopre28221155-prog.github.io/tg-game-arena/mario.nes');
-                const b = await r.arrayBuffer();
-                let s = "";
-                new Uint8Array(b).forEach(v => s += String.fromCharCode(v));
-                nes.loadROM(s);
-                document.getElementById('status').innerText = 'СИСТЕМА АКТИВНА';
-                setInterval(() => nes.frame(), 16);
-            } catch (e) {
-                alert('Сбой сети. Попробуйте обновить страницу или сменить браузер.');
-            }
+            // Загружаем файл напрямую из твоего GitHub
+            fetch('mario.nes')
+                .then(r => r.arrayBuffer())
+                .then(b => {
+                    let s = "";
+                    new Uint8Array(b).forEach(v => s += String.fromCharCode(v));
+                    nes.loadROM(s);
+                    setInterval(() => nes.frame(), 16);
+                })
+                .catch(e => alert('Файл mario.nes не найден в репозитории!'));
         }
     </script>
 </body>
