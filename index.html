@@ -6,27 +6,26 @@
     <title>Mario Arena TG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { touch-action: none; -webkit-tap-highlight-color: transparent; background-color: #05080f; }
+        body { background-color: #05080f; color: white; overflow: hidden; font-family: sans-serif; }
+        .game-wrapper { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border: 4px solid #1e293b; border-radius: 20px; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; }
         .hidden { display: none; }
-        .ctrl-btn { user-select: none; -webkit-user-select: none; transition: transform 0.1s; }
-        .ctrl-btn:active { transform: scale(0.9); background-color: #1e3a8a; }
-        canvas { width: 100% !important; height: 100% !important; image-rendering: pixelated; }
     </style>
 </head>
-<body class="text-white overflow-hidden select-none font-sans">
+<body>
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
         <div class="flex justify-between items-center mb-8">
             <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
                 <span class="text-yellow-400 font-bold">⭐️</span>
-                <span id="balance" class="font-black text-xl">150</span>
+                <span class="font-black text-xl">150</span>
             </div>
-            <div class="text-[10px] text-green-500 font-mono tracking-widest uppercase">System: Online</div>
+            <div class="text-[10px] text-blue-500 font-mono tracking-widest uppercase">System: V3-Stable</div>
         </div>
 
         <div id="menu" class="flex flex-col gap-4">
             <h1 class="text-2xl font-black italic uppercase text-center mb-6">Super Mario Arena</h1>
-            <button onclick="startGame()" class="bg-gradient-to-br from-red-600 to-red-900 p-8 rounded-[2.5rem] shadow-2xl active:scale-95 flex items-center gap-4">
+            <button onclick="launchGame()" class="bg-gradient-to-br from-red-600 to-red-900 p-8 rounded-[2.5rem] shadow-2xl active:scale-95 flex items-center gap-4">
                 <div class="bg-white/20 p-3 rounded-2xl text-4xl">🍄</div>
                 <div class="text-left">
                     <div class="text-xl font-black italic uppercase text-white">Super Mario Bros</div>
@@ -35,65 +34,36 @@
             </button>
         </div>
 
-        <div id="game-screen" class="hidden flex-1 flex flex-col">
+        <div id="game-container" class="hidden flex-1 flex flex-col">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="location.reload()" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-gray-900 px-4 py-2 rounded-full border border-gray-800">← Выход</button>
-                <div id="load-msg" class="text-[10px] text-yellow-500 font-bold uppercase animate-pulse">Запуск двигателя...</div>
+                <div class="text-[10px] text-green-500 font-bold uppercase">Game Active</div>
             </div>
 
-            <div class="relative w-full aspect-[4/3] bg-black rounded-[2rem] border-4 border-gray-800 overflow-hidden shadow-2xl flex items-center justify-center">
-                <div id="emulator-container" class="w-full h-full"></div>
+            <div class="game-wrapper shadow-2xl">
+                <iframe id="game-frame" src=""></iframe>
             </div>
-            
-            <div class="mt-auto mb-10 flex justify-between items-center px-2">
-                <div class="relative w-36 h-36">
-                    <button ontouchstart="press('up')" ontouchend="release('up')" class="ctrl-btn absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl">↑</button>
-                    <button ontouchstart="press('down')" ontouchend="release('down')" class="ctrl-btn absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl">↓</button>
-                    <button ontouchstart="press('left')" ontouchend="release('left')" class="ctrl-btn absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl">←</button>
-                    <button ontouchstart="press('right')" ontouchend="release('right')" class="ctrl-btn absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl">→</button>
-                </div>
-                <div class="flex gap-4">
-                    <button ontouchstart="press('b')" ontouchend="release('b')" class="ctrl-btn w-20 h-20 bg-blue-700 rounded-full font-black text-2xl shadow-xl flex items-center justify-center text-white">B</button>
-                    <button ontouchstart="press('a')" ontouchend="release('a')" class="ctrl-btn w-20 h-20 bg-red-700 rounded-full font-black text-2xl shadow-xl flex items-center justify-center text-white">A</button>
+
+            <div class="mt-10 text-center">
+                <p class="text-gray-500 text-[10px] uppercase tracking-widest mb-4">Используйте экранные кнопки в окне игры</p>
+                <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+                    <p class="text-blue-400 text-xs font-bold">Подсказка:</p>
+                    <p class="text-[10px] text-blue-300 opacity-70">Если игра попросит нажать "Start", используйте кнопки внутри черного экрана.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/gh/bfirsh/jsnes/dist/jsnes.min.js"></script>
     <script>
-        let nes = new jsnes.NES();
-        const canvas = document.createElement('canvas');
-        canvas.width = 256; canvas.height = 240;
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.createImageData(256, 240);
-        const buf = new Uint32Array(imageData.data.buffer);
-
-        function startGame() {
+        function launchGame() {
             document.getElementById('menu').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('emulator-container').appendChild(canvas);
-
-            fetch('https://cdn.jsdelivr.net/gh/Birdulon/nes-roms@master/Super%20Mario%20Bros%20(E).nes')
-                .then(r => r.arrayBuffer())
-                .then(data => {
-                    nes.loadROM(new Uint8Array(data).reduce((a, b) => a + String.fromCharCode(b), ''));
-                    document.getElementById('load-msg').innerText = "LIVE";
-                    document.getElementById('load-msg').style.color = "#22c55e";
-                    loop();
-                });
+            document.getElementById('game-container').classList.remove('hidden');
+            
+            // Прямая ссылка на онлайн-эмулятор с загруженным Марио
+            // Это самый стабильный вариант, который не зависит от библиотек
+            const gameUrl = "https://www.weretro.net/embed/nes-super-mario-bros";
+            document.getElementById('game-frame').src = gameUrl;
         }
-
-        function loop() {
-            requestAnimationFrame(loop);
-            nes.frame();
-            for (let i = 0; i < 256 * 240; i++) buf[i] = 0xFF000000 | nes.ui.videoBuffer[i];
-            ctx.putImageData(imageData, 0, 0);
-        }
-
-        const keys = {up: 4, down: 5, left: 6, right: 7, a: 0, b: 1};
-        function press(k) { nes.buttonDown(1, keys[k]); }
-        function release(k) { nes.buttonUp(1, keys[k]); }
     </script>
 </body>
 </html>
