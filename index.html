@@ -8,8 +8,11 @@
     <style>
         .hidden { display: none; }
         .active-bet { background: #eab308 !important; color: black !important; transform: scale(1.05); }
-        .game-card { border: 2px solid transparent; transition: all 0.3s; }
+        .game-card { border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
         .game-card.selected { border-color: #3b82f6; background: #1e293b; }
+        /* Анимация появления */
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="bg-[#05080f] text-white overflow-hidden select-none font-sans">
@@ -24,34 +27,36 @@
             <div id="status-tag" class="text-[10px] text-blue-500 font-mono tracking-tighter uppercase">Menu</div>
         </div>
 
-        <div id="main-menu" class="flex flex-col gap-4">
+        <div id="main-menu" class="flex flex-col gap-4 fade-in">
             <h1 class="text-2xl font-black italic uppercase tracking-widest text-center mb-2">Tournament Arena</h1>
             
             <button onclick="showMode('free')" class="bg-gradient-to-r from-blue-600 to-blue-800 p-5 rounded-3xl shadow-xl active:scale-95 transition-all text-left border-b-4 border-blue-900">
-                <div class="text-xs uppercase opacity-70 font-bold">Free</div>
+                <div class="text-xs uppercase opacity-70 font-bold">Free Mode</div>
                 <div class="text-xl font-black italic">ОБЫЧНАЯ ИГРА</div>
+                <div class="text-[10px] opacity-50">Тренировка без ставок</div>
             </button>
 
             <button onclick="showMode('pro')" class="bg-gradient-to-r from-yellow-500 to-orange-700 p-5 rounded-3xl shadow-xl active:scale-95 transition-all text-left border-b-4 border-orange-900">
-                <div class="text-xs uppercase opacity-90 font-bold text-yellow-200">Pro</div>
-                <div class="text-xl font-black italic">ТУРНИР</div>
+                <div class="text-xs uppercase opacity-90 font-bold text-yellow-200">Pro League</div>
+                <div class="text-xl font-black italic text-white">ТУРНИР</div>
+                <div class="text-[10px] text-yellow-100/60 font-bold">Игра на монеты</div>
             </button>
         </div>
 
-        <div id="mode-settings" class="hidden flex flex-col gap-4 overflow-y-auto">
+        <div id="mode-settings" class="hidden flex flex-col gap-4 fade-in">
             <button onclick="backToMenu()" class="text-blue-400 text-sm mb-2 text-left w-fit">← Назад в меню</button>
             
             <label class="text-xs text-gray-500 uppercase font-bold ml-2">1. Выбери игру</label>
             <div class="grid grid-cols-3 gap-2">
-                <div onclick="selectGame('kirby', this)" class="game-card selected p-2 rounded-xl bg-gray-900 text-center cursor-pointer">
+                <div onclick="selectGame('kirby', this)" class="game-card selected p-3 rounded-xl bg-gray-900 text-center">
                     <div class="text-2xl mb-1">☁️</div>
                     <div class="text-[10px] font-bold uppercase">Kirby</div>
                 </div>
-                <div onclick="selectGame('mario', this)" class="game-card p-2 rounded-xl bg-gray-900 text-center cursor-pointer">
+                <div onclick="selectGame('mario', this)" class="game-card p-3 rounded-xl bg-gray-900 text-center">
                     <div class="text-2xl mb-1">🍄</div>
                     <div class="text-[10px] font-bold uppercase">Mario</div>
                 </div>
-                <div onclick="selectGame('pacman', this)" class="game-card p-2 rounded-xl bg-gray-900 text-center cursor-pointer">
+                <div onclick="selectGame('pacman', this)" class="game-card p-3 rounded-xl bg-gray-900 text-center">
                     <div class="text-2xl mb-1">🟡</div>
                     <div class="text-[10px] font-bold uppercase">Pac-Man</div>
                 </div>
@@ -59,53 +64,54 @@
 
             <label class="text-xs text-gray-500 uppercase font-bold ml-2 mt-2">2. Сложность бота</label>
             <div class="flex gap-2">
-                <button onclick="setDiff('easy', this)" class="diff-btn flex-1 bg-gray-800 py-2 rounded-xl text-xs font-bold border-2 border-transparent active-bet">EASY</button>
-                <button onclick="setDiff('med', this)" class="diff-btn flex-1 bg-gray-800 py-2 rounded-xl text-xs font-bold border-2 border-transparent">NORMAL</button>
-                <button onclick="setDiff('hard', this)" class="diff-btn flex-1 bg-gray-800 py-2 rounded-xl text-xs font-bold border-2 border-transparent">HARD</button>
+                <button onclick="setDiff('easy', this)" class="diff-btn flex-1 bg-gray-800 py-3 rounded-xl text-xs font-bold active-bet">EASY</button>
+                <button onclick="setDiff('med', this)" class="diff-btn flex-1 bg-gray-800 py-3 rounded-xl text-xs font-bold">NORMAL</button>
+                <button onclick="setDiff('hard', this)" class="diff-btn flex-1 bg-gray-800 py-3 rounded-xl text-xs font-bold">HARD</button>
             </div>
 
             <div id="bet-container" class="hidden flex flex-col gap-2 mt-2">
-                <label class="text-xs text-gray-500 uppercase font-bold ml-2">3. Ставка</label>
+                <label class="text-xs text-gray-500 uppercase font-bold ml-2">3. Выбери ставку (⭐️)</label>
                 <div class="grid grid-cols-3 gap-2">
-                    <button onclick="setBet(10, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold">10</button>
-                    <button onclick="setBet(50, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold">50</button>
-                    <button onclick="setBet(100, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold">100</button>
+                    <button onclick="setBet(10, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold transition-all">10</button>
+                    <button onclick="setBet(50, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold transition-all">50</button>
+                    <button onclick="setBet(100, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold transition-all">100</button>
                 </div>
             </div>
 
-            <button onclick="startSearch()" class="mt-4 bg-white text-black py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95">Поиск игры</button>
+            <button onclick="startSearch()" class="mt-4 bg-white text-black py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
+                Поиск игры
+            </button>
         </div>
 
-        <div id="search-screen" class="hidden flex-1 flex flex-col items-center justify-center">
+        <div id="search-screen" class="hidden flex-1 flex flex-col items-center justify-center fade-in">
             <div class="w-16 h-16 border-4 border-t-blue-500 border-gray-800 rounded-full animate-spin mb-6"></div>
-            <div class="text-xl font-black italic animate-pulse mb-8">ИЩЕМ СОПЕРНИКА...</div>
-            <button onclick="cancelSearch()" class="px-8 py-3 bg-red-900/30 border border-red-500/50 rounded-full text-red-500 text-xs font-bold uppercase tracking-widest">Отмена</button>
+            <div class="text-xl font-black italic animate-pulse mb-8 text-center uppercase">Ищем достойного<br>соперника...</div>
+            <button onclick="cancelSearch()" class="px-8 py-3 bg-red-900/20 border border-red-500/50 rounded-full text-red-500 text-[10px] font-bold uppercase tracking-widest">Отмена поиска</button>
         </div>
 
-        <div id="game-container" class="hidden flex-col flex-1">
-            <div class="flex justify-between items-center mb-2 px-2">
-                <button onclick="quitGame()" class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">← Выйти в меню</button>
-                <div id="game-title-display" class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Kirby</div>
+        <div id="game-container" class="hidden flex-col flex-1 fade-in">
+            <div class="flex justify-between items-center mb-3 px-2">
+                <button onclick="quitGame()" class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">← Выход</button>
+                <div id="game-title-display" class="text-[10px] text-blue-400 font-bold uppercase tracking-widest bg-blue-500/10 px-3 py-1 rounded-full">Kirby</div>
             </div>
             
             <div class="relative w-full aspect-[4/3] bg-black rounded-[2rem] border-4 border-gray-800 overflow-hidden shadow-2xl">
                 <div id="game" class="w-full h-full"></div>
             </div>
             
-            <div class="mt-auto mb-8 flex justify-between items-center px-2">
+            <div class="mt-auto mb-10 flex justify-between items-center px-2">
                 <div class="relative w-32 h-32">
-                    <button onmousedown="press('up')" onmouseup="release('up')" class="absolute top-0 left-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all">↑</button>
-                    <button onmousedown="press('down')" onmouseup="release('down')" class="absolute bottom-0 left-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all">↓</button>
-                    <button onmousedown="press('left')" onmouseup="release('left')" class="absolute left-0 top-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all">←</button>
-                    <button onmousedown="press('right')" onmouseup="release('right')" class="absolute right-0 top-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all">→</button>
+                    <button onmousedown="press('up')" onmouseup="release('up')" ontouchstart="press('up')" ontouchend="release('up')" class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center active:bg-blue-600">↑</button>
+                    <button onmousedown="press('down')" onmouseup="release('down')" ontouchstart="press('down')" ontouchend="release('down')" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center active:bg-blue-600">↓</button>
+                    <button onmousedown="press('left')" onmouseup="release('left')" ontouchstart="press('left')" ontouchend="release('left')" class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center active:bg-blue-600">←</button>
+                    <button onmousedown="press('right')" onmouseup="release('right')" ontouchstart="press('right')" ontouchend="release('right')" class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center active:bg-blue-600">→</button>
                 </div>
                 <div class="flex gap-4">
-                    <button onmousedown="press('b')" onmouseup="release('b')" class="w-16 h-16 bg-blue-600 rounded-full font-black text-2xl shadow-xl active:bg-blue-400 active:scale-90 transition-all">B</button>
-                    <button onmousedown="press('a')" onmouseup="release('a')" class="w-16 h-16 bg-red-600 rounded-full font-black text-2xl shadow-xl active:bg-red-400 active:scale-90 transition-all">A</button>
+                    <button onmousedown="press('b')" onmouseup="release('b')" ontouchstart="press('b')" ontouchend="release('b')" class="w-16 h-16 bg-blue-600 rounded-full font-black text-2xl shadow-xl active:bg-blue-400 active:scale-90 flex items-center justify-center">B</button>
+                    <button onmousedown="press('a')" onmouseup="release('a')" ontouchstart="press('a')" ontouchend="release('a')" class="w-16 h-16 bg-red-600 rounded-full font-black text-2xl shadow-xl active:bg-red-400 active:scale-90 flex items-center justify-center">A</button>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
@@ -116,10 +122,11 @@
         let selectedGame = 'kirby';
         let searchTimer;
 
+        // ИСПРАВЛЕННЫЕ ССЫЛКИ НА ИГРЫ
         const ROMS = {
             kirby: "https://cdn.emulatorjs.org/stable/data/roms/nes/kirby_dream_land.nes",
-            mario: "https://cdn.emulatorjs.org/stable/data/roms/nes/super_mario_bros.nes",
-            pacman: "https://cdn.emulatorjs.org/stable/data/roms/nes/pacman.nes"
+            mario: "https://raw.githubusercontent.com/Birdulon/nes-roms/master/Super%20Mario%20Bros%20(E).nes",
+            pacman: "https://raw.githubusercontent.com/Birdulon/nes-roms/master/Pac-Man%20(U)%20%5B!%5D.nes"
         };
 
         function showMode(m) {
@@ -154,8 +161,12 @@
         }
 
         function startSearch() {
-            if (currentMode === 'pro' && (currentBet === 0 || balance < currentBet)) return alert("Проверь ставку или баланс!");
-            if (currentMode === 'pro') { balance -= currentBet; document.getElementById('balance').innerText = balance; }
+            if (currentMode === 'pro') {
+                if (currentBet === 0) return alert("Выбери ставку!");
+                if (balance < currentBet) return alert("Недостаточно монет ⭐️!");
+                balance -= currentBet;
+                document.getElementById('balance').innerText = balance;
+            }
             
             document.getElementById('mode-settings').classList.add('hidden');
             document.getElementById('search-screen').classList.remove('hidden');
@@ -171,27 +182,39 @@
 
         function cancelSearch() {
             clearTimeout(searchTimer);
-            if (currentMode === 'pro') { balance += currentBet; document.getElementById('balance').innerText = balance; }
+            if (currentMode === 'pro') {
+                balance += currentBet;
+                document.getElementById('balance').innerText = balance;
+            }
             document.getElementById('search-screen').classList.add('hidden');
             document.getElementById('mode-settings').classList.remove('hidden');
+            document.getElementById('status-tag').innerText = "Settings";
         }
 
         function quitGame() {
-            if (confirm("Выйти из игры? Ставка не вернется!")) {
-                location.reload(); // Перезагружаем для очистки эмулятора
+            if (confirm("Выйти в меню? В режиме турнира ставка сгорит!")) {
+                location.reload(); 
             }
         }
 
         function initGame() {
+            document.getElementById('game').innerHTML = ""; // Очистка
             new EmulatorJS("#game", {
                 dataUrl: "https://cdn.emulatorjs.org/stable/data/",
                 gameUrl: ROMS[selectedGame],
-                system: "nes"
+                system: "nes",
+                allowPreloader: true,
+                onReady: () => {
+                    document.getElementById('status-tag').innerText = "Live: " + selectedGame;
+                    // Авто-клик для активации управления
+                    setTimeout(() => { document.getElementById('game').click(); }, 500);
+                }
             });
         }
 
-        function press(k) { if(window.EmuJS) window.EmuJS.Input.press(k); }
-        function release(k) { if(window.EmuJS) window.EmuJS.Input.release(k); }
+        // Функции управления
+        function press(k) { if(window.EmuJS && window.EmuJS.Input) window.EmuJS.Input.press(k); }
+        function release(k) { if(window.EmuJS && window.EmuJS.Input) window.EmuJS.Input.release(k); }
     </script>
 </body>
 </html>
