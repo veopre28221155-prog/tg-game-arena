@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>E-Sports Arena | Cloud Build</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#05080f] text-white overflow-hidden">
+
+    <div class="max-w-md mx-auto min-h-screen flex flex-col p-4 shadow-2xl">
+        <div class="flex justify-between items-center mb-6 pt-2">
+            <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
+                <span class="text-yellow-400 font-bold">⭐️</span>
+                <span id="balance" class="font-black text-xl">150</span>
+            </div>
+            <div class="text-[10px] text-blue-500 font-mono animate-pulse">CLOUD ENGINE ACTIVE</div>
+        </div>
+
+        <div class="relative w-full aspect-[4/3] bg-black rounded-[2.5rem] border-4 border-gray-800 overflow-hidden shadow-2xl">
+            <iframe id="game-frame" 
+                    src="https://www.retrogames.cc/embed/42436-mortal-kombat-3-europe.html" 
+                    class="w-full h-full border-none"
+                    allow="autoplay; keyboard"></iframe>
+        </div>
+
+        <div class="text-[9px] text-gray-500 text-center my-4 uppercase tracking-widest font-bold">
+            Tap game screen once to enable keys
+        </div>
+
+        <div class="mt-auto mb-10 flex justify-between items-center px-2">
+            <div class="relative w-32 h-32">
+                <button onmousedown="simulateKey(38)" class="absolute top-0 left-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">↑</button>
+                <button onmousedown="simulateKey(40)" class="absolute bottom-0 left-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">↓</button>
+                <button onmousedown="simulateKey(37)" class="absolute left-0 top-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">←</button>
+                <button onmousedown="simulateKey(39)" class="absolute right-0 top-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">→</button>
+            </div>
+
+            <div class="flex gap-4">
+                <button onmousedown="simulateKey(88)" class="w-16 h-16 bg-red-600 rounded-full font-black text-2xl shadow-xl active:scale-95 active:bg-red-500 transition-all italic">A</button>
+                <button onmousedown="simulateKey(90)" class="w-16 h-16 bg-blue-600 rounded-full font-black text-2xl shadow-xl active:scale-95 active:bg-blue-500 transition-all italic">B</button>
+            </div>
+        </div>
+
+        <button onclick="aiConfirm()" id="ai-btn" class="w-full bg-white text-black py-5 rounded-3xl font-black uppercase text-sm tracking-[0.2em] shadow-2xl active:scale-95 transition-all">
+            Verify Victory (AI)
+        </button>
+    </div>
+
+    <script>
+        const frame = document.getElementById('game-frame');
+
+        function simulateKey(keyCode) {
+            // ФОКУСИРУЕМСЯ НА ИГРЕ
+            frame.focus();
+            
+            // Пытаемся отправить событие клавиши в документ
+            const event = new KeyboardEvent('keydown', {
+                keyCode: keyCode,
+                which: keyCode,
+                bubbles: true
+            });
+            
+            document.dispatchEvent(event);
+            console.log("Key Simulated:", keyCode);
+        }
+
+        function aiConfirm() {
+            const btn = document.getElementById('ai-btn');
+            const bal = document.getElementById('balance');
+            btn.innerText = "Analyzing Match...";
+            btn.classList.add('animate-pulse');
+
+            setTimeout(() => {
+                bal.innerText = parseInt(bal.innerText) + 50;
+                btn.innerText = "Winner: +50 Stars ✅";
+                btn.style.background = "#22c55e";
+                btn.style.color = "white";
+                btn.classList.remove('animate-pulse');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
