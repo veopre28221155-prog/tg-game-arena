@@ -6,64 +6,91 @@
     <title>Mario Arena TG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #05080f; color: white; overflow: hidden; font-family: sans-serif; }
-        .game-wrapper { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border: 4px solid #1e293b; border-radius: 20px; overflow: hidden; }
-        iframe { width: 100%; height: 100%; border: none; }
+        body { background-color: #05080f; color: white; overflow: hidden; touch-action: none; }
+        #screen { width: 100%; aspect-ratio: 4/3; background: #000; border: 4px solid #1e293b; border-radius: 24px; image-rendering: pixelated; }
         .hidden { display: none; }
+        .btn-active:active { transform: scale(0.9); background-color: #1e40af; }
     </style>
 </head>
-<body>
+<body class="p-6 flex flex-col items-center">
 
-    <div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
-        <div class="flex justify-between items-center mb-8">
-            <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
-                <span class="text-yellow-400 font-bold">⭐️</span>
-                <span class="font-black text-xl">150</span>
-            </div>
-            <div class="text-[10px] text-blue-500 font-mono tracking-widest uppercase">System: V3-Stable</div>
+    <div class="w-full flex justify-between items-center mb-8">
+        <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
+            <span class="text-yellow-400 font-bold">⭐️</span>
+            <span class="font-black text-xl">150</span>
         </div>
+        <div class="text-[10px] text-red-500 font-mono animate-pulse uppercase">Offline Mode Enabled</div>
+    </div>
 
-        <div id="menu" class="flex flex-col gap-4">
-            <h1 class="text-2xl font-black italic uppercase text-center mb-6">Super Mario Arena</h1>
-            <button onclick="launchGame()" class="bg-gradient-to-br from-red-600 to-red-900 p-8 rounded-[2.5rem] shadow-2xl active:scale-95 flex items-center gap-4">
-                <div class="bg-white/20 p-3 rounded-2xl text-4xl">🍄</div>
-                <div class="text-left">
-                    <div class="text-xl font-black italic uppercase text-white">Super Mario Bros</div>
-                    <div class="text-[10px] text-red-100 font-bold uppercase opacity-80">Нажми для старта</div>
-                </div>
-            </button>
-        </div>
-
-        <div id="game-container" class="hidden flex-1 flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <button onclick="location.reload()" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-gray-900 px-4 py-2 rounded-full border border-gray-800">← Выход</button>
-                <div class="text-[10px] text-green-500 font-bold uppercase">Game Active</div>
+    <div id="menu" class="w-full flex flex-col gap-4">
+        <h1 class="text-2xl font-black italic uppercase text-center mb-6 tracking-widest">Mario Arena</h1>
+        <button onclick="start()" class="bg-gradient-to-br from-red-600 to-red-900 p-8 rounded-[2.5rem] shadow-2xl flex items-center gap-4 active:scale-95 transition-all">
+            <div class="bg-white/20 p-3 rounded-2xl text-4xl">🍄</div>
+            <div class="text-left">
+                <div class="text-xl font-black italic uppercase">Super Mario</div>
+                <div class="text-[10px] text-red-100 font-bold uppercase opacity-80">Запуск без интернета</div>
             </div>
+        </button>
+    </div>
 
-            <div class="game-wrapper shadow-2xl">
-                <iframe id="game-frame" src=""></iframe>
+    <div id="game" class="hidden w-full flex-1 flex flex-col">
+        <canvas id="screen"></canvas>
+        
+        <div class="mt-auto mb-10 flex justify-between items-center w-full">
+            <div class="relative w-32 h-32 scale-90">
+                <button id="up" class="btn-active absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg">↑</button>
+                <button id="down" class="btn-active absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg">↓</button>
+                <button id="left" class="btn-active absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg">←</button>
+                <button id="right" class="btn-active absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg">→</button>
             </div>
-
-            <div class="mt-10 text-center">
-                <p class="text-gray-500 text-[10px] uppercase tracking-widest mb-4">Используйте экранные кнопки в окне игры</p>
-                <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-                    <p class="text-blue-400 text-xs font-bold">Подсказка:</p>
-                    <p class="text-[10px] text-blue-300 opacity-70">Если игра попросит нажать "Start", используйте кнопки внутри черного экрана.</p>
-                </div>
+            <div class="flex gap-4">
+                <button id="b" class="btn-active w-16 h-16 bg-blue-600 rounded-full font-black text-xl shadow-xl">B</button>
+                <button id="a" class="btn-active w-16 h-16 bg-red-600 rounded-full font-black text-xl shadow-xl">A</button>
             </div>
         </div>
     </div>
 
+    <script src="https://unpkg.com/jsnes/dist/jsnes.min.js"></script>
     <script>
-        function launchGame() {
+        let nes = new jsnes.NES();
+        const canvas = document.getElementById('screen');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 256; canvas.height = 240;
+        const img = ctx.createImageData(256, 240);
+        const buf = new Uint32Array(img.data.buffer);
+
+        function start() {
             document.getElementById('menu').classList.add('hidden');
-            document.getElementById('game-container').classList.remove('hidden');
+            document.getElementById('game').classList.remove('hidden');
             
-            // Прямая ссылка на онлайн-эмулятор с загруженным Марио
-            // Это самый стабильный вариант, который не зависит от библиотек
-            const gameUrl = "https://www.weretro.net/embed/nes-super-mario-bros";
-            document.getElementById('game-frame').src = gameUrl;
+            // Используем твой собственный файл mario.nes с твоего гитхаба
+            fetch('mario.nes')
+                .then(r => r.arrayBuffer())
+                .then(data => {
+                    let binary = "";
+                    let bytes = new Uint8Array(data);
+                    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                    nes.loadROM(binary);
+                    requestAnimationFrame(step);
+                }).catch(e => alert("Ошибка: загрузи файл mario.nes в свой GitHub!"));
         }
+
+        function step() {
+            requestAnimationFrame(step);
+            nes.frame();
+            for (let i = 0; i < 256 * 240; i++) buf[i] = 0xFF000000 | nes.ui.videoBuffer[i];
+            ctx.putImageData(img, 0, 0);
+        }
+
+        // Привязка кнопок
+        const map = {a:0, b:1, up:4, down:5, left:6, right:7};
+        Object.keys(map).forEach(id => {
+            const el = document.getElementById(id);
+            el.ontouchstart = () => nes.buttonDown(1, map[id]);
+            el.ontouchend = () => nes.buttonUp(1, map[id]);
+            el.onmousedown = () => nes.buttonDown(1, map[id]);
+            el.onmouseup = () => nes.buttonUp(1, map[id]);
+        });
     </script>
 </body>
 </html>
