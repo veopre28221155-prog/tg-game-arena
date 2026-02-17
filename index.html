@@ -5,100 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: white; user-select: none; font-family: sans-serif; margin: 0; overflow: hidden; }
-        canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 300px; }
+        canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 260px; height: auto; }
         .menu-card { background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid #475569; cursor: pointer; }
-        .joypad { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; }
-        .d-pad { display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(3, 55px); gap: 5px; }
-        .btn-action { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 5px 0 #000; }
-        .btn-direction { width: 55px; height: 55px; background: #1e293b; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #000; font-size: 24px; }
-        .btn-direction:active, .btn-action:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; background: #3b82f6; }
-        .lobby-checkbox { width: 24px; height: 24px; accent-color: #22c55e; }
-        #countdown { font-size: 6rem; line-height: 1; }
+        .joypad { position: fixed; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; z-index: 50; }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); gap: 8px; }
+        .btn-action { width: 85px; height: 85px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 6px 0 #000; text-align: center; line-height: 1; }
+        .btn-direction { width: 60px; height: 60px; background: #1e293b; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 0 #000; font-size: 28px; }
+        .btn-direction:active, .btn-action:active { transform: translateY(4px); box-shadow: 0 2px 0 #000; background: #3b82f6; }
+        .lobby-checkbox { width: 28px; height: 28px; accent-color: #22c55e; }
+        #countdown { font-size: 6rem; font-weight: 900; }
     </style>
 </head>
 <body class="flex flex-col items-center">
 
     <div id="screen-main" class="p-6 w-full space-y-4 max-w-md text-center">
-        <h1 class="text-3xl font-black my-6 text-blue-400 italic">RETRO ARENA</h1>
+        <h1 class="text-3xl font-black my-8 text-blue-400 italic tracking-tighter">RETRO BATTLE</h1>
         <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500 text-left">
             <h2 class="text-xl font-bold">🎮 Обычная игра</h2>
-            <p class="text-sm text-slate-400">Бесплатно против бота</p>
+            <p class="text-sm text-slate-400">Тренировка против ИИ</p>
         </div>
         <div onclick="showMode('tournament')" class="menu-card border-l-4 border-l-yellow-500 text-left">
             <h2 class="text-xl font-bold">🏆 Турнир</h2>
-            <p class="text-sm text-slate-400">Вход: 10-100 Stars</p>
+            <p class="text-sm text-slate-400">Битва на Stars</p>
         </div>
     </div>
 
     <div id="screen-setup" class="p-6 w-full hidden max-w-md">
         <button onclick="goBack('screen-main')" class="mb-4 text-blue-400">← Назад</button>
-        <h2 id="setup-title" class="text-2xl font-bold mb-6 text-center">Настройка</h2>
+        <h2 id="setup-title" class="text-2xl font-bold mb-6">Настройка</h2>
         <div class="space-y-6">
             <div>
-                <p class="mb-2 font-semibold">Выберите игру:</p>
+                <p class="mb-2 font-semibold">Выберите дисциплину:</p>
                 <div class="flex gap-2">
-                    <button id="opt-snake" onclick="setGame('snake')" class="flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white">Snake</button>
-                    <button id="opt-tetris" onclick="setGame('tetris')" class="flex-1 p-3 rounded-xl bg-slate-700">Tetris</button>
+                    <button id="opt-snake" onclick="setGame('snake')" class="flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white">SNAKE</button>
+                    <button id="opt-tetris" onclick="setGame('tetris')" class="flex-1 p-4 rounded-xl bg-slate-700">TETRIS</button>
                 </div>
             </div>
             <div id="price-block" class="hidden">
-                <p class="mb-2 font-semibold text-yellow-400">Ставка турнира:</p>
+                <p class="mb-2 font-semibold text-yellow-400">Взнос:</p>
                 <select id="tourney-price" class="w-full bg-slate-800 p-3 rounded-xl border border-yellow-500">
                     <option value="10">⭐ 10 Stars</option>
                     <option value="50">⭐ 50 Stars</option>
                 </select>
             </div>
-            <button onclick="goToLobby()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl">ПЕРЕЙТИ В ЛОББИ</button>
+            <button onclick="goToLobby()" class="w-full bg-green-500 py-5 rounded-2xl font-bold text-xl shadow-lg">ПОИСК МАТЧА</button>
         </div>
     </div>
 
     <div id="screen-lobby" class="p-6 w-full hidden max-w-md text-center">
-        <button onclick="goBack('screen-setup')" class="mb-4 text-blue-400 text-left block">← Назад</button>
-        <h2 class="text-2xl font-bold mb-8">ИГРОВОЕ ЛОББИ</h2>
-        
+        <h2 class="text-2xl font-bold mb-8">ПОДГОТОВКА</h2>
         <div class="space-y-4 mb-8">
-            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
+            <div class="flex items-center justify-between bg-slate-800 p-5 rounded-2xl border border-slate-700">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold">ME</div>
-                    <div class="text-left">
-                        <p class="font-bold">Вы</p>
-                        <p class="text-xs text-slate-400" id="lobby-stats">Рекорд: 0</p>
-                    </div>
+                    <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center font-bold">ME</div>
+                    <div class="text-left"><p class="font-bold">Вы</p><p class="text-xs text-slate-400" id="lobby-stats">Рекорд: 0</p></div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400">Готов</span>
-                    <input type="checkbox" id="player-ready" class="lobby-checkbox" onchange="checkLobbyReady()">
-                </div>
+                <input type="checkbox" id="player-ready" class="lobby-checkbox" onchange="checkLobbyReady()">
             </div>
-
-            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700 opacity-80">
+            <div class="flex items-center justify-between bg-slate-800 p-5 rounded-2xl border border-slate-700 opacity-60">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center font-bold">AI</div>
-                    <div class="text-left">
-                        <p class="font-bold">Бот (CPU)</p>
-                        <p class="text-xs text-slate-400">Сложность: Hard</p>
-                    </div>
+                    <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center font-bold">AI</div>
+                    <div class="text-left"><p class="font-bold">Бот</p><p class="text-xs text-slate-400">READY</p></div>
                 </div>
                 <input type="checkbox" checked disabled class="lobby-checkbox">
             </div>
         </div>
-
-        <p id="lobby-msg" class="text-yellow-400 animate-bounce">Поставьте галочку "Готов"</p>
-        <div id="countdown" class="hidden font-black text-white mt-4 transition-all scale-150">3</div>
+        <p id="lobby-msg" class="text-yellow-400 text-lg">Подтвердите готовность</p>
+        <div id="countdown" class="hidden text-white mt-4 animate-ping">3</div>
     </div>
 
-    <div id="screen-game" class="hidden w-full h-screen bg-slate-950">
-        <div class="flex justify-between p-4 bg-slate-900 border-b border-slate-800">
-            <div><p class="text-[10px] text-slate-500">PLAYER</p><p id="my-score" class="text-xl font-mono font-bold text-green-400">0000</p></div>
-            <div class="text-right"><p class="text-[10px] text-slate-500">CPU BOT</p><p id="opp-score" class="text-xl font-mono font-bold text-red-400">0000</p></div>
+    <div id="screen-game" class="hidden w-full h-screen bg-black">
+        <div class="flex justify-between p-4 bg-slate-900 border-b border-slate-700">
+            <div><p class="text-[10px] text-slate-400 uppercase">Score</p><p id="my-score" class="text-xl font-mono font-bold text-green-400">0000</p></div>
+            <div><p class="text-[10px] text-slate-400 uppercase">Enemy</p><p id="opp-score" class="text-xl font-mono font-bold text-red-400 text-right">0000</p></div>
         </div>
         
-        <div class="flex justify-center mt-6">
-            <canvas id="mainCanvas" width="300" height="400"></canvas>
+        <div class="flex justify-center mt-4">
+            <canvas id="mainCanvas"></canvas>
         </div>
 
         <div class="joypad">
@@ -109,21 +95,21 @@
                 <button class="btn-direction" onmousedown="handleInput('right')">→</button>
             </div>
             <div class="actions">
-                <button class="btn-action bg-blue-500" id="btn-rotate" onmousedown="handleInput('rotate')">ROTATE</button>
+                <button class="btn-action bg-blue-500 text-xs" id="btn-rotate" onmousedown="handleInput('rotate')">ROTATE<br>(Space)</button>
             </div>
         </div>
     </div>
 
     <div id="screen-results" class="hidden p-8 text-center w-full max-w-md">
-        <h2 class="text-5xl font-black mb-10 text-white italic">RESULT</h2>
-        <div class="bg-slate-800 p-8 rounded-3xl space-y-6 shadow-2xl border border-slate-700">
-            <div class="flex justify-between text-2xl"><span>Ваш счет:</span> <span id="res-my" class="text-green-400 font-mono">0</span></div>
-            <div class="flex justify-between text-2xl"><span>Счет бота:</span> <span id="res-opp" class="text-red-400 font-mono">0</span></div>
-            <div id="res-msg" class="text-4xl font-black pt-6 text-yellow-400 border-t border-slate-700">VICTORY!</div>
+        <h2 class="text-5xl font-black mb-10 text-white italic">OVER</h2>
+        <div class="bg-slate-800 p-8 rounded-3xl space-y-4 shadow-2xl border border-slate-700">
+            <div class="flex justify-between text-2xl"><span>YOU:</span> <span id="res-my" class="text-green-400 font-mono">0</span></div>
+            <div class="flex justify-between text-2xl"><span>BOT:</span> <span id="res-opp" class="text-red-400 font-mono">0</span></div>
+            <div id="res-msg" class="text-4xl font-black pt-6 border-t border-slate-700">WIN!</div>
         </div>
         <div class="flex flex-col gap-4 mt-10">
-            <button onclick="goToLobby()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl shadow-lg">ИГРАТЬ СНОВА</button>
-            <button onclick="location.reload()" class="w-full bg-slate-700 py-4 rounded-2xl font-bold text-slate-300">В ГЛАВНОЕ МЕНЮ</button>
+            <button onclick="goToLobby()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl">TRY AGAIN</button>
+            <button onclick="location.reload()" class="w-full bg-slate-700 py-4 rounded-2xl font-bold text-slate-300">MENU</button>
         </div>
     </div>
 
@@ -133,75 +119,58 @@
         const ctx = canvas.getContext('2d');
         let gameLoop, currentGame = 'snake', currentMode = 'casual', myScore = 0, oppScore = 0;
 
-        // --- KEYBOARD LISTENER ---
+        // --- KEYBOARD ---
         window.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'ArrowUp': handleInput('up'); break;
-                case 'ArrowDown': handleInput('down'); break;
-                case 'ArrowLeft': handleInput('left'); break;
-                case 'ArrowRight': handleInput('right'); break;
-                case ' ': handleInput('rotate'); break;
-            }
+            if(e.key === 'ArrowUp') handleInput('up');
+            if(e.key === 'ArrowDown') handleInput('down');
+            if(e.key === 'ArrowLeft') handleInput('left');
+            if(e.key === 'ArrowRight') handleInput('right');
+            if(e.key === ' ') handleInput('rotate');
         });
 
+        // --- NAVIGATION ---
         function showScreen(id) {
-            ['screen-main', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => {
-                document.getElementById(s).classList.add('hidden');
-            });
+            ['screen-main', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
         function showMode(mode) {
             currentMode = mode;
-            document.getElementById('setup-title').innerText = mode === 'casual' ? 'Обычная игра' : 'Турнир';
             document.getElementById('price-block').classList.toggle('hidden', mode === 'casual');
             showScreen('screen-setup');
         }
 
-        function goBack(target) { showScreen(target); }
-
         function setGame(game) {
             currentGame = game;
-            document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
-            document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
-            document.getElementById('btn-rotate').style.opacity = game === 'snake' ? '0.2' : '1';
+            document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
+            document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
+            document.getElementById('btn-rotate').innerText = game === 'snake' ? 'SPEED' : 'ROTATE';
         }
+
+        function goBack(target) { showScreen(target); }
 
         function goToLobby() {
             document.getElementById('player-ready').checked = false;
             document.getElementById('countdown').classList.add('hidden');
-            document.getElementById('lobby-msg').classList.remove('hidden');
-            document.getElementById('lobby-msg').innerText = "Поставьте галочку 'Готов'";
-            
-            const record = localStorage.getItem('snakeRecord') || 0;
+            document.getElementById('lobby-msg').innerText = "Подтвердите готовность";
+            const record = localStorage.getItem(currentGame + 'Record') || 0;
             document.getElementById('lobby-stats').innerText = currentMode === 'tournament' ? `Баланс: 1500 Stars` : `Рекорд: ${record}`;
             showScreen('screen-lobby');
         }
 
         function checkLobbyReady() {
-            if (document.getElementById('player-ready').checked) {
-                startCountdown();
-            }
+            if (document.getElementById('player-ready').checked) startCountdown();
         }
 
         function startCountdown() {
             const cd = document.getElementById('countdown');
-            const msg = document.getElementById('lobby-msg');
             cd.classList.remove('hidden');
-            msg.innerText = "Матч начинается!";
-            let count = 3;
-            cd.innerText = count;
+            let count = 3; cd.innerText = count;
             const timer = setInterval(() => {
                 count--;
-                if(count <= 0) {
-                    clearInterval(timer);
-                    initGame();
-                } else {
-                    cd.innerText = count;
-                }
-            }, 800000000000); // Исправлено на 1000мс для нормального теста
-            // Внимание: для реального теста поставьте 1000. В коде сейчас 1000.
-            setTimeout(() => { clearInterval(timer); initGame(); }, 3500);
+                if(count <= 0) { clearInterval(timer); initGame(); }
+                else cd.innerText = count;
+            }, 1000);
         }
 
         function initGame() {
@@ -213,39 +182,38 @@
 
         function finishGame() {
             clearInterval(gameLoop);
-            if(currentGame === 'snake') {
-                 const best = parseInt(localStorage.getItem('snakeRecord') || 0);
-                 if(myScore > best) localStorage.setItem('snakeRecord', myScore);
-            }
+            const best = parseInt(localStorage.getItem(currentGame + 'Record') || 0);
+            if(myScore > best) localStorage.setItem(currentGame + 'Record', myScore);
             document.getElementById('res-my').innerText = myScore;
             document.getElementById('res-opp').innerText = oppScore;
-            document.getElementById('res-msg').innerText = myScore >= oppScore ? "WINNER!" : "DEFEAT";
-            document.getElementById('res-msg').className = myScore >= oppScore ? "text-4xl font-black pt-6 text-green-400 border-t border-slate-700" : "text-4xl font-black pt-6 text-red-500 border-t border-slate-700";
+            const win = myScore >= oppScore;
+            document.getElementById('res-msg').innerText = win ? "VICTORY!" : "DEFEAT";
+            document.getElementById('res-msg').className = win ? "text-4xl font-black pt-6 text-green-400 border-t border-slate-700" : "text-4xl font-black pt-6 text-red-500 border-t border-slate-700";
             showScreen('screen-results');
         }
 
-        // --- SNAKE ---
+        function updateScores() {
+            document.getElementById('my-score').innerText = String(myScore).padStart(4, '0');
+            document.getElementById('opp-score').innerText = String(oppScore).padStart(4, '0');
+        }
+
+        // --- SNAKE ENGINE ---
         let snk, apple, sDir;
         function initSnake() {
-            snk = [{x:10, y:15}, {x:10, y:16}, {x:10, y:17}]; 
-            apple = {x:5, y:5}; 
-            sDir = {x:0, y:-1};
+            canvas.width = 300; canvas.height = 400;
+            snk = [{x:10, y:15}, {x:10, y:16}]; apple = {x:5, y:5}; sDir = {x:0, y:-1};
             gameLoop = setInterval(() => {
                 const head = {x: snk[0].x + sDir.x, y: snk[0].y + sDir.y};
-                if(head.x<0 || head.x>=20 || head.y<0 || head.y>=26) return finishGame();
-                
+                if(head.x<0 || head.x>=20 || head.y<0 || head.y>=26 || snk.some(p=>p.x===head.x&&p.y===head.y)) return finishGame();
                 snk.unshift(head);
                 if(head.x === apple.x && head.y === apple.y) {
                     myScore += 10;
                     apple = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*26)};
-                } else {
-                    snk.pop();
-                }
-                if(Math.random() > 0.98) oppScore += 10; 
+                } else snk.pop();
+                if(Math.random() > 0.985) oppScore += 10;
                 drawSnake();
-            }, 150);
+            }, 130);
         }
-
         function drawSnake() {
             ctx.fillStyle = '#020617'; ctx.fillRect(0,0,300,400);
             ctx.fillStyle = '#4ade80'; snk.forEach(p => ctx.fillRect(p.x*15, p.y*15, 14, 14));
@@ -253,28 +221,67 @@
             updateScores();
         }
 
-        // --- TETRIS ---
-        let pPos;
+        // --- TETRIS ENGINE ---
+        let board, activePiece, piecePos;
+        const SHAPES = [
+            [[1, 1, 1, 1]], [[1, 1], [1, 1]], [[0, 1, 0], [1, 1, 1]], 
+            [[1, 1, 0], [0, 1, 1]], [[0, 1, 1], [1, 1, 0]], [[1, 0, 0], [1, 1, 1]], [[0, 0, 1], [1, 1, 1]]
+        ];
         function initTetris() {
-            pPos = {x:3, y:0};
+            canvas.width = 200; canvas.height = 400;
+            board = Array(20).fill().map(() => Array(10).fill(0));
+            spawnPiece();
             gameLoop = setInterval(() => {
-                pPos.y++;
-                if(pPos.y > 18) { pPos.y = 0; myScore += 100; }
+                if(!movePiece(0, 1)) {
+                    freezePiece();
+                    clearLines();
+                    spawnPiece();
+                    if(collide()) finishGame();
+                }
                 if(Math.random() > 0.99) oppScore += 100;
-                if(myScore > 800) finishGame();
                 drawTetris();
-            }, 250);
+            }, 400);
         }
-
+        function spawnPiece() {
+            activePiece = SHAPES[Math.floor(Math.random()*SHAPES.length)];
+            piecePos = {x: 3, y: 0};
+        }
+        function movePiece(dx, dy) {
+            piecePos.x += dx; piecePos.y += dy;
+            if(collide()) { piecePos.x -= dx; piecePos.y -= dy; return false; }
+            return true;
+        }
+        function collide() {
+            return activePiece.some((row, y) => row.some((val, x) => {
+                let bx = piecePos.x + x, by = piecePos.y + y;
+                return val && (bx < 0 || bx >= 10 || by >= 20 || (by >= 0 && board[by][bx]));
+            }));
+        }
+        function freezePiece() {
+            activePiece.forEach((row, y) => row.forEach((val, x) => {
+                if(val) board[piecePos.y + y][piecePos.x + x] = 1;
+            }));
+        }
+        function clearLines() {
+            for(let y=19; y>=0; y--) {
+                if(board[y].every(v => v)) {
+                    board.splice(y, 1);
+                    board.unshift(Array(10).fill(0));
+                    myScore += 100;
+                    y++;
+                }
+            }
+        }
         function drawTetris() {
-            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,300,400);
-            ctx.fillStyle = '#3b82f6'; ctx.fillRect(pPos.x*30, pPos.y*20, 28, 18);
+            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,200,400);
+            board.forEach((row, y) => row.forEach((val, x) => {
+                if(val) { ctx.fillStyle = '#475569'; ctx.fillRect(x*20, y*20, 19, 19); }
+            }));
+            ctx.fillStyle = '#3b82f6';
+            activePiece.forEach((row, y) => row.forEach((val, x) => {
+                if(val) ctx.fillRect((piecePos.x+x)*20, (piecePos.y+y)*20, 19, 19);
+            }));
             updateScores();
-        }
-
-        function updateScores() {
-            document.getElementById('my-score').innerText = String(myScore).padStart(4, '0');
-            document.getElementById('opp-score').innerText = String(oppScore).padStart(4, '0');
         }
 
         function handleInput(cmd) {
@@ -284,10 +291,15 @@
                 if(cmd === 'left' && sDir.x !== 1) sDir = {x:-1, y:0};
                 if(cmd === 'right' && sDir.x !== -1) sDir = {x:1, y:0};
             } else {
-                if(cmd === 'left' && pPos.x > 0) pPos.x--;
-                if(cmd === 'right' && pPos.x < 9) pPos.x++;
-                if(cmd === 'down') pPos.y++;
-                if(cmd === 'rotate') pPos.x = (pPos.x + 1) % 8; // Простая имитация поворота
+                if(cmd === 'left') movePiece(-1, 0);
+                if(cmd === 'right') movePiece(1, 0);
+                if(cmd === 'down') movePiece(0, 1);
+                if(cmd === 'rotate') {
+                    const rotated = activePiece[0].map((_, i) => activePiece.map(row => row[i]).reverse());
+                    const old = activePiece; activePiece = rotated;
+                    if(collide()) activePiece = old;
+                }
+                drawTetris();
             }
         }
     </script>
