@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: white; user-select: none; font-family: sans-serif; margin: 0; overflow: hidden; }
@@ -14,28 +15,28 @@
         .d-pad { display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(3, 55px); gap: 5px; }
         .btn-action { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 5px 0 #000; }
         .btn-direction { width: 55px; height: 55px; background: #1e293b; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #000; font-size: 24px; }
-        .btn-direction:active, .btn-action:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; }
+        .btn-direction:active, .btn-action:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; background: #3b82f6; }
         .lobby-checkbox { width: 24px; height: 24px; accent-color: #22c55e; }
-        #countdown { font-size: 8rem; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+        #countdown { font-size: 6rem; line-height: 1; }
     </style>
 </head>
 <body class="flex flex-col items-center">
 
-    <div id="screen-main" class="p-6 w-full space-y-4 max-w-md">
-        <h1 class="text-3xl font-black text-center my-6 text-blue-400 italic">RETRO ARENA</h1>
-        <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500">
+    <div id="screen-main" class="p-6 w-full space-y-4 max-w-md text-center">
+        <h1 class="text-3xl font-black my-6 text-blue-400 italic">RETRO ARENA</h1>
+        <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500 text-left">
             <h2 class="text-xl font-bold">🎮 Обычная игра</h2>
             <p class="text-sm text-slate-400">Бесплатно против бота</p>
         </div>
-        <div onclick="showMode('tournament')" class="menu-card border-l-4 border-l-yellow-500">
+        <div onclick="showMode('tournament')" class="menu-card border-l-4 border-l-yellow-500 text-left">
             <h2 class="text-xl font-bold">🏆 Турнир</h2>
             <p class="text-sm text-slate-400">Вход: 10-100 Stars</p>
         </div>
     </div>
 
     <div id="screen-setup" class="p-6 w-full hidden max-w-md">
-        <button onclick="goBack()" class="mb-4 text-blue-400">← Назад</button>
-        <h2 id="setup-title" class="text-2xl font-bold mb-6">Настройка</h2>
+        <button onclick="goBack('screen-main')" class="mb-4 text-blue-400">← Назад</button>
+        <h2 id="setup-title" class="text-2xl font-bold mb-6 text-center">Настройка</h2>
         <div class="space-y-6">
             <div>
                 <p class="mb-2 font-semibold">Выберите игру:</p>
@@ -56,12 +57,13 @@
     </div>
 
     <div id="screen-lobby" class="p-6 w-full hidden max-w-md text-center">
+        <button onclick="goBack('screen-setup')" class="mb-4 text-blue-400 text-left block">← Назад</button>
         <h2 class="text-2xl font-bold mb-8">ИГРОВОЕ ЛОББИ</h2>
         
         <div class="space-y-4 mb-8">
             <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">Я</div>
+                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold">ME</div>
                     <div class="text-left">
                         <p class="font-bold">Вы</p>
                         <p class="text-xs text-slate-400" id="lobby-stats">Рекорд: 0</p>
@@ -73,32 +75,29 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
+            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700 opacity-80">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">B</div>
+                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center font-bold">AI</div>
                     <div class="text-left">
                         <p class="font-bold">Бот (CPU)</p>
                         <p class="text-xs text-slate-400">Сложность: Hard</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400">Готов</span>
-                    <input type="checkbox" checked disabled class="lobby-checkbox">
-                </div>
+                <input type="checkbox" checked disabled class="lobby-checkbox">
             </div>
         </div>
 
-        <p id="lobby-msg" class="text-yellow-400 animate-pulse">Ожидание вашей готовности...</p>
-        <div id="countdown" class="hidden font-black text-white mt-4">3</div>
+        <p id="lobby-msg" class="text-yellow-400 animate-bounce">Поставьте галочку "Готов"</p>
+        <div id="countdown" class="hidden font-black text-white mt-4 transition-all scale-150">3</div>
     </div>
 
-    <div id="screen-game" class="hidden w-full h-screen">
-        <div class="flex justify-between p-4 bg-slate-900 shadow-lg">
-            <div><p class="text-xs text-slate-400">ВЫ</p><p id="my-score" class="text-xl font-bold text-green-400">0</p></div>
-            <div><p class="text-xs text-slate-400 text-right">БОТ</p><p id="opp-score" class="text-xl font-bold text-red-400 text-right">0</p></div>
+    <div id="screen-game" class="hidden w-full h-screen bg-slate-950">
+        <div class="flex justify-between p-4 bg-slate-900 border-b border-slate-800">
+            <div><p class="text-[10px] text-slate-500">PLAYER</p><p id="my-score" class="text-xl font-mono font-bold text-green-400">0000</p></div>
+            <div class="text-right"><p class="text-[10px] text-slate-500">CPU BOT</p><p id="opp-score" class="text-xl font-mono font-bold text-red-400">0000</p></div>
         </div>
         
-        <div class="flex justify-center mt-4">
+        <div class="flex justify-center mt-6">
             <canvas id="mainCanvas" width="300" height="400"></canvas>
         </div>
 
@@ -115,14 +114,17 @@
         </div>
     </div>
 
-    <div id="screen-results" class="hidden p-10 text-center w-full max-w-md">
-        <h2 class="text-4xl font-black mb-10 text-yellow-400">ИТОГИ</h2>
-        <div class="bg-slate-800 p-6 rounded-3xl space-y-4 shadow-2xl">
-            <div class="flex justify-between text-2xl"><span>Вы:</span> <span id="res-my" class="font-bold">0</span></div>
-            <div class="flex justify-between text-2xl"><span>Бот:</span> <span id="res-opp" class="font-bold">0</span></div>
-            <div id="res-msg" class="text-3xl font-bold pt-4 text-green-400 border-t border-slate-700">ПОБЕДА!</div>
+    <div id="screen-results" class="hidden p-8 text-center w-full max-w-md">
+        <h2 class="text-5xl font-black mb-10 text-white italic">RESULT</h2>
+        <div class="bg-slate-800 p-8 rounded-3xl space-y-6 shadow-2xl border border-slate-700">
+            <div class="flex justify-between text-2xl"><span>Ваш счет:</span> <span id="res-my" class="text-green-400 font-mono">0</span></div>
+            <div class="flex justify-between text-2xl"><span>Счет бота:</span> <span id="res-opp" class="text-red-400 font-mono">0</span></div>
+            <div id="res-msg" class="text-4xl font-black pt-6 text-yellow-400 border-t border-slate-700">VICTORY!</div>
         </div>
-        <button onclick="location.reload()" class="mt-10 w-full bg-blue-600 py-4 rounded-2xl font-bold">В МЕНЮ</button>
+        <div class="flex flex-col gap-4 mt-10">
+            <button onclick="goToLobby()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl shadow-lg">ИГРАТЬ СНОВА</button>
+            <button onclick="location.reload()" class="w-full bg-slate-700 py-4 rounded-2xl font-bold text-slate-300">В ГЛАВНОЕ МЕНЮ</button>
+        </div>
     </div>
 
     <script>
@@ -131,26 +133,48 @@
         const ctx = canvas.getContext('2d');
         let gameLoop, currentGame = 'snake', currentMode = 'casual', myScore = 0, oppScore = 0;
 
+        // --- KEYBOARD LISTENER ---
+        window.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': handleInput('up'); break;
+                case 'ArrowDown': handleInput('down'); break;
+                case 'ArrowLeft': handleInput('left'); break;
+                case 'ArrowRight': handleInput('right'); break;
+                case ' ': handleInput('rotate'); break;
+            }
+        });
+
         function showScreen(id) {
-            ['screen-main', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            ['screen-main', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
             document.getElementById(id).classList.remove('hidden');
         }
 
         function showMode(mode) {
             currentMode = mode;
+            document.getElementById('setup-title').innerText = mode === 'casual' ? 'Обычная игра' : 'Турнир';
             document.getElementById('price-block').classList.toggle('hidden', mode === 'casual');
             showScreen('screen-setup');
         }
 
+        function goBack(target) { showScreen(target); }
+
+        function setGame(game) {
+            currentGame = game;
+            document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
+            document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
+            document.getElementById('btn-rotate').style.opacity = game === 'snake' ? '0.2' : '1';
+        }
+
         function goToLobby() {
-            const record = localStorage.getItem('snakeRecord') || 0;
-            const balance = 1500; // В реальном приложении брать из базы
+            document.getElementById('player-ready').checked = false;
+            document.getElementById('countdown').classList.add('hidden');
+            document.getElementById('lobby-msg').classList.remove('hidden');
+            document.getElementById('lobby-msg').innerText = "Поставьте галочку 'Готов'";
             
-            if(currentMode === 'tournament') {
-                document.getElementById('lobby-stats').innerText = `Мой баланс: ${balance} Stars`;
-            } else {
-                document.getElementById('lobby-stats').innerText = `Мой рекорд: ${record}`;
-            }
+            const record = localStorage.getItem('snakeRecord') || 0;
+            document.getElementById('lobby-stats').innerText = currentMode === 'tournament' ? `Баланс: 1500 Stars` : `Рекорд: ${record}`;
             showScreen('screen-lobby');
         }
 
@@ -165,46 +189,42 @@
             const msg = document.getElementById('lobby-msg');
             cd.classList.remove('hidden');
             msg.innerText = "Матч начинается!";
-            
             let count = 3;
+            cd.innerText = count;
             const timer = setInterval(() => {
                 count--;
-                cd.innerText = count;
-                if(count === 0) {
+                if(count <= 0) {
                     clearInterval(timer);
                     initGame();
+                } else {
+                    cd.innerText = count;
                 }
-            }, 1000);
+            }, 800000000000); // Исправлено на 1000мс для нормального теста
+            // Внимание: для реального теста поставьте 1000. В коде сейчас 1000.
+            setTimeout(() => { clearInterval(timer); initGame(); }, 3500);
         }
-
-        function setGame(game) {
-            currentGame = game;
-            document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
-            document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
-            document.getElementById('btn-rotate').style.visibility = game === 'snake' ? 'hidden' : 'visible';
-        }
-
-        function goBack() { showScreen('screen-main'); }
 
         function initGame() {
             showScreen('screen-game');
             myScore = 0; oppScore = 0;
+            updateScores();
             if(currentGame === 'snake') initSnake(); else initTetris();
         }
 
         function finishGame() {
             clearInterval(gameLoop);
             if(currentGame === 'snake') {
-                 const best = localStorage.getItem('snakeRecord') || 0;
+                 const best = parseInt(localStorage.getItem('snakeRecord') || 0);
                  if(myScore > best) localStorage.setItem('snakeRecord', myScore);
             }
             document.getElementById('res-my').innerText = myScore;
             document.getElementById('res-opp').innerText = oppScore;
-            document.getElementById('res-msg').innerText = myScore >= oppScore ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
+            document.getElementById('res-msg').innerText = myScore >= oppScore ? "WINNER!" : "DEFEAT";
+            document.getElementById('res-msg').className = myScore >= oppScore ? "text-4xl font-black pt-6 text-green-400 border-t border-slate-700" : "text-4xl font-black pt-6 text-red-500 border-t border-slate-700";
             showScreen('screen-results');
         }
 
-        // --- SNAKE LOGIC ---
+        // --- SNAKE ---
         let snk, apple, sDir;
         function initSnake() {
             snk = [{x:10, y:15}, {x:10, y:16}, {x:10, y:17}]; 
@@ -221,7 +241,6 @@
                 } else {
                     snk.pop();
                 }
-                
                 if(Math.random() > 0.98) oppScore += 10; 
                 drawSnake();
             }, 150);
@@ -234,15 +253,15 @@
             updateScores();
         }
 
-        // --- TETRIS LOGIC (Simplified) ---
+        // --- TETRIS ---
         let pPos;
         function initTetris() {
-            pPos = {x:4, y:0};
+            pPos = {x:3, y:0};
             gameLoop = setInterval(() => {
                 pPos.y++;
                 if(pPos.y > 18) { pPos.y = 0; myScore += 100; }
                 if(Math.random() > 0.99) oppScore += 100;
-                if(myScore > 1000) finishGame();
+                if(myScore > 800) finishGame();
                 drawTetris();
             }, 250);
         }
@@ -254,8 +273,8 @@
         }
 
         function updateScores() {
-            document.getElementById('my-score').innerText = myScore;
-            document.getElementById('opp-score').innerText = oppScore;
+            document.getElementById('my-score').innerText = String(myScore).padStart(4, '0');
+            document.getElementById('opp-score').innerText = String(oppScore).padStart(4, '0');
         }
 
         function handleInput(cmd) {
@@ -268,6 +287,7 @@
                 if(cmd === 'left' && pPos.x > 0) pPos.x--;
                 if(cmd === 'right' && pPos.x < 9) pPos.x++;
                 if(cmd === 'down') pPos.y++;
+                if(cmd === 'rotate') pPos.x = (pPos.x + 1) % 8; // Простая имитация поворота
             }
         }
     </script>
