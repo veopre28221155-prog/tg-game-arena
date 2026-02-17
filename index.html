@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: white; user-select: none; font-family: sans-serif; margin: 0; overflow: hidden; }
-        canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 280px; }
+        canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 280px; height: auto; }
         .menu-card { background: #1e293b; border-radius: 16px; padding: 15px; border: 1px solid #475569; cursor: pointer; }
         .joypad { position: fixed; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; z-index: 50; }
         .d-pad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); gap: 8px; }
@@ -36,19 +36,16 @@
             <h2 class="text-xl font-bold">🏆 Турнир</h2>
             <p class="text-sm text-slate-400">Игра на звезды (Stars)</p>
         </div>
-        <div onclick="inviteFriend()" class="menu-card border-l-4 border-l-blue-500">
-            <h2 class="text-xl font-bold text-center">👥 Пригласить друга</h2>
-        </div>
     </div>
 
     <div id="screen-profile" class="p-6 w-full hidden max-w-md text-center">
         <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl mb-6">
             <div id="user-avatar" class="w-16 h-16 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center text-xl font-bold">?</div>
-            <h2 id="user-name" class="text-lg font-bold">Загрузка...</h2>
+            <h2 id="user-name" class="text-lg font-bold">Gamer</h2>
             <p class="text-yellow-400 text-2xl font-black my-2">⭐ <span id="user-balance">0</span></p>
         </div>
         <button onclick="topUp()" class="w-full bg-yellow-500 py-4 rounded-2xl font-bold text-black mb-3">ПОПОЛНИТЬ БАЛАНС</button>
-        <button onclick="showScreen('screen-main')" class="w-full bg-slate-700 py-4 rounded-2xl font-bold">НАЗАД</button>
+        <button onclick="showScreen('screen-main')" class="w-full bg-slate-700 py-4 rounded-2xl font-bold text-slate-300">НАЗАД</button>
     </div>
 
     <div id="screen-setup" class="p-6 w-full hidden max-w-md">
@@ -64,6 +61,7 @@
                 <select id="tourney-price" class="w-full bg-slate-900 p-3 rounded-lg border border-slate-700">
                     <option value="10">⭐ 10 Stars</option>
                     <option value="50">⭐ 50 Stars</option>
+                    <option value="100">⭐ 100 Stars</option>
                 </select>
             </div>
             <button onclick="processLobbyEntry()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl">ПОИСК</button>
@@ -93,10 +91,10 @@
         <div id="countdown" class="hidden text-6xl font-black">3</div>
     </div>
 
-    <div id="screen-game" class="hidden w-full h-screen bg-black pt-2">
+    <div id="screen-game" class="hidden w-full h-screen bg-black">
         <div class="flex justify-between px-6 py-2 bg-slate-900 border-b border-slate-800">
             <div><p class="text-[10px] text-slate-500 uppercase">YOU</p><p id="my-score" class="text-xl font-mono text-green-400 font-bold">0</p></div>
-            <div><p class="text-[10px] text-slate-500">BOT</p><p id="opp-score" class="text-xl font-mono text-red-400 font-bold">0</p></div>
+            <div class="text-right"><p class="text-[10px] text-slate-500">BOT</p><p id="opp-score" class="text-xl font-mono text-red-400 font-bold">0</p></div>
         </div>
         <div class="flex justify-center mt-4">
             <canvas id="mainCanvas"></canvas>
@@ -135,13 +133,22 @@
         let balance = parseInt(localStorage.getItem('user_balance')) || 500;
         let waitTimer, waitSeconds = 60;
 
-        // --- Navigation ---
+        // TETRIS CONSTANTS
+        const T_COLS = 10, T_ROWS = 20, T_SIZE = 20;
+        const SHAPES = [
+            [[1,1,1,1]], // I
+            [[1,1],[1,1]], // O
+            [[0,1,0],[1,1,1]], // T
+            [[1,1,0],[0,1,1]], // S
+            [[0,1,1],[1,1,0]], // Z
+            [[1,0,0],[1,1,1]], // L
+            [[0,0,1],[1,1,1]]  // J
+        ];
+
         function showScreen(id) {
             ['screen-main', 'screen-profile', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
             document.getElementById('nav-bar').classList.toggle('hidden', id === 'screen-game' || id === 'screen-lobby');
-            document.getElementById('tab-main').className = id === 'screen-main' ? 'tab-active py-2 px-4 font-bold' : 'py-2 px-4 font-bold text-slate-400';
-            document.getElementById('tab-profile').className = id === 'screen-profile' ? 'tab-active py-2 px-4 font-bold' : 'py-2 px-4 font-bold text-slate-400';
         }
 
         function showMode(mode) {
@@ -154,7 +161,7 @@
             currentGame = game;
             document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
             document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
-            document.getElementById('btn-rotate').style.opacity = game === 'snake' ? '0.2' : '1';
+            document.getElementById('btn-rotate').innerText = game === 'snake' ? 'SPEED' : 'ROTATE';
         }
 
         function showProfile() {
@@ -163,7 +170,6 @@
             showScreen('screen-profile');
         }
 
-        // --- Lobby ---
         function processLobbyEntry() {
             if(currentMode === 'tournament') {
                 const price = parseInt(document.getElementById('tourney-price').value);
@@ -173,23 +179,18 @@
             showScreen('screen-lobby');
             document.getElementById('player-ready').checked = false;
             document.getElementById('countdown').classList.add('hidden');
-            document.getElementById('wait-timer').classList.remove('hidden');
             waitSeconds = 60;
-            updateWaitTimer();
             clearInterval(waitTimer);
             waitTimer = setInterval(() => {
                 waitSeconds--;
-                updateWaitTimer();
-                if(waitSeconds <= 0) { cancelLobby(); tg.showAlert("Время вышло. Взнос возвращен."); }
+                document.getElementById('wait-timer').innerText = `Ожидание: ${waitSeconds}с`;
+                if(waitSeconds <= 0) { cancelLobby(); tg.showAlert("Время вышло."); }
             }, 1000);
         }
-
-        function updateWaitTimer() { document.getElementById('wait-timer').innerText = `Ожидание: ${waitSeconds}с`; }
 
         function toggleReady() {
             if(document.getElementById('player-ready').checked) {
                 clearInterval(waitTimer);
-                document.getElementById('wait-timer').classList.add('hidden');
                 const cd = document.getElementById('countdown');
                 cd.classList.remove('hidden');
                 let c = 3; cd.innerText = c;
@@ -215,7 +216,7 @@
             if(currentGame === 'snake') initSnake(); else initTetris();
         }
 
-        function finishGame() {
+        function finish() {
             clearInterval(gameLoop);
             document.getElementById('res-my').innerText = myScore;
             document.getElementById('res-opp').innerText = oppScore;
@@ -228,52 +229,20 @@
             showScreen('screen-results');
         }
 
-        // --- CONTROLS ---
-        let sDir = {x:0, y:-1};
-        let tPos = {x:4, y:0};
-
-        const handleInput = (cmd) => {
-            if(currentGame === 'snake') {
-                if(cmd==='up' && sDir.y !== 1) sDir = {x:0, y:-1};
-                if(cmd==='down' && sDir.y !== -1) sDir = {x:0, y:1};
-                if(cmd==='left' && sDir.x !== 1) sDir = {x:-1, y:0};
-                if(cmd==='right' && sDir.x !== -1) sDir = {x:1, y:0};
-            } else {
-                if(cmd==='left' && tPos.x > 0) tPos.x--;
-                if(cmd==='right' && tPos.x < 9) tPos.x++;
-                if(cmd==='down' && tPos.y < 18) tPos.y++;
-                if(cmd==='rotate') tPos.x = (tPos.x + 1) % 10; 
-            }
-        };
-
-        ['up','down','left','right','rotate'].forEach(id => {
-            const el = document.getElementById('btn-' + id);
-            const events = ['touchstart', 'mousedown'];
-            events.forEach(ev => el.addEventListener(ev, (e) => {
-                e.preventDefault();
-                handleInput(id);
-            }));
-        });
-
-        window.addEventListener('keydown', (e) => {
-            const keys = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',' ':'rotate'};
-            if(keys[e.key]) handleInput(keys[e.key]);
-        });
-
-        // --- ENGINES ---
+        // --- SNAKE ---
+        let snk, apple, sDir;
         function initSnake() {
             canvas.width = 300; canvas.height = 400;
-            let snk = [{x:10, y:15}, {x:10, y:16}]; 
-            let apple = {x:5, y:5}; sDir = {x:0, y:-1};
+            snk = [{x:10, y:15}, {x:10, y:16}]; apple = {x:5, y:5}; sDir = {x:0, y:-1};
             gameLoop = setInterval(() => {
                 const head = {x: snk[0].x + sDir.x, y: snk[0].y + sDir.y};
-                if(head.x<0||head.x>=20||head.y<0||head.y>=26||snk.some(p=>p.x===head.x&&p.y===head.y)) return finishGame();
+                if(head.x<0||head.x>=20||head.y<0||head.y>=26||snk.some(p=>p.x===head.x&&p.y===head.y)) return finish();
                 snk.unshift(head);
                 if(head.x===apple.x && head.y===apple.y) {
                     myScore += 10;
                     apple = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*26)};
                 } else snk.pop();
-                if(Math.random()>0.985) oppScore+=10;
+                if(Math.random()>0.98) oppScore+=10;
                 ctx.fillStyle='#020617'; ctx.fillRect(0,0,300,400);
                 ctx.fillStyle='#4ade80'; snk.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
                 ctx.fillStyle='#f87171'; ctx.fillRect(apple.x*15, apple.y*15, 14, 14);
@@ -282,27 +251,93 @@
             }, 150);
         }
 
+        // --- TETRIS ---
+        let tBoard, tPiece, tPos;
         function initTetris() {
-            canvas.width = 240; canvas.height = 400;
-            tPos = {x:4, y:0};
+            canvas.width = T_COLS * T_SIZE; canvas.height = T_ROWS * T_SIZE;
+            tBoard = Array(T_ROWS).fill().map(() => Array(T_COLS).fill(0));
+            spawnPiece();
             gameLoop = setInterval(() => {
-                tPos.y++;
-                if(tPos.y > 18) { tPos.y=0; myScore+=100; }
-                if(Math.random()>0.99) oppScore+=100;
-                if(myScore > 800) finishGame();
-                ctx.fillStyle='#020617'; ctx.fillRect(0,0,240,400);
-                ctx.fillStyle='#3b82f6'; ctx.fillRect(tPos.x*24, tPos.y*20, 22, 18);
-                document.getElementById('my-score').innerText = myScore;
-                document.getElementById('opp-score').innerText = oppScore;
-            }, 250);
+                if(!movePiece(0, 1)) { lockPiece(); clearLines(); spawnPiece(); }
+                if(Math.random()>0.99) oppScore += 100;
+                drawTetris();
+            }, 400);
+        }
+        function spawnPiece() {
+            tPiece = SHAPES[Math.floor(Math.random()*SHAPES.length)];
+            tPos = {x: 3, y: 0};
+            if(collide()) finish();
+        }
+        function movePiece(dx, dy) {
+            tPos.x += dx; tPos.y += dy;
+            if(collide()) { tPos.x -= dx; tPos.y -= dy; return false; }
+            return true;
+        }
+        function rotatePiece() {
+            const prev = tPiece;
+            tPiece = tPiece[0].map((_, i) => tPiece.map(row => row[i]).reverse());
+            if(collide()) tPiece = prev;
+        }
+        function collide() {
+            return tPiece.some((row, y) => row.some((val, x) => {
+                let bx = tPos.x + x, by = tPos.y + y;
+                return val && (bx < 0 || bx >= T_COLS || by >= T_ROWS || (by >= 0 && tBoard[by][bx]));
+            }));
+        }
+        function lockPiece() {
+            tPiece.forEach((row, y) => row.forEach((val, x) => {
+                if(val) tBoard[tPos.y + y][tPos.x + x] = 1;
+            }));
+        }
+        function clearLines() {
+            for(let y=T_ROWS-1; y>=0; y--) {
+                if(tBoard[y].every(v => v)) {
+                    tBoard.splice(y, 1);
+                    tBoard.unshift(Array(T_COLS).fill(0));
+                    myScore += 100; y++;
+                }
+            }
+        }
+        function drawTetris() {
+            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            tBoard.forEach((row, y) => row.forEach((val, x) => {
+                if(val) { ctx.fillStyle = '#475569'; ctx.fillRect(x*T_SIZE, y*T_SIZE, T_SIZE-1, T_SIZE-1); }
+            }));
+            ctx.fillStyle = '#3b82f6';
+            tPiece.forEach((row, y) => row.forEach((val, x) => {
+                if(val) ctx.fillRect((tPos.x+x)*T_SIZE, (tPos.y+y)*T_SIZE, T_SIZE-1, T_SIZE-1);
+            }));
+            document.getElementById('my-score').innerText = myScore;
+            document.getElementById('opp-score').innerText = oppScore;
         }
 
-        function topUp() {
-            tg.showConfirm("Купить 100 Stars?", (ok) => { if(ok) { balance+=100; localStorage.setItem('user_balance', balance); showProfile(); }});
-        }
+        const handleInput = (cmd) => {
+            if(currentGame === 'snake') {
+                if(cmd==='up' && sDir.y !== 1) sDir = {x:0, y:-1};
+                if(cmd==='down' && sDir.y !== -1) sDir = {x:0, y:1};
+                if(cmd==='left' && sDir.x !== 1) sDir = {x:-1, y:0};
+                if(cmd==='right' && sDir.x !== -1) sDir = {x:1, y:0};
+            } else {
+                if(cmd==='left') movePiece(-1, 0);
+                if(cmd==='right') movePiece(1, 0);
+                if(cmd==='down') movePiece(0, 1);
+                if(cmd==='rotate' || cmd==='up') rotatePiece();
+                drawTetris();
+            }
+        };
+
+        ['up','down','left','right','rotate'].forEach(id => {
+            const el = document.getElementById('btn-' + id);
+            ['touchstart', 'mousedown'].forEach(ev => el.addEventListener(ev, (e) => { e.preventDefault(); handleInput(id); }));
+        });
+
+        window.addEventListener('keydown', (e) => {
+            const keys = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',' ':'rotate'};
+            if(keys[e.key]) handleInput(keys[e.key]);
+        });
         
-        function inviteFriend() {
-            tg.shareToChat("Давай сразимся в ретро-игры! Заходи в Арену: https://t.me/YOUR_BOT_USERNAME");
+        function topUp() {
+            tg.showConfirm("Купить 100 Stars?", (ok) => { if(ok) { balance += 100; localStorage.setItem('user_balance', balance); showProfile(); }});
         }
     </script>
 </body>
