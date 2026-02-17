@@ -2,82 +2,148 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>E-Sports Arena | Cloud Build</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tournament Arena</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none; }
+        .active-btn { background: #eab308 !important; color: black !important; }
+    </style>
 </head>
-<body class="bg-[#05080f] text-white overflow-hidden">
+<body class="bg-[#05080f] text-white overflow-hidden select-none font-sans">
 
-    <div class="max-w-md mx-auto min-h-screen flex flex-col p-4 shadow-2xl">
-        <div class="flex justify-between items-center mb-6 pt-2">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
+        
+        <div class="flex justify-between items-center mb-8">
             <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
                 <span class="text-yellow-400 font-bold">⭐️</span>
                 <span id="balance" class="font-black text-xl">150</span>
             </div>
-            <div class="text-[10px] text-blue-500 font-mono animate-pulse">CLOUD ENGINE ACTIVE</div>
+            <div id="status-tag" class="text-[10px] text-blue-500 font-mono tracking-tighter uppercase">Main Menu</div>
         </div>
 
-        <div class="relative w-full aspect-[4/3] bg-black rounded-[2.5rem] border-4 border-gray-800 overflow-hidden shadow-2xl">
-            <iframe id="game-frame" 
-                    src="https://www.retrogames.cc/embed/42436-mortal-kombat-3-europe.html" 
-                    class="w-full h-full border-none"
-                    allow="autoplay; keyboard"></iframe>
+        <div id="main-menu" class="flex flex-col gap-4">
+            <h1 class="text-2xl font-black mb-4 italic uppercase tracking-widest text-center">Выбери режим</h1>
+            
+            <button onclick="showMode('free')" class="bg-gradient-to-r from-blue-600 to-blue-800 p-6 rounded-3xl shadow-xl active:scale-95 transition-all text-left border-b-4 border-blue-900">
+                <div class="text-xs uppercase opacity-70 font-bold">Free to Play</div>
+                <div class="text-xl font-black italic">ОБЫЧНАЯ ИГРА</div>
+                <div class="text-[10px] mt-1 opacity-50">Против бота (Бесплатно)</div>
+            </button>
+
+            <button onclick="showMode('pro')" class="bg-gradient-to-r from-yellow-500 to-orange-700 p-6 rounded-3xl shadow-xl active:scale-95 transition-all text-left border-b-4 border-orange-900">
+                <div class="text-xs uppercase opacity-90 font-bold text-yellow-200">Pro League</div>
+                <div class="text-xl font-black italic text-white">ТУРНИР</div>
+                <div class="text-[10px] mt-1 text-yellow-100/60 font-bold">На монеты (Платная)</div>
+            </button>
         </div>
 
-        <div class="text-[9px] text-gray-500 text-center my-4 uppercase tracking-widest font-bold">
-            Tap game screen once to enable keys
-        </div>
+        <div id="mode-settings" class="hidden flex flex-col gap-4">
+            <button onclick="backToMenu()" class="text-blue-400 text-sm mb-4 text-left">← Назад</button>
+            <h2 id="mode-title" class="text-xl font-black italic mb-4 uppercase text-center">Настройки</h2>
+            
+            <label class="text-xs text-gray-500 uppercase font-bold ml-2">Сложность бота</label>
+            <select id="diff" class="bg-gray-900 border border-gray-700 p-4 rounded-2xl text-white outline-none">
+                <option value="easy">Easy (Новичок)</option>
+                <option value="medium">Medium (Средний)</option>
+                <option value="hard">Hard (Профи)</option>
+            </select>
 
-        <div class="mt-auto mb-10 flex justify-between items-center px-2">
-            <div class="relative w-32 h-32">
-                <button onmousedown="simulateKey(38)" class="absolute top-0 left-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">↑</button>
-                <button onmousedown="simulateKey(40)" class="absolute bottom-0 left-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">↓</button>
-                <button onmousedown="simulateKey(37)" class="absolute left-0 top-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">←</button>
-                <button onmousedown="simulateKey(39)" class="absolute right-0 top-11 w-10 h-10 bg-gray-800 rounded-lg shadow-lg active:bg-blue-600 active:scale-90 transition-all text-sm">→</button>
+            <div id="bet-container" class="hidden flex flex-col gap-2">
+                <label class="text-xs text-gray-500 uppercase font-bold ml-2 mt-4">Ставка</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setBet(10, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold transition-all">10 ⭐️</button>
+                    <button onclick="setBet(50, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold transition-all">50 ⭐️</button>
+                    <button onclick="setBet(100, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold transition-all">100 ⭐️</button>
+                </div>
             </div>
 
-            <div class="flex gap-4">
-                <button onmousedown="simulateKey(88)" class="w-16 h-16 bg-red-600 rounded-full font-black text-2xl shadow-xl active:scale-95 active:bg-red-500 transition-all italic">A</button>
-                <button onmousedown="simulateKey(90)" class="w-16 h-16 bg-blue-600 rounded-full font-black text-2xl shadow-xl active:scale-95 active:bg-blue-500 transition-all italic">B</button>
+            <button onclick="startSearch()" id="search-btn" class="mt-8 bg-white text-black py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95">
+                Поиск игры
+            </button>
+        </div>
+
+        <div id="search-screen" class="hidden flex-1 flex flex-col items-center justify-center">
+            <div class="w-16 h-16 border-4 border-t-blue-500 border-gray-800 rounded-full animate-spin mb-6"></div>
+            <div class="text-xl font-black italic animate-pulse">ИЩЕМ СОПЕРНИКА...</div>
+        </div>
+
+        <div id="game-container" class="hidden flex-col flex-1">
+            <div class="relative w-full aspect-[4/3] bg-black rounded-[2rem] border-4 border-gray-800 overflow-hidden shadow-2xl">
+                <div id="game" class="w-full h-full"></div>
+            </div>
+            
+            <div class="mt-auto mb-10 flex justify-between items-center px-2">
+                <div class="relative w-32 h-32">
+                    <button onmousedown="press('up')" onmouseup="release('up')" ontouchstart="press('up')" ontouchend="release('up')" class="absolute top-0 left-11 w-10 h-10 bg-gray-800 rounded-lg">↑</button>
+                    <button onmousedown="press('down')" onmouseup="release('down')" ontouchstart="press('down')" ontouchend="release('down')" class="absolute bottom-0 left-11 w-10 h-10 bg-gray-800 rounded-lg">↓</button>
+                    <button onmousedown="press('left')" onmouseup="release('left')" ontouchstart="press('left')" ontouchend="release('left')" class="absolute left-0 top-11 w-10 h-10 bg-gray-800 rounded-lg">←</button>
+                    <button onmousedown="press('right')" onmouseup="release('right')" ontouchstart="press('right')" ontouchend="release('right')" class="absolute right-0 top-11 w-10 h-10 bg-gray-800 rounded-lg">→</button>
+                </div>
+                <div class="flex gap-4">
+                    <button onmousedown="press('b')" onmouseup="release('b')" ontouchstart="press('b')" ontouchend="release('b')" class="w-16 h-16 bg-blue-600 rounded-full font-black text-2xl shadow-xl active:bg-blue-400">B</button>
+                    <button onmousedown="press('a')" onmouseup="release('a')" ontouchstart="press('a')" ontouchend="release('a')" class="w-16 h-16 bg-red-600 rounded-full font-black text-2xl shadow-xl active:bg-red-400">A</button>
+                </div>
             </div>
         </div>
 
-        <button onclick="aiConfirm()" id="ai-btn" class="w-full bg-white text-black py-5 rounded-3xl font-black uppercase text-sm tracking-[0.2em] shadow-2xl active:scale-95 transition-all">
-            Verify Victory (AI)
-        </button>
     </div>
 
+    <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
     <script>
-        const frame = document.getElementById('game-frame');
+        let balance = 150;
+        let currentMode = 'free';
+        let currentBet = 0;
 
-        function simulateKey(keyCode) {
-            // ФОКУСИРУЕМСЯ НА ИГРЕ
-            frame.focus();
-            
-            // Пытаемся отправить событие клавиши в документ
-            const event = new KeyboardEvent('keydown', {
-                keyCode: keyCode,
-                which: keyCode,
-                bubbles: true
-            });
-            
-            document.dispatchEvent(event);
-            console.log("Key Simulated:", keyCode);
+        function showMode(m) {
+            currentMode = m;
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('mode-settings').classList.remove('hidden');
+            document.getElementById('mode-title').innerText = m === 'free' ? 'Обычная игра' : 'Турнир';
+            document.getElementById('bet-container').classList.toggle('hidden', m === 'free');
+            document.getElementById('status-tag').innerText = "Mode: " + m.toUpperCase();
         }
 
-        function aiConfirm() {
-            const btn = document.getElementById('ai-btn');
-            const bal = document.getElementById('balance');
-            btn.innerText = "Analyzing Match...";
-            btn.classList.add('animate-pulse');
+        function backToMenu() {
+            document.getElementById('main-menu').classList.remove('hidden');
+            document.getElementById('mode-settings').classList.add('hidden');
+        }
+
+        function setBet(a, btn) {
+            currentBet = a;
+            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active-btn'));
+            btn.classList.add('active-btn');
+        }
+
+        function startSearch() {
+            if (currentMode === 'pro') {
+                if (currentBet === 0) return alert("Выбери ставку!");
+                if (balance < currentBet) return alert("Недостаточно ⭐️!");
+                balance -= currentBet;
+                document.getElementById('balance').innerText = balance;
+            }
+            
+            document.getElementById('mode-settings').classList.add('hidden');
+            document.getElementById('search-screen').classList.remove('hidden');
 
             setTimeout(() => {
-                bal.innerText = parseInt(bal.innerText) + 50;
-                btn.innerText = "Winner: +50 Stars ✅";
-                btn.style.background = "#22c55e";
-                btn.style.color = "white";
-                btn.classList.remove('animate-pulse');
-            }, 3000);
+                // Имитация поиска - всегда находим для теста
+                document.getElementById('search-screen').classList.add('hidden');
+                document.getElementById('game-container').classList.remove('hidden');
+                initGame();
+            }, 2500);
         }
+
+        function initGame() {
+            new EmulatorJS("#game", {
+                dataUrl: "https://cdn.emulatorjs.org/stable/data/",
+                gameUrl: "https://cdn.emulatorjs.org/stable/data/roms/nes/kirby_dream_land.nes",
+                system: "nes"
+            });
+        }
+
+        function press(k) { if(window.EmuJS) window.EmuJS.Input.press(k); }
+        function release(k) { if(window.EmuJS) window.EmuJS.Input.release(k); }
     </script>
 </body>
 </html>
