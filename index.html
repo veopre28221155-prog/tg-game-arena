@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mario TG Arena</title>
+    <title>Mario Arena Ultima</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: #05080f; color: white; touch-action: none; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
-        #nes-canvas { width: 100%; max-width: 400px; aspect-ratio: 256/240; background: #000; border: 4px solid #1e293b; border-radius: 20px; image-rendering: pixelated; }
+        canvas { width: 100%; max-width: 400px; aspect-ratio: 256/240; background: #000; border: 4px solid #1e293b; border-radius: 20px; image-rendering: pixelated; }
         .btn { background: #1e293b; width: 65px; height: 65px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px #000; -webkit-user-select: none; }
         .btn:active { transform: translateY(2px); box-shadow: 0 2px #000; background: #3b82f6; }
     </style>
@@ -19,7 +19,7 @@
             <span class="text-yellow-400 font-bold">⭐️</span>
             <span class="font-black text-xl">150</span>
         </div>
-        <div id="status" class="text-[10px] text-green-500 uppercase font-bold tracking-widest">System Active</div>
+        <div id="status" class="text-[10px] text-green-500 uppercase font-bold tracking-widest">Core: v1.2 Stable</div>
     </div>
 
     <canvas id="nes-canvas"></canvas>
@@ -37,7 +37,7 @@
         </div>
     </div>
 
-    <button onclick="startGame()" id="pBtn" class="w-full py-5 bg-red-600 rounded-2xl font-black text-white shadow-2xl uppercase animate-pulse">Запустить игру</button>
+    <button onclick="ignite()" id="igniteBtn" class="w-full py-5 bg-red-600 rounded-2xl font-black text-white shadow-2xl uppercase animate-pulse">Нажми, чтобы играть!</button>
 
     <script>
         const nes = new jsnes.NES({
@@ -53,10 +53,10 @@
         const img = ctx.createImageData(256, 240);
         const b32 = new Uint32Array(img.data.buffer);
 
-        function startGame() {
-            document.getElementById('pBtn').style.display = 'none';
-            // Загружаем файл напрямую из твоего GitHub
-            fetch('mario.nes')
+        function ignite() {
+            document.getElementById('igniteBtn').style.display = 'none';
+            // Загружаем игру из твоего репозитория без ошибок CORS
+            fetch('https://veopre28221155-prog.github.io/tg-game-arena/mario.nes')
                 .then(r => r.arrayBuffer())
                 .then(b => {
                     let s = "";
@@ -64,7 +64,9 @@
                     nes.loadROM(s);
                     setInterval(() => nes.frame(), 16);
                 })
-                .catch(e => alert('Файл mario.nes не найден в репозитории!'));
+                .catch(e => {
+                    alert("Сбой сети! Попробуй обновить страницу или включить мобильный интернет.");
+                });
         }
     </script>
 </body>
