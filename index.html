@@ -6,10 +6,11 @@
     <title>Mario Arena TG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #05080f; color: white; overflow: hidden; touch-action: none; }
+        body { background-color: #05080f; color: white; overflow: hidden; touch-action: none; font-family: sans-serif; }
         #screen { width: 100%; aspect-ratio: 4/3; background: #000; border: 4px solid #1e293b; border-radius: 24px; image-rendering: pixelated; }
         .hidden { display: none; }
         .btn-active:active { transform: scale(0.9); background-color: #1e40af; }
+        .ctrl-btn { user-select: none; -webkit-user-select: none; }
     </style>
 </head>
 <body class="p-6 flex flex-col items-center">
@@ -19,7 +20,7 @@
             <span class="text-yellow-400 font-bold">⭐️</span>
             <span class="font-black text-xl">150</span>
         </div>
-        <div class="text-[10px] text-red-500 font-mono animate-pulse uppercase">Offline Mode Enabled</div>
+        <div id="status" class="text-[10px] text-green-500 font-mono uppercase tracking-widest">System: Ready</div>
     </div>
 
     <div id="menu" class="w-full flex flex-col gap-4">
@@ -28,31 +29,36 @@
             <div class="bg-white/20 p-3 rounded-2xl text-4xl">🍄</div>
             <div class="text-left">
                 <div class="text-xl font-black italic uppercase">Super Mario</div>
-                <div class="text-[10px] text-red-100 font-bold uppercase opacity-80">Запуск без интернета</div>
+                <div class="text-[10px] text-red-100 font-bold uppercase opacity-80">Начать игру</div>
             </div>
         </button>
     </div>
 
     <div id="game" class="hidden w-full flex-1 flex flex-col">
+        <div class="flex justify-between items-center mb-2 px-2">
+            <button onclick="location.reload()" class="text-[10px] text-gray-500 font-bold uppercase">← Выход</button>
+            <div id="load-msg" class="text-[10px] text-blue-400 font-bold animate-pulse">CONNECTING...</div>
+        </div>
+        
         <canvas id="screen"></canvas>
         
-        <div class="mt-auto mb-10 flex justify-between items-center w-full">
-            <div class="relative w-32 h-32 scale-90">
-                <button id="up" class="btn-active absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg">↑</button>
-                <button id="down" class="btn-active absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg">↓</button>
-                <button id="left" class="btn-active absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg">←</button>
-                <button id="right" class="btn-active absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg">→</button>
+        <div class="mt-auto mb-10 flex justify-between items-center w-full px-2">
+            <div class="relative w-36 h-36">
+                <button id="up" class="ctrl-btn btn-active absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl shadow-lg">↑</button>
+                <button id="down" class="ctrl-btn btn-active absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl shadow-lg">↓</button>
+                <button id="left" class="ctrl-btn btn-active absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl shadow-lg">←</button>
+                <button id="right" class="ctrl-btn btn-active absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center text-xl shadow-lg">→</button>
             </div>
             <div class="flex gap-4">
-                <button id="b" class="btn-active w-16 h-16 bg-blue-600 rounded-full font-black text-xl shadow-xl">B</button>
-                <button id="a" class="btn-active w-16 h-16 bg-red-600 rounded-full font-black text-xl shadow-xl">A</button>
+                <button id="b" class="ctrl-btn btn-active w-20 h-20 bg-blue-700 rounded-full font-black text-2xl shadow-xl flex items-center justify-center border-b-4 border-blue-900 text-white">B</button>
+                <button id="a" class="ctrl-btn btn-active w-20 h-20 bg-red-700 rounded-full font-black text-2xl shadow-xl flex items-center justify-center border-b-4 border-red-900 text-white">A</button>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/jsnes/dist/jsnes.min.js"></script>
     <script>
-        let nes = new jsnes.NES();
+        const nes = new jsnes.NES();
         const canvas = document.getElementById('screen');
         const ctx = canvas.getContext('2d');
         canvas.width = 256; canvas.height = 240;
@@ -63,16 +69,23 @@
             document.getElementById('menu').classList.add('hidden');
             document.getElementById('game').classList.remove('hidden');
             
-            // Используем твой собственный файл mario.nes с твоего гитхаба
-            fetch('mario.nes')
+            // Прямая ссылка на твой файл mario.nes
+            const gameUrl = 'https://cdn.jsdelivr.net/gh/veopre28221155-prog/tg-game-arena@main/mario.nes';
+
+            fetch(gameUrl)
                 .then(r => r.arrayBuffer())
                 .then(data => {
                     let binary = "";
                     let bytes = new Uint8Array(data);
                     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
                     nes.loadROM(binary);
+                    document.getElementById('load-msg').innerText = "LIVE";
+                    document.getElementById('load-msg').style.color = "#22c55e";
                     requestAnimationFrame(step);
-                }).catch(e => alert("Ошибка: загрузи файл mario.nes в свой GitHub!"));
+                })
+                .catch(e => {
+                    alert("Ошибка: Убедись, что файл mario.nes лежит в твоем GitHub!");
+                });
         }
 
         function step() {
@@ -82,12 +95,14 @@
             ctx.putImageData(img, 0, 0);
         }
 
-        // Привязка кнопок
+        // ПРИВЯЗКА КНОПОК
         const map = {a:0, b:1, up:4, down:5, left:6, right:7};
         Object.keys(map).forEach(id => {
             const el = document.getElementById(id);
-            el.ontouchstart = () => nes.buttonDown(1, map[id]);
-            el.ontouchend = () => nes.buttonUp(1, map[id]);
+            // Для телефонов
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); nes.buttonDown(1, map[id]); });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); nes.buttonUp(1, map[id]); });
+            // Для мышки
             el.onmousedown = () => nes.buttonDown(1, map[id]);
             el.onmouseup = () => nes.buttonUp(1, map[id]);
         });
