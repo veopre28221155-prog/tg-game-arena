@@ -10,29 +10,26 @@
         body { background-color: #0f172a; color: white; user-select: none; font-family: sans-serif; margin: 0; overflow: hidden; }
         canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 300px; }
         .menu-card { background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid #475569; cursor: pointer; }
-        
-        /* Стили пульта управления */
         .joypad { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; }
         .d-pad { display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(3, 55px); gap: 5px; }
-        .btn-action { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 5px 0 #000; active:translate-y-1; }
+        .btn-action { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 5px 0 #000; }
         .btn-direction { width: 55px; height: 55px; background: #1e293b; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #000; font-size: 24px; }
         .btn-direction:active, .btn-action:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; }
+        .lobby-checkbox { width: 24px; height: 24px; accent-color: #22c55e; }
+        #countdown { font-size: 8rem; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
     </style>
 </head>
 <body class="flex flex-col items-center">
 
     <div id="screen-main" class="p-6 w-full space-y-4 max-w-md">
-        <h1 class="text-3xl font-black text-center my-6 text-blue-400">RETRO ARENA</h1>
+        <h1 class="text-3xl font-black text-center my-6 text-blue-400 italic">RETRO ARENA</h1>
         <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500">
             <h2 class="text-xl font-bold">🎮 Обычная игра</h2>
             <p class="text-sm text-slate-400">Бесплатно против бота</p>
         </div>
         <div onclick="showMode('tournament')" class="menu-card border-l-4 border-l-yellow-500">
             <h2 class="text-xl font-bold">🏆 Турнир</h2>
-            <p class="text-sm text-slate-400">Игра на звезды (Stars)</p>
-        </div>
-        <div onclick="inviteFriend()" class="menu-card border-l-4 border-l-blue-500 text-center">
-            <h2 class="text-lg font-bold">👥 Пригласить друга</h2>
+            <p class="text-sm text-slate-400">Вход: 10-100 Stars</p>
         </div>
     </div>
 
@@ -48,14 +45,51 @@
                 </div>
             </div>
             <div id="price-block" class="hidden">
-                <p class="mb-2 font-semibold">Ставка:</p>
+                <p class="mb-2 font-semibold text-yellow-400">Ставка турнира:</p>
                 <select id="tourney-price" class="w-full bg-slate-800 p-3 rounded-xl border border-yellow-500">
                     <option value="10">⭐ 10 Stars</option>
                     <option value="50">⭐ 50 Stars</option>
                 </select>
             </div>
-            <button onclick="startLoading()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl">ИСКАТЬ СОПЕРНИКА</button>
+            <button onclick="goToLobby()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl">ПЕРЕЙТИ В ЛОББИ</button>
         </div>
+    </div>
+
+    <div id="screen-lobby" class="p-6 w-full hidden max-w-md text-center">
+        <h2 class="text-2xl font-bold mb-8">ИГРОВОЕ ЛОББИ</h2>
+        
+        <div class="space-y-4 mb-8">
+            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">Я</div>
+                    <div class="text-left">
+                        <p class="font-bold">Вы</p>
+                        <p class="text-xs text-slate-400" id="lobby-stats">Рекорд: 0</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400">Готов</span>
+                    <input type="checkbox" id="player-ready" class="lobby-checkbox" onchange="checkLobbyReady()">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">B</div>
+                    <div class="text-left">
+                        <p class="font-bold">Бот (CPU)</p>
+                        <p class="text-xs text-slate-400">Сложность: Hard</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400">Готов</span>
+                    <input type="checkbox" checked disabled class="lobby-checkbox">
+                </div>
+            </div>
+        </div>
+
+        <p id="lobby-msg" class="text-yellow-400 animate-pulse">Ожидание вашей готовности...</p>
+        <div id="countdown" class="hidden font-black text-white mt-4">3</div>
     </div>
 
     <div id="screen-game" class="hidden w-full h-screen">
@@ -65,7 +99,7 @@
         </div>
         
         <div class="flex justify-center mt-4">
-            <canvas id="mainCanvas" width="200" height="400"></canvas>
+            <canvas id="mainCanvas" width="300" height="400"></canvas>
         </div>
 
         <div class="joypad">
@@ -76,102 +110,146 @@
                 <button class="btn-direction" onmousedown="handleInput('right')">→</button>
             </div>
             <div class="actions">
-                <button class="btn-action bg-blue-500" onmousedown="handleInput('rotate')">ROTATE</button>
+                <button class="btn-action bg-blue-500" id="btn-rotate" onmousedown="handleInput('rotate')">ROTATE</button>
             </div>
         </div>
     </div>
 
     <div id="screen-results" class="hidden p-10 text-center w-full max-w-md">
-        <h2 class="text-4xl font-black mb-10 text-yellow-400">ФИНИШ!</h2>
+        <h2 class="text-4xl font-black mb-10 text-yellow-400">ИТОГИ</h2>
         <div class="bg-slate-800 p-6 rounded-3xl space-y-4 shadow-2xl">
             <div class="flex justify-between text-2xl"><span>Вы:</span> <span id="res-my" class="font-bold">0</span></div>
             <div class="flex justify-between text-2xl"><span>Бот:</span> <span id="res-opp" class="font-bold">0</span></div>
             <div id="res-msg" class="text-3xl font-bold pt-4 text-green-400 border-t border-slate-700">ПОБЕДА!</div>
         </div>
-        <button onclick="location.reload()" class="mt-10 w-full bg-blue-600 py-4 rounded-2xl font-bold">В ГЛАВНОЕ МЕНЮ</button>
+        <button onclick="location.reload()" class="mt-10 w-full bg-blue-600 py-4 rounded-2xl font-bold">В МЕНЮ</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        let gameLoop, currentGame = 'snake', myScore = 0, oppScore = 0, isGameOver = false;
+        let gameLoop, currentGame = 'snake', currentMode = 'casual', myScore = 0, oppScore = 0;
 
         function showScreen(id) {
-            ['screen-main', 'screen-setup', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            ['screen-main', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
         function showMode(mode) {
+            currentMode = mode;
             document.getElementById('price-block').classList.toggle('hidden', mode === 'casual');
             showScreen('screen-setup');
+        }
+
+        function goToLobby() {
+            const record = localStorage.getItem('snakeRecord') || 0;
+            const balance = 1500; // В реальном приложении брать из базы
+            
+            if(currentMode === 'tournament') {
+                document.getElementById('lobby-stats').innerText = `Мой баланс: ${balance} Stars`;
+            } else {
+                document.getElementById('lobby-stats').innerText = `Мой рекорд: ${record}`;
+            }
+            showScreen('screen-lobby');
+        }
+
+        function checkLobbyReady() {
+            if (document.getElementById('player-ready').checked) {
+                startCountdown();
+            }
+        }
+
+        function startCountdown() {
+            const cd = document.getElementById('countdown');
+            const msg = document.getElementById('lobby-msg');
+            cd.classList.remove('hidden');
+            msg.innerText = "Матч начинается!";
+            
+            let count = 3;
+            const timer = setInterval(() => {
+                count--;
+                cd.innerText = count;
+                if(count === 0) {
+                    clearInterval(timer);
+                    initGame();
+                }
+            }, 1000);
         }
 
         function setGame(game) {
             currentGame = game;
             document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
             document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-3 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-3 rounded-xl bg-slate-700';
-            canvas.width = game === 'snake' ? 300 : 200;
-            canvas.height = 400;
+            document.getElementById('btn-rotate').style.visibility = game === 'snake' ? 'hidden' : 'visible';
         }
 
         function goBack() { showScreen('screen-main'); }
 
-        function startLoading() {
+        function initGame() {
             showScreen('screen-game');
+            myScore = 0; oppScore = 0;
             if(currentGame === 'snake') initSnake(); else initTetris();
         }
 
         function finishGame() {
             clearInterval(gameLoop);
+            if(currentGame === 'snake') {
+                 const best = localStorage.getItem('snakeRecord') || 0;
+                 if(myScore > best) localStorage.setItem('snakeRecord', myScore);
+            }
             document.getElementById('res-my').innerText = myScore;
             document.getElementById('res-opp').innerText = oppScore;
             document.getElementById('res-msg').innerText = myScore >= oppScore ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
             showScreen('screen-results');
         }
 
-        // --- ЛОГИКА ЗМЕЙКИ ---
+        // --- SNAKE LOGIC ---
         let snk, apple, sDir;
         function initSnake() {
-            snk = [{x:10, y:10}]; apple = {x:15, y:15}; sDir = {x:0, y:-1}; myScore = 0;
+            snk = [{x:10, y:15}, {x:10, y:16}, {x:10, y:17}]; 
+            apple = {x:5, y:5}; 
+            sDir = {x:0, y:-1};
             gameLoop = setInterval(() => {
                 const head = {x: snk[0].x + sDir.x, y: snk[0].y + sDir.y};
-                if(head.x<0||head.x>19||head.y<0||head.y>26) return finishGame();
+                if(head.x<0 || head.x>=20 || head.y<0 || head.y>=26) return finishGame();
+                
                 snk.unshift(head);
                 if(head.x === apple.x && head.y === apple.y) {
                     myScore += 10;
                     apple = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*26)};
-                } else snk.pop();
+                } else {
+                    snk.pop();
+                }
                 
-                if(Math.random() > 0.97) oppScore += 10; // Симуляция бота
+                if(Math.random() > 0.98) oppScore += 10; 
                 drawSnake();
             }, 150);
         }
+
         function drawSnake() {
-            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,300,400);
             ctx.fillStyle = '#4ade80'; snk.forEach(p => ctx.fillRect(p.x*15, p.y*15, 14, 14));
             ctx.fillStyle = '#f87171'; ctx.fillRect(apple.x*15, apple.y*15, 14, 14);
             updateScores();
         }
 
-        // --- ЛОГИКА ТЕТРИСА (УПРОЩЕННО) ---
-        let board, piece, pPos;
+        // --- TETRIS LOGIC (Simplified) ---
+        let pPos;
         function initTetris() {
-            board = Array(20).fill().map(() => Array(10).fill(0));
-            pPos = {x:4, y:0}; myScore = 0;
+            pPos = {x:4, y:0};
             gameLoop = setInterval(() => {
                 pPos.y++;
-                if(pPos.y > 18) {
-                    pPos.y = 0; myScore += 100;
-                    if(myScore > 1000) finishGame();
-                }
-                if(Math.random() > 0.98) oppScore += 100;
+                if(pPos.y > 18) { pPos.y = 0; myScore += 100; }
+                if(Math.random() > 0.99) oppScore += 100;
+                if(myScore > 1000) finishGame();
                 drawTetris();
-            }, 200);
+            }, 250);
         }
+
         function drawTetris() {
-            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.fillStyle = '#3b82f6'; ctx.fillRect(pPos.x*20, pPos.y*20, 20, 20);
+            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,300,400);
+            ctx.fillStyle = '#3b82f6'; ctx.fillRect(pPos.x*30, pPos.y*20, 28, 18);
             updateScores();
         }
 
@@ -191,9 +269,6 @@
                 if(cmd === 'right' && pPos.x < 9) pPos.x++;
                 if(cmd === 'down') pPos.y++;
             }
-        }
-        function inviteFriend() {
-            tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent("https://t.me/YOUR_BOT_USERNAME"));
         }
     </script>
 </body>
