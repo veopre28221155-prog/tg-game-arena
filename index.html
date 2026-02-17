@@ -10,8 +10,7 @@
         .hidden { display: none; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        /* Стилизация кнопок для мобильных */
-        .ctrl-btn { user-select: none; -webkit-user-select: none; }
+        .ctrl-btn { user-select: none; -webkit-user-select: none; transition: transform 0.1s; }
         .ctrl-btn:active { transform: scale(0.9); background-color: #1e3a8a; }
     </style>
 </head>
@@ -20,46 +19,41 @@
     <div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
         
         <div class="flex justify-between items-center mb-8">
-            <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-lg">
+            <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
                 <span class="text-yellow-400 font-bold">⭐️</span>
                 <span id="balance" class="font-black text-xl">150</span>
             </div>
-            <div class="text-[10px] text-blue-500 font-mono tracking-widest uppercase bg-blue-500/10 px-3 py-1 rounded-full">Arena v1.1</div>
+            <div class="text-[10px] text-blue-500 font-mono tracking-widest uppercase bg-blue-500/10 px-3 py-1 rounded-full">Arena Ultra</div>
         </div>
 
         <div id="menu" class="flex flex-col gap-4 fade-in">
-            <h1 class="text-2xl font-black italic uppercase tracking-widest text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">Доступные игры</h1>
+            <h1 class="text-2xl font-black italic uppercase tracking-widest text-center mb-4">Super Mario Arena</h1>
             
-            <button onclick="startGame()" class="bg-gradient-to-br from-red-600 to-red-900 p-6 rounded-[2.5rem] shadow-2xl active:scale-95 transition-all text-left border-b-4 border-black/40 flex items-center gap-4">
+            <button onclick="startGame()" class="bg-gradient-to-br from-red-600 to-red-900 p-8 rounded-[2.5rem] shadow-2xl active:scale-95 transition-all text-left border-b-4 border-black/40 flex items-center gap-4">
                 <div class="bg-white/20 p-3 rounded-2xl text-4xl shadow-inner">🍄</div>
                 <div>
                     <div class="text-xl font-black italic uppercase text-white tracking-tight">Super Mario Bros</div>
-                    <div class="text-[10px] text-red-100 font-bold tracking-widest uppercase opacity-80">Нажми, чтобы играть</div>
+                    <div class="text-[10px] text-red-100 font-bold uppercase opacity-80">Нажми, чтобы играть</div>
                 </div>
             </button>
-
-            <div class="bg-gray-900/40 p-6 rounded-[2.5rem] border-2 border-dashed border-gray-800/50 flex items-center gap-4 opacity-30 mt-2">
-                <div class="bg-gray-800 p-3 rounded-2xl text-3xl">🔒</div>
-                <div class="text-lg font-bold italic uppercase">Next Game...</div>
-            </div>
         </div>
 
         <div id="game-screen" class="hidden flex-1 flex flex-col fade-in">
-            <div class="flex justify-between items-center mb-4">
-                <button onclick="location.reload()" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest bg-gray-900/80 px-4 py-2 rounded-full border border-gray-800 active:bg-gray-700">← Выход</button>
-                <div id="game-title" class="text-[10px] text-red-500 font-bold uppercase tracking-widest bg-red-500/10 px-3 py-1 rounded-full">Mario Live</div>
+            <div class="flex justify-between items-center mb-4 px-2">
+                <button onclick="location.reload()" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-gray-900 px-4 py-2 rounded-full border border-gray-800">← Выход</button>
+                <div id="game-status" class="text-[10px] text-red-500 font-bold uppercase tracking-widest bg-red-500/10 px-3 py-1 rounded-full italic">Connecting...</div>
             </div>
 
             <div class="relative w-full aspect-[4/3] bg-black rounded-[2rem] border-4 border-gray-800 overflow-hidden shadow-2xl">
                 <div id="game" class="w-full h-full"></div>
             </div>
             
-            <div class="mt-auto mb-8 flex justify-between items-center px-2">
+            <div class="mt-auto mb-10 flex justify-between items-center px-2">
                 <div class="relative w-36 h-36">
-                    <button ontouchstart="press('up')" ontouchend="release('up')" class="ctrl-btn absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl border-b-2 border-black">↑</button>
-                    <button ontouchstart="press('down')" ontouchend="release('down')" class="ctrl-btn absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl border-b-2 border-black">↓</button>
-                    <button ontouchstart="press('left')" ontouchend="release('left')" class="ctrl-btn absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl border-b-2 border-black">←</button>
-                    <button ontouchstart="press('right')" ontouchend="release('right')" class="ctrl-btn absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl border-b-2 border-black">→</button>
+                    <button ontouchstart="press('up')" ontouchend="release('up')" class="ctrl-btn absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl">↑</button>
+                    <button ontouchstart="press('down')" ontouchend="release('down')" class="ctrl-btn absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl">↓</button>
+                    <button ontouchstart="press('left')" ontouchend="release('left')" class="ctrl-btn absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl">←</button>
+                    <button ontouchstart="press('right')" ontouchend="release('right')" class="ctrl-btn absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg flex items-center justify-center text-xl">→</button>
                 </div>
 
                 <div class="flex gap-4">
@@ -76,10 +70,8 @@
             document.getElementById('menu').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             
-            // Динамическое определение пути к файлу
-            const username = "veopre28221155-prog";
-            const repo = "tg-game-arena";
-            const gamePath = `https://${username}.github.io/${repo}/mario.nes`;
+            // Используем cdn.jsdelivr.net — это самый быстрый способ достать файл из GitHub
+            const gamePath = "https://cdn.jsdelivr.net/gh/veopre28221155-prog/tg-game-arena@main/mario.nes";
 
             new EmulatorJS("#game", {
                 dataUrl: "https://cdn.emulatorjs.org/stable/data/",
@@ -87,27 +79,16 @@
                 system: "nes",
                 allowPreloader: true,
                 onReady: () => {
-                    // Клик для фокуса и звука
-                    setTimeout(() => { 
-                        const g = document.getElementById('game');
-                        if(g) g.click();
-                    }, 1000);
+                    document.getElementById('game-status').innerText = "LIVE";
+                    document.getElementById('game-status').classList.replace('text-red-500', 'text-green-500');
+                    // Важно: клик для активации
+                    setTimeout(() => { document.getElementById('game').dispatchEvent(new MouseEvent('click')); }, 1000);
                 }
             });
         }
 
-        // Обработка нажатий
-        function press(key) {
-            if (window.EmuJS && window.EmuJS.Input) {
-                window.EmuJS.Input.press(key);
-            }
-        }
-
-        function release(key) {
-            if (window.EmuJS && window.EmuJS.Input) {
-                window.EmuJS.Input.release(key);
-            }
-        }
+        function press(key) { if (window.EmuJS) window.EmuJS.Input.press(key); }
+        function release(key) { if (window.EmuJS) window.EmuJS.Input.release(key); }
     </script>
 </body>
 </html>
