@@ -3,93 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tournament Arena Ultra</title>
+    <title>Mario Arena TG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Убираем лишние отступы и скролл для Telegram */
+        body { touch-action: none; -webkit-tap-highlight-color: transparent; }
         .hidden { display: none; }
-        .active-bet { background: #eab308 !important; color: black !important; transform: scale(1.05); }
-        .game-card { border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
-        .game-card.selected { border-color: #3b82f6; background: #1e293b; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        #loader-status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; text-align: center; }
     </style>
 </head>
 <body class="bg-[#05080f] text-white overflow-hidden select-none font-sans">
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col p-6">
         
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-8">
             <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
                 <span class="text-yellow-400 font-bold">⭐️</span>
                 <span id="balance" class="font-black text-xl">150</span>
             </div>
-            <div id="status-tag" class="text-[10px] text-blue-500 font-mono tracking-tighter">READY</div>
+            <div class="text-[10px] text-blue-500 font-mono tracking-widest uppercase">Arena v1.0</div>
         </div>
 
-        <div id="main-menu" class="flex flex-col gap-4 fade-in">
-            <h1 class="text-2xl font-black italic uppercase tracking-widest text-center mb-2">Tournament Arena</h1>
-            <button onclick="showMode('free')" class="bg-gradient-to-r from-blue-600 to-blue-800 p-5 rounded-3xl shadow-xl active:scale-95 text-left border-b-4 border-blue-900 font-black italic">ОБЫЧНАЯ ИГРА</button>
-            <button onclick="showMode('pro')" class="bg-gradient-to-r from-yellow-500 to-orange-700 p-5 rounded-3xl shadow-xl active:scale-95 text-left border-b-4 border-orange-900 font-black italic">ТУРНИР</button>
-        </div>
-
-        <div id="mode-settings" class="hidden flex flex-col gap-4 fade-in">
-            <button onclick="backToMenu()" class="text-blue-400 text-sm mb-2 text-left w-fit">← Назад</button>
-            <div class="grid grid-cols-3 gap-2">
-                <div onclick="selectGame('kirby', this)" class="game-card selected p-3 rounded-xl bg-gray-900 text-center">
-                    <div class="text-2xl">☁️</div><div class="text-[8px] font-bold">KIRBY</div>
-                </div>
-                <div onclick="selectGame('mario', this)" class="game-card p-3 rounded-xl bg-gray-900 text-center">
-                    <div class="text-2xl">🍄</div><div class="text-[8px] font-bold">MARIO</div>
-                </div>
-                <div onclick="selectGame('pacman', this)" class="game-card p-3 rounded-xl bg-gray-900 text-center">
-                    <div class="text-2xl">🟡</div><div class="text-[8px] font-bold">PACMAN</div>
-                </div>
-            </div>
+        <div id="menu" class="flex flex-col gap-4 fade-in">
+            <h1 class="text-2xl font-black italic uppercase tracking-widest text-center mb-4">Доступные игры</h1>
             
-            <div class="flex gap-2">
-                <button onclick="setDiff('easy', this)" class="diff-btn flex-1 bg-gray-800 py-3 rounded-xl text-xs active-bet">EASY</button>
-                <button onclick="setDiff('hard', this)" class="diff-btn flex-1 bg-gray-800 py-3 rounded-xl text-xs">HARD</button>
-            </div>
-
-            <div id="bet-container" class="hidden grid grid-cols-3 gap-2">
-                <button onclick="setBet(10, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold">10</button>
-                <button onclick="setBet(50, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold">50</button>
-                <button onclick="setBet(100, this)" class="bet-btn bg-gray-800 py-3 rounded-xl font-bold">100</button>
-            </div>
-
-            <button onclick="startSearch()" class="mt-4 bg-white text-black py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl active:scale-95">Поиск игры</button>
-        </div>
-
-        <div id="search-screen" class="hidden flex-1 flex flex-col items-center justify-center">
-            <div class="w-16 h-16 border-4 border-t-blue-500 border-gray-800 rounded-full animate-spin mb-6"></div>
-            <div class="text-xl font-black italic animate-pulse">MATCHMAKING...</div>
-            <button onclick="cancelSearch()" class="mt-8 text-red-500 text-xs font-bold uppercase">Отмена</button>
-        </div>
-
-        <div id="game-container" class="hidden flex flex-col flex-1">
-            <div class="flex justify-between items-center mb-2">
-                <button onclick="quitGame()" class="text-[10px] text-gray-500 font-bold uppercase">← В меню</button>
-                <div id="game-title-display" class="text-[10px] text-blue-400 font-bold uppercase">LOADING...</div>
-            </div>
-            <div class="relative w-full aspect-[4/3] bg-black rounded-[2rem] border-4 border-gray-800 overflow-hidden shadow-2xl">
-                <div id="loader-status">
-                    <div class="w-8 h-8 border-2 border-t-white border-gray-800 rounded-full animate-spin mx-auto mb-2"></div>
-                    <div class="text-[10px] text-gray-400 tracking-widest uppercase">Загрузка...</div>
+            <button onclick="startGame()" class="bg-gradient-to-r from-red-600 to-red-800 p-6 rounded-[2.5rem] shadow-xl active:scale-95 transition-all text-left border-b-4 border-red-900 flex items-center gap-4">
+                <div class="bg-white/20 p-3 rounded-2xl text-3xl">🍄</div>
+                <div>
+                    <div class="text-xl font-black italic uppercase text-white">Super Mario Bros</div>
+                    <div class="text-[10px] text-red-200 font-bold tracking-widest uppercase">Нажми, чтобы начать</div>
                 </div>
+            </button>
+
+            <div class="bg-gray-900/50 p-6 rounded-[2.5rem] border-2 border-dashed border-gray-800 flex items-center gap-4 opacity-40">
+                <div class="bg-gray-800 p-3 rounded-2xl text-3xl">🔒</div>
+                <div>
+                    <div class="text-lg font-bold italic uppercase">Скоро...</div>
+                    <div class="text-[10px] font-bold uppercase tracking-widest">Добавьте .nes файлы</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-screen" class="hidden flex-1 flex flex-col fade-in">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <button onclick="location.reload()" class="text-[11px] text-gray-500 font-bold uppercase tracking-widest bg-gray-900 px-4 py-2 rounded-full border border-gray-800 active:bg-gray-800">← Меню</button>
+                <div class="text-[11px] text-red-500 font-bold uppercase animate-pulse">Playing Now</div>
+            </div>
+
+            <div class="relative w-full aspect-[4/3] bg-black rounded-[2rem] border-4 border-gray-800 overflow-hidden shadow-2xl">
                 <div id="game" class="w-full h-full"></div>
             </div>
             
-            <div class="mt-auto mb-10 flex justify-between items-center">
-                <div class="relative w-32 h-32 scale-90">
-                    <button onmousedown="press('up')" onmouseup="release('up')" ontouchstart="press('up')" ontouchend="release('up')" class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg active:bg-blue-600">↑</button>
-                    <button onmousedown="press('down')" onmouseup="release('down')" ontouchstart="press('down')" ontouchend="release('down')" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-lg active:bg-blue-600">↓</button>
-                    <button onmousedown="press('left')" onmouseup="release('left')" ontouchstart="press('left')" ontouchend="release('left')" class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg active:bg-blue-600">←</button>
-                    <button onmousedown="press('right')" onmouseup="release('right')" ontouchstart="press('right')" ontouchend="release('right')" class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-lg active:bg-blue-600">→</button>
+            <div class="mt-auto mb-10 flex justify-between items-center px-2">
+                <div class="relative w-36 h-36">
+                    <button onmousedown="press('up')" onmouseup="release('up')" ontouchstart="press('up')" ontouchend="release('up')" class="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg active:bg-blue-600 flex items-center justify-center text-xl">↑</button>
+                    <button onmousedown="press('down')" onmouseup="release('down')" ontouchstart="press('down')" ontouchend="release('down')" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg active:bg-blue-600 flex items-center justify-center text-xl">↓</button>
+                    <button onmousedown="press('left')" onmouseup="release('left')" ontouchstart="press('left')" ontouchend="release('left')" class="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg active:bg-blue-600 flex items-center justify-center text-xl">←</button>
+                    <button onmousedown="press('right')" onmouseup="release('right')" ontouchstart="press('right')" ontouchend="release('right')" class="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-xl shadow-lg active:bg-blue-600 flex items-center justify-center text-xl">→</button>
                 </div>
+
                 <div class="flex gap-4">
-                    <button onmousedown="press('b')" onmouseup="release('b')" ontouchstart="press('b')" ontouchend="release('b')" class="w-16 h-16 bg-blue-600 rounded-full font-black text-2xl shadow-xl active:bg-blue-400">B</button>
-                    <button onmousedown="press('a')" onmouseup="release('a')" ontouchstart="press('a')" ontouchend="release('a')" class="w-16 h-16 bg-red-600 rounded-full font-black text-2xl shadow-xl active:bg-red-400">A</button>
+                    <button onmousedown="press('b')" onmouseup="release('b')" ontouchstart="press('b')" ontouchend="release('b')" class="w-20 h-20 bg-blue-600 rounded-full font-black text-2xl shadow-xl active:scale-90 active:bg-blue-500 border-b-4 border-blue-800 flex items-center justify-center">B</button>
+                    <button onmousedown="press('a')" onmouseup="release('a')" ontouchstart="press('a')" ontouchend="release('a')" class="w-20 h-20 bg-red-600 rounded-full font-black text-2xl shadow-xl active:scale-90 active:bg-red-500 border-b-4 border-red-800 flex items-center justify-center">A</button>
                 </div>
             </div>
         </div>
@@ -97,80 +73,33 @@
 
     <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
     <script>
-        let balance = 150; let currentMode = 'free'; let currentBet = 0; let selectedGame = 'kirby';
-        
-        // САМЫЕ БЫСТРЫЕ ССЫЛКИ НА ROMS
-        const ROMS = {
-            kirby: "https://cdn.jsdelivr.net/gh/veopre28221155-prog/tg-game-arena@main/kirby.nes",
-            mario: "https://cdn.jsdelivr.net/gh/Birdulon/nes-roms@master/Super%20Mario%20Bros%20(E).nes",
-            pacman: "https://cdn.jsdelivr.net/gh/Birdulon/nes-roms@master/Pac-Man%20(U)%20%5B!%5D.nes"
-        };
-
-        function showMode(m) {
-            currentMode = m;
-            document.getElementById('main-menu').classList.add('hidden');
-            document.getElementById('mode-settings').classList.remove('hidden');
-            document.getElementById('bet-container').classList.toggle('hidden', m === 'free');
-        }
-
-        function backToMenu() {
-            document.getElementById('main-menu').classList.remove('hidden');
-            document.getElementById('mode-settings').classList.add('hidden');
-        }
-
-        function selectGame(game, el) {
-            selectedGame = game;
-            document.querySelectorAll('.game-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-        }
-
-        function setDiff(d, el) {
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active-bet'));
-            el.classList.add('active-bet');
-        }
-
-        function setBet(a, btn) {
-            currentBet = a;
-            document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active-bet'));
-            btn.classList.add('active-bet');
-        }
-
-        function startSearch() {
-            if (currentMode === 'pro' && (currentBet === 0 || balance < currentBet)) return alert("Check balance/bet!");
-            if (currentMode === 'pro') { balance -= currentBet; document.getElementById('balance').innerText = balance; }
-            document.getElementById('mode-settings').classList.add('hidden');
-            document.getElementById('search-screen').classList.remove('hidden');
-            setTimeout(() => {
-                document.getElementById('search-screen').classList.add('hidden');
-                document.getElementById('game-container').classList.remove('hidden');
-                initGame();
-            }, 1500);
-        }
-
-        function cancelSearch() {
-            if (currentMode === 'pro') { balance += currentBet; document.getElementById('balance').innerText = balance; }
-            document.getElementById('search-screen').classList.add('hidden');
-            document.getElementById('mode-settings').classList.remove('hidden');
-        }
-
-        function quitGame() { location.reload(); }
-
-        function initGame() {
-            document.getElementById('game-title-display').innerText = selectedGame;
+        function startGame() {
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
             new EmulatorJS("#game", {
                 dataUrl: "https://cdn.emulatorjs.org/stable/data/",
-                gameUrl: ROMS[selectedGame],
+                gameUrl: "mario.nes", // Ссылка на твой файл на GitHub
                 system: "nes",
                 onReady: () => {
-                    document.getElementById('loader-status').classList.add('hidden');
-                    // Автоматически фокусируемся на игре
+                    // Маленькая хитрость: эмулятору нужен клик для активации
                     setTimeout(() => { document.getElementById('game').click(); }, 500);
                 }
             });
         }
 
-        function press(k) { if(window.EmuJS) window.EmuJS.Input.press(k); }
-        function release(k) { if(window.EmuJS) window.EmuJS.Input.release(k); }
+        // Функции управления для кнопок
+        function press(key) {
+            if (window.EmuJS && window.EmuJS.Input) {
+                window.EmuJS.Input.press(key);
+            }
+        }
+
+        function release(key) {
+            if (window.EmuJS && window.EmuJS.Input) {
+                window.EmuJS.Input.release(key);
+            }
+        }
     </script>
 </body>
 </html>
