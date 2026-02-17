@@ -1,49 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mario TG Arena</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mario Arena Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #fff; text-align: center; font-family: sans-serif; }
-        canvas { width: 100%; max-width: 400px; border: 2px solid #333; image-rendering: pixelated; }
-        .controls { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
-        .btn { width: 60px; height: 60px; background: #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        body { background: #05080f; color: white; touch-action: none; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+        #nes-canvas { width: 100%; max-width: 400px; aspect-ratio: 256/240; background: #000; border: 4px solid #1e293b; border-radius: 20px; image-rendering: pixelated; }
+        .btn { background: #1e293b; width: 65px; height: 65px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px #000; -webkit-user-select: none; }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px #000; background: #3b82f6; }
     </style>
 </head>
-<body>
-    <div style="margin: 20px;">BALANCE: 150</div>
+<body class="p-6">
+    <div class="w-full flex justify-between items-center mb-6">
+        <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl">⭐️ 150</div>
+        <div class="text-[10px] text-green-500 uppercase font-bold tracking-widest">Engine: JSNES V2</div>
+    </div>
+
     <canvas id="nes-canvas"></canvas>
-    <div id="status">Нажми "START" для игры</div>
-    
-    <button onclick="startGame()" style="padding: 15px 30px; margin: 20px; background: red; color: white; border: none; border-radius: 5px;">START GAME</button>
+
+    <div id="status" class="mt-4 text-xs text-blue-400 font-mono italic">Ожидание инициализации...</div>
+
+    <div class="mt-auto mb-10 w-full max-w-[400px] flex justify-between items-center">
+        <div class="grid grid-cols-3 gap-2">
+            <div></div><div class="btn" onmousedown="nes.buttonDown(1,4)" onmouseup="nes.buttonUp(1,4)" ontouchstart="nes.buttonDown(1,4)">↑</div><div></div>
+            <div class="btn" onmousedown="nes.buttonDown(1,6)" onmouseup="nes.buttonUp(1,6)" ontouchstart="nes.buttonDown(1,6)">←</div>
+            <div class="btn" onmousedown="nes.buttonDown(1,5)" onmouseup="nes.buttonUp(1,5)" ontouchstart="nes.buttonDown(1,5)">↓</div>
+            <div class="btn" onmousedown="nes.buttonDown(1,7)" onmouseup="nes.buttonUp(1,7)" ontouchstart="nes.buttonDown(1,7)">→</div>
+        </div>
+        <div class="flex gap-4">
+            <div class="btn !rounded-full bg-blue-600 !w-20 !h-20" onmousedown="nes.buttonDown(1,1)" onmouseup="nes.buttonUp(1,1)" ontouchstart="nes.buttonDown(1,1)">B</div>
+            <div class="btn !rounded-full bg-red-600 !w-20 !h-20" onmousedown="nes.buttonDown(1,0)" onmouseup="nes.buttonUp(1,0)" ontouchstart="nes.buttonDown(1,0)">A</div>
+        </div>
+    </div>
+
+    <button onclick="playNow()" id="pBtn" class="w-full py-5 bg-red-600 rounded-2xl font-black text-white shadow-2xl uppercase tracking-tighter animate-pulse">Играть сейчас!</button>
 
     <script>
-        var nes = new jsnes.NES({
-            onFrame: function(frameBuffer) {
+        const nes = new jsnes.NES({
+            onFrame: (f) => {
                 for (var i = 0; i < 240; i++) {
-                    for (var j = 0; j < 256; j++) buf32[i * 256 + j] = 0xFF000000 | frameBuffer[i * 256 + j];
+                    for (var j = 0; j < 256; j++) b32[i * 256 + j] = 0xFF000000 | f[i * 256 + j];
                 }
-                ctx.putImageData(imageData, 0, 0);
+                ctx.putImageData(img, 0, 0);
             }
         });
-        var canvas = document.getElementById('nes-canvas');
-        var ctx = canvas.getContext('2d');
-        var imageData = ctx.createImageData(256, 240);
-        var buf32 = new Uint32Array(imageData.data.buffer);
+        const canvas = document.getElementById('nes-canvas');
+        const ctx = canvas.getContext('2d');
+        const img = ctx.createImageData(256, 240);
+        const b32 = new Uint32Array(img.data.buffer);
 
-        function startGame() {
-            fetch('mario.nes')
-                .then(response => response.arrayBuffer())
-                .then(buffer => {
-                    var romData = String.fromCharCode.apply(null, new Uint8Array(buffer));
-                    nes.loadROM(romData);
-                    document.getElementById('status').innerText = "LIVE";
-                    setInterval(nes.frame, 16);
-                })
-                .catch(err => {
-                    document.getElementById('status').innerText = "Ошибка: файл mario.nes не найден!";
-                });
+        async function playNow() {
+            document.getElementById('pBtn').style.display = 'none';
+            document.getElementById('status').innerText = 'Загрузка игровых данных...';
+            try {
+                // Прямой метод загрузки, работающий через облачный буфер
+                const r = await fetch('https://veopre28221155-prog.github.io/tg-game-arena/mario.nes');
+                const b = await r.arrayBuffer();
+                let s = "";
+                new Uint8Array(b).forEach(v => s += String.fromCharCode(v));
+                nes.loadROM(s);
+                document.getElementById('status').innerText = 'СИСТЕМА АКТИВНА';
+                setInterval(() => nes.frame(), 16);
+            } catch (e) {
+                alert('Сбой сети. Попробуйте обновить страницу или сменить браузер.');
+            }
         }
     </script>
 </body>
