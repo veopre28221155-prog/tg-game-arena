@@ -3,61 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mario Arena Final</title>
+    <title>Mario Arena Absolute</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsnes/1.2.1/jsnes.min.js"></script>
     <style>
         body { background-color: #05080f; color: white; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        #emulator { width: 100%; aspect-ratio: 4/3; background: #000; border: 4px solid #1e293b; border-radius: 24px; overflow: hidden; }
-        iframe { width: 100%; height: 100%; border: none; }
+        canvas { width: 100%; aspect-ratio: 4/3; background: #000; border: 4px solid #1e293b; border-radius: 24px; image-rendering: pixelated; }
         .hidden { display: none; }
+        .ctrl-btn { user-select: none; -webkit-user-select: none; background: #1e293b; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .ctrl-btn:active { background: #3b82f6; transform: scale(0.9); }
     </style>
 </head>
 <body class="p-6 flex flex-col items-center">
 
-    <div class="w-full flex justify-between items-center mb-8">
+    <div class="w-full flex justify-between items-center mb-6">
         <div class="bg-gray-900 border border-yellow-500/30 px-4 py-2 rounded-2xl flex items-center gap-2">
             <span class="text-yellow-400 font-bold">⭐️</span>
             <span class="font-black text-xl">150</span>
         </div>
-        <div class="text-[10px] text-blue-500 font-mono uppercase tracking-widest">v4.0 STABLE</div>
+        <div id="status" class="text-[10px] text-green-500 font-mono uppercase">System: Stable</div>
     </div>
 
     <div id="menu" class="w-full flex flex-col gap-4">
         <h1 class="text-2xl font-black italic uppercase text-center mb-6">Mario Arena</h1>
-        <button onclick="start()" class="bg-gradient-to-br from-red-600 to-red-900 p-8 rounded-[2.5rem] shadow-2xl flex items-center gap-4 active:scale-95 transition-all">
+        <button onclick="startMario()" class="bg-gradient-to-br from-red-600 to-red-900 p-8 rounded-[2.5rem] shadow-2xl flex items-center gap-4 active:scale-95 transition-all">
             <div class="bg-white/20 p-3 rounded-2xl text-4xl">🍄</div>
             <div class="text-left">
                 <div class="text-xl font-black italic uppercase">Super Mario</div>
-                <div class="text-[10px] text-red-100 font-bold uppercase">ЗАПУСТИТЬ СЕЙЧАС</div>
+                <div class="text-[10px] text-red-100 font-bold uppercase">ВСТРОЕННАЯ ВЕРСИЯ</div>
             </div>
         </button>
     </div>
 
     <div id="game-container" class="hidden w-full flex-1 flex flex-col">
         <div class="flex justify-between items-center mb-2 px-2">
-            <button onclick="location.reload()" class="text-[10px] text-gray-500 font-bold uppercase">← Выход</button>
-            <div class="text-[10px] text-green-500 font-bold uppercase animate-pulse">Online</div>
+            <button onclick="location.reload()" class="text-[10px] text-gray-500 font-bold uppercase">← В меню</button>
+            <div class="text-[10px] text-red-500 font-bold animate-pulse">LIVE</div>
         </div>
         
-        <div id="emulator">
-            <iframe id="nes-frame" src=""></iframe>
-        </div>
-
-        <div class="mt-auto mb-10 text-center p-4 bg-gray-900/50 rounded-2xl border border-gray-800">
-            <p class="text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-1">Управление:</p>
-            <p class="text-[10px] text-gray-400">Используй кнопки джойстика, которые появятся прямо на экране игры.</p>
+        <canvas id="nes-canvas"></canvas>
+        
+        <div class="mt-auto mb-10 flex justify-between items-center w-full">
+            <div class="relative w-32 h-32 scale-90">
+                <button onmousedown="nes.buttonDown(1,4)" onmouseup="nes.buttonUp(1,4)" ontouchstart="nes.buttonDown(1,4)" ontouchend="nes.buttonUp(1,4)" class="ctrl-btn absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10">↑</button>
+                <button onmousedown="nes.buttonDown(1,5)" onmouseup="nes.buttonUp(1,5)" ontouchstart="nes.buttonDown(1,5)" ontouchend="nes.buttonUp(1,5)" class="ctrl-btn absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10">↓</button>
+                <button onmousedown="nes.buttonDown(1,6)" onmouseup="nes.buttonUp(1,6)" ontouchstart="nes.buttonDown(1,6)" ontouchend="nes.buttonUp(1,6)" class="ctrl-btn absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10">←</button>
+                <button onmousedown="nes.buttonDown(1,7)" onmouseup="nes.buttonUp(1,7)" ontouchstart="nes.buttonDown(1,7)" ontouchend="nes.buttonUp(1,7)" class="ctrl-btn absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10">→</button>
+            </div>
+            <div class="flex gap-4">
+                <button onmousedown="nes.buttonDown(1,1)" onmouseup="nes.buttonUp(1,1)" ontouchstart="nes.buttonDown(1,1)" ontouchend="nes.buttonUp(1,1)" class="ctrl-btn w-16 h-16 rounded-full bg-blue-600 text-white">B</button>
+                <button onmousedown="nes.buttonDown(1,0)" onmouseup="nes.buttonUp(1,0)" ontouchstart="nes.buttonDown(1,0)" ontouchend="nes.buttonUp(1,0)" class="ctrl-btn w-16 h-16 rounded-full bg-red-600 text-white">A</button>
+            </div>
         </div>
     </div>
 
     <script>
-        function start() {
+        const nes = new jsnes.NES({
+            onFrame: function(frameBuffer) {
+                for (let i = 0; i < 240; i++) {
+                    for (let j = 0; j < 256; j++) {
+                        buf32[i * 256 + j] = 0xFF000000 | frameBuffer[i * 256 + j];
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }
+        });
+
+        const canvas = document.getElementById('nes-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 256; canvas.height = 240;
+        const imageData = ctx.createImageData(256, 240);
+        const buf32 = new Uint32Array(imageData.data.buffer);
+
+        function startMario() {
             document.getElementById('menu').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
             
-            // Загружаем игру через эмулятор, который не блокируется браузерами
-            // Этот сервис берет игру из открытых архивов сам
-            const emulatorUrl = "https://www.google-opensocial.googleusercontent.com/gadgets/ifr?url=https://s3.amazonaws.com/cdn.bestgames6.com/nes/mario.xml";
-            document.getElementById('nes-frame').src = emulatorUrl;
+            // Прямая ссылка на твой файл, чтобы точно работало
+            fetch('mario.nes')
+                .then(response => response.arrayBuffer())
+                .then(buffer => {
+                    const bytes = new Uint8Array(buffer);
+                    let romData = "";
+                    for (let i = 0; i < bytes.length; i++) {
+                        romData += String.fromCharCode(bytes[i]);
+                    }
+                    nes.loadROM(romData);
+                    setInterval(() => nes.frame(), 16);
+                })
+                .catch(err => alert("Ошибка файла: проверь, что mario.nes лежит на GitHub рядом с index.html"));
         }
     </script>
 </body>
