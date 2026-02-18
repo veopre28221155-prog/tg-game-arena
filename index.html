@@ -23,14 +23,13 @@
         canvas { background: #000; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
         #countdown { font-size: 80px; font-weight: bold; color: var(--btn); display: none; margin: 40px; }
         .controls { display: none; grid-template-columns: repeat(3, 70px); gap: 10px; margin-top: 15px; }
-        .ctrl-btn { width: 70px; height: 70px; background: var(--sec-bg); border-radius: 50%; border: 1px solid #ddd; font-size: 24px; color: var(--text); }
+        .ctrl-btn { width: 70px; height: 70px; background: var(--sec-bg); border-radius: 50%; border: 1px solid #ddd; font-size: 24px; color: var(--text); display: flex; align-items: center; justify-content: center; user-select: none; }
         #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--hint); cursor: pointer; }
         .nav-item.active { color: var(--btn); }
     </style>
 </head>
 <body>
-
 <div id="app">
     <div id="arena" class="screen active">
         <div class="card">
@@ -100,18 +99,20 @@
     tg.expand();
 
     async function load() {
-        const r = await fetch(`${API}/api/user-data`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData })
-        });
-        const d = await r.json();
-        balance = d.balance;
-        document.getElementById('u-balance').innerText = balance;
-        document.getElementById('u-name').innerText = d.name;
+        try {
+            const r = await fetch(`${API}/api/user-data`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ initData: tg.initData })
+            });
+            const d = await r.json();
+            balance = d.balance;
+            document.getElementById('u-balance').innerText = balance;
+            document.getElementById('u-name').innerText = d.name;
+        } catch(e) { console.error(e); }
     }
 
-    // УПРАВЛЕНИЕ КЛАВИАТУРОЙ
+    // УПРАВЛЕНИЕ КЛАВИАТУРОЙ (ПК)
     document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp') handleInput('up');
         if (e.key === 'ArrowDown') handleInput('down');
@@ -133,57 +134,6 @@
         }
     }
 
-    function tab(id, el) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        el.classList.add('active');
-    }
-
-    function setGame(g) {
-        currentGame = g;
-        document.getElementById('s-snake').style.opacity = g==='snake'?1:0.5;
-        document.getElementById('s-tetris').style.opacity = g==='tetris'?1:0.5;
-        document.getElementById('mode-info').innerText = "Выбрано: " + (g==='snake'?'Змейка':'Тетрис');
-    }
-
-    function preStart() {
-        document.getElementById('arena-menu').style.display = 'none';
-        document.getElementById('game-ui').style.display = 'flex';
-        const cd = document.getElementById('countdown');
-        cd.style.display = 'block';
-        let c = 3;
-        const t = setInterval(() => {
-            cd.innerText = c;
-            c--;
-            if(c < 0) {
-                clearInterval(t);
-                cd.style.display = 'none';
-                document.getElementById('gameCanvas').style.display = 'block';
-                document.getElementById('game-ctrls').style.display = 'grid';
-                if(currentGame==='snake') runSnake(); else runTetris();
-            }
-        }, 1000);
-    }
-
-    // ЛОГИКА ЗМЕЙКИ
-    function runSnake() {
-        const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
-        let s = [{x:10, y:10}], f = {x:5, y:5}, score = 0;
-        gameLoop = setInterval(() => {
-            let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
-            if(h.x<0||h.x>=20||h.y<0||h.y>=30) return location.reload();
-            s.unshift(h);
-            if(h.x===f.x && h.y===f.y) {
-                score++; document.getElementById('score').innerText = "Score: "+score;
-                f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
-            } else s.pop();
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
-            ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
-            ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
-        }, 150);
-    }
-
     // ЛОГИКА ТЕТРИСА
     let board, piece, tetrisScore;
     function runTetris() {
@@ -199,14 +149,19 @@
 
     function spawnPiece() {
         const types = ['I','J','L','O','S','T','Z'];
-        piece = { pos: {x: 4, y: 0}, matrix: createPiece(types[Math.random()*7|0]) };
+        const t = types[Math.floor(Math.random()*types.length)];
+        piece = { pos: {x: 4, y: 0}, matrix: createPiece(t) };
+        if(collide()) location.reload();
     }
 
     function createPiece(type) {
         if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
         if (type === 'T') return [[0,1,0],[1,1,1],[0,0,0]];
         if (type === 'O') return [[1,1],[1,1]];
-        return [[1,1,0],[0,1,1],[0,0,0]];
+        if (type === 'J') return [[0,1,0],[0,1,0],[1,1,0]];
+        if (type === 'L') return [[0,1,0],[0,1,0],[0,1,1]];
+        if (type === 'S') return [[0,1,1],[1,1,0],[0,0,0]];
+        if (type === 'Z') return [[1,1,0],[0,1,1],[0,0,0]];
     }
 
     function tetrisDrop() {
@@ -266,11 +221,80 @@
         if(collide()) piece.matrix = old;
     }
 
-    // ИГРА С ДРУГОМ
+    // ЛОГИКА ЗМЕЙКИ
+    function runSnake() {
+        const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
+        let s = [{x:10, y:10}], f = {x:5, y:5}, score = 0;
+        gameLoop = setInterval(() => {
+            let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
+            if(h.x<0||h.x>=20||h.y<0||h.y>=30) return location.reload();
+            s.unshift(h);
+            if(h.x===f.x && h.y===f.y) {
+                score++; document.getElementById('score').innerText = "Score: "+score;
+                f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
+            } else s.pop();
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
+            ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
+            ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
+        }, 150);
+    }
+
+    // ИНИЦИАЛИЗАЦИЯ И ИНВАЙТЫ
+    async function checkInvite() {
+        const startParam = tg.initDataUnsafe.start_param;
+        if (startParam && startParam.startsWith('lobby_')) {
+            const lobbyId = startParam.replace('lobby_', '');
+            tg.showConfirm(`Вы приглашены в игру! Присоединиться?`, async (ok) => {
+                if (ok) {
+                    const r = await fetch(`${API}/api/join-lobby`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ initData: tg.initData, lobbyId })
+                    });
+                    const lobby = await r.json();
+                    if (lobby.status === 'ready' || lobby.players.length > 0) preStart();
+                }
+            });
+        }
+    }
+
     document.getElementById('friend-btn').onclick = () => {
-        const url = `https://t.me/RetroBattleArena_bot/app?startapp=lobby_${Math.random().toString(36).substr(2,9)}`;
-        tg.switchInlineQuery(url, ['users', 'chats']);
+        const lobbyId = Math.random().toString(36).substr(2, 9);
+        tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats']);
     };
+
+    function tab(id, el) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+    }
+
+    function setGame(g) {
+        currentGame = g;
+        document.getElementById('s-snake').style.opacity = g==='snake'?1:0.5;
+        document.getElementById('s-tetris').style.opacity = g==='tetris'?1:0.5;
+        document.getElementById('mode-info').innerText = "Выбрано: " + (g==='snake'?'Змейка':'Тетрис');
+    }
+
+    function preStart() {
+        document.getElementById('arena-menu').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'flex';
+        const cd = document.getElementById('countdown');
+        cd.style.display = 'block';
+        let c = 3;
+        const t = setInterval(() => {
+            cd.innerText = c;
+            c--;
+            if(c < 0) {
+                clearInterval(t);
+                cd.style.display = 'none';
+                document.getElementById('gameCanvas').style.display = 'block';
+                document.getElementById('game-ctrls').style.display = 'grid';
+                if(currentGame==='snake') runSnake(); else runTetris();
+            }
+        }, 1000);
+    }
 
     function startRandom(bet) {
         if(balance < bet) return tg.showAlert("Мало Stars!");
@@ -299,7 +323,11 @@
         if(r.ok) { tg.showAlert("Заявка принята! Ожидайте обработки."); load(); }
     }
 
-    load();
+    async function init() {
+        await load();
+        checkInvite();
+    }
+    init();
 </script>
 </body>
 </html>
