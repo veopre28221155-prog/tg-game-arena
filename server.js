@@ -13,25 +13,22 @@ const MONGO_URI = 'mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.
 
 mongoose.connect(MONGO_URI).then(() => console.log('✅ DB Connected'));
 
-const UserSchema = new mongoose.Schema({
+// Схемы данных
+const User = mongoose.model('User', new mongoose.Schema({
     tg_id: { type: Number, unique: true },
     name: String,
     balance: { type: Number, default: 1000 }
-});
-const User = mongoose.model('User', UserSchema);
-
-const Withdraw = mongoose.model('Withdraw', new mongoose.Schema({
-    tg_id: Number, 
-    amount: Number, 
-    date: { type: Date, default: Date.now }
 }));
 
-const LobbySchema = new mongoose.Schema({
+const Withdraw = mongoose.model('Withdraw', new mongoose.Schema({
+    tg_id: Number, amount: Number, date: { type: Date, default: Date.now }
+}));
+
+const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     lobbyId: String,
     players: [Number],
     status: { type: String, default: 'waiting' }
-});
-const Lobby = mongoose.model('Lobby', LobbySchema);
+}));
 
 function verifyTelegramData(initData) {
     if (!initData) return false;
@@ -44,6 +41,7 @@ function verifyTelegramData(initData) {
     return crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex') === hash;
 }
 
+// Эндпоинты
 app.post('/api/user-data', async (req, res) => {
     const { initData } = req.body;
     if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
@@ -51,6 +49,22 @@ app.post('/api/user-data', async (req, res) => {
     let user = await User.findOne({ tg_id: tgUser.id });
     if (!user) user = await User.create({ tg_id: tgUser.id, name: tgUser.first_name });
     res.json(user);
+});
+
+app.post('/api/join-lobby', async (req, res) => {
+    const { initData, lobbyId } = req.body;
+    if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
+    const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
+    
+    let lobby = await Lobby.findOne({ lobbyId });
+    if (!lobby) {
+        lobby = await Lobby.create({ lobbyId, players: [tgUser.id] });
+    } else if (!lobby.players.includes(tgUser.id)) {
+        lobby.players.push(tgUser.id);
+        if (lobby.players.length >= 2) lobby.status = 'ready';
+        await lobby.save();
+    }
+    res.json(lobby);
 });
 
 app.post('/api/create-invoice', async (req, res) => {
@@ -79,21 +93,6 @@ app.post('/api/withdraw', async (req, res) => {
     await user.save();
     await Withdraw.create({ tg_id: tgUser.id, amount });
     res.json({ success: true, balance: user.balance });
-});
-
-app.post('/api/join-lobby', async (req, res) => {
-    const { initData, lobbyId } = req.body;
-    if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
-    const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
-    let lobby = await Lobby.findOne({ lobbyId });
-    if (!lobby) {
-        lobby = await Lobby.create({ lobbyId, players: [tgUser.id] });
-    } else if (!lobby.players.includes(tgUser.id)) {
-        lobby.players.push(tgUser.id);
-        if (lobby.players.length >= 2) lobby.status = 'ready';
-        await lobby.save();
-    }
-    res.json(lobby);
 });
 
 const PORT = process.env.PORT || 3000;
