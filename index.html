@@ -1,19 +1,19 @@
 <script>
     const tg = window.Telegram.WebApp;
-    // Принудительно сообщаем Telegram, что приложение готово
     tg.ready();
     tg.expand();
 
     const API = 'https://tg-game-arena.onrender.com';
-    let balance = 0, currentGame = 'snake', moveDir = {x:1, y:0}, isPractice = true;
-    let gameLoop, currentLobbyId = null, currentScore = 0;
+    let currentGame = 'snake', moveDir = {x:1, y:0}, isPractice = true;
+    let gameLoop = null, currentLobbyId = null, currentScore = 0;
 
-    // --- ЛОГИКА ИНТЕРФЕЙСА (ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК) ---
+    // --- ЛОГИКА ИНТЕРФЕЙСА ---
     function tab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         el.classList.add('active');
+        if (gameLoop) stopGame(); // Останавливаем игру при переключении вкладок
     }
 
     function setGame(g) {
@@ -23,63 +23,22 @@
         document.getElementById('mode-info').innerText = "Выбрано: " + (g === 'snake' ? 'Змейка' : 'Тетрис');
     }
 
-    // --- ОТЛАДОЧНАЯ ФУНКЦИЯ "ИГРАТЬ С ДРУГОМ" ---
+    // --- ИГРА С ДРУГОМ ---
     function shareLobby() {
-        console.log("Кнопка нажата, начинаем вызов...");
         try {
             const lobbyId = Math.random().toString(36).substr(2, 9);
             currentLobbyId = lobbyId;
-            
-            // Проверяем, видит ли скрипт объект Telegram
-            if (!window.Telegram || !window.Telegram.WebApp) {
-                alert("Ошибка: Telegram SDK не загружен!");
-                return;
-            }
-
-            // Если это сработает, значит JS код выполняется верно
-            alert("Вызываем меню выбора чата для лобби: " + lobbyId);
-            
-            // Вызов API Telegram
             if (tg.isVersionAtLeast('6.7')) {
                 tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats', 'groups']);
             } else {
                 tg.switchInlineQuery(`lobby_${lobbyId}`);
             }
-            
-        } catch (e) {
-            alert("Критическая ошибка скрипта: " + e.message);
-        }
+        } catch (e) { console.error(e); }
     }
 
-    // Привязываем функцию к кнопке после загрузки страницы
-    document.addEventListener('DOMContentLoaded', () => {
-        const friendBtn = document.getElementById('friend-btn');
-        if (friendBtn) {
-            friendBtn.onclick = shareLobby;
-        }
-    });
+    document.getElementById('friend-btn').onclick = shareLobby;
 
-    // --- ПОПОЛНЕНИЕ STARS ---
-    async function pay() {
-        const amt = document.getElementById('pay-amt').value;
-        try {
-            const r = await fetch(`${API}/api/create-invoice`, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ initData: tg.initData, amount: parseInt(amt) }) 
-            });
-            const d = await r.json();
-            if(d.invoiceLink) {
-                tg.openInvoice(d.invoiceLink, (status) => {
-                    if(status === 'paid') load();
-                });
-            }
-        } catch(e) { 
-            alert("Ошибка при создании счета"); 
-        }
-    }
-
-    // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ (ПК) ---
+    // --- УПРАВЛЕНИЕ ---
     window.addEventListener('keydown', (e) => {
         if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
         if (currentGame === 'snake') {
@@ -95,50 +54,96 @@
         }
     });
 
-    // --- ЗАПУСК ИГРЫ ---
+    // --- СТАРТ И СТОП ---
     function preStart(practice) {
+        if (gameLoop) clearInterval(gameLoop); // Защита от двойного запуска
         isPractice = practice;
         document.getElementById('arena-menu').style.display = 'none';
         document.getElementById('result-overlay').style.display = 'none';
         document.getElementById('game-ui').style.display = 'flex';
+        
         let c = 3;
         const cd = document.getElementById('countdown');
+        cd.innerText = c;
         cd.style.display = 'block';
+        document.getElementById('gameCanvas').style.display = 'none';
+
         const t = setInterval(() => {
-            cd.innerText = c; c--;
-            if(c < 0) {
-                clearInterval(t); cd.style.display = 'none';
+            c--;
+            if(c > 0) cd.innerText = c;
+            else {
+                clearInterval(t);
+                cd.style.display = 'none';
                 document.getElementById('gameCanvas').style.display = 'block';
                 if(currentGame === 'snake') runSnake(); else runTetris();
             }
         }, 1000);
     }
 
-    // --- ДВИЖОК: ЗМЕЙКА ---
+    function stopGame() {
+        if (gameLoop) {
+            clearInterval(gameLoop);
+            gameLoop = null;
+        }
+        
+        if(!isPractice && currentLobbyId) {
+            submitScore(); 
+        } else {
+            document.getElementById('result-overlay').style.display = 'flex';
+            document.getElementById('res-score').innerText = "Ваш счет: " + currentScore;
+        }
+    }
+
+    async function submitScore() {
+        document.getElementById('result-overlay').style.display = 'flex';
+        document.getElementById('res-score').innerText = "Сохранение счета...";
+        try {
+            await fetch(`${API}/api/submit-score`, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) 
+            });
+            document.getElementById('res-score').innerText = "Счет отправлен! Итого: " + currentScore;
+        } catch(e) { 
+            document.getElementById('res-score').innerText = "Ошибка сети. Счет: " + currentScore;
+        }
+    }
+
+    // --- ЗМЕЙКА ---
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
         currentScore = 0; moveDir = {x:1, y:0};
+        document.getElementById('score-text').innerText = "Score: 0";
+
         gameLoop = setInterval(() => {
             let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
-            if(h.x<0||h.x>=20||h.y<0||h.y>=30) { stopGame(); return; }
+            // Проверка столкновений
+            if(h.x<0||h.x>=20||h.y<0||h.y>=30 || s.some(p => p.x === h.x && p.y === h.y)) { 
+                stopGame(); 
+                return; 
+            }
             s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
-                currentScore++; document.getElementById('score-text').innerText = "Score: " + currentScore;
+                currentScore++; 
+                document.getElementById('score-text').innerText = "Score: " + currentScore;
                 f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*30)};
             } else s.pop();
+
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
             ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
             ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
         }, 150);
     }
 
-    // --- ДВИЖОК: ТЕТРИС ---
+    // --- ТЕТРИС ---
     let tBoard, tPiece;
     function runTetris() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         tBoard = Array(20).fill().map(() => Array(10).fill(0));
-        currentScore = 0; spawnTPiece();
+        currentScore = 0; 
+        document.getElementById('score-text').innerText = "Score: 0";
+        spawnTPiece();
         gameLoop = setInterval(() => { tetrisDrop(); drawTetris(ctx); }, 600);
     }
     function spawnTPiece() {
@@ -156,6 +161,7 @@
         return [[1,1,0],[0,1,1],[0,0,0]];
     }
     function tetrisDrop() {
+        if (!gameLoop) return;
         tPiece.pos.y++;
         if(tCollide()){ tPiece.pos.y--; tMerge(); spawnTPiece(); tClear(); }
     }
@@ -186,38 +192,23 @@
         if(tCollide()) tPiece.matrix = old;
     }
 
-    // --- ОСТАНОВКА И ОТПРАВКА ОЧКОВ ---
-    function stopGame() {
-        clearInterval(gameLoop);
-        if(!isPractice) submitScore(); else tg.showAlert("Счет: " + currentScore);
-    }
-
-    async function submitScore() {
+    // --- ОСТАЛЬНОЕ ---
+    async function pay() {
+        const amt = document.getElementById('pay-amt').value;
         try {
-            await fetch(`${API}/api/submit-score`, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) 
-            });
-            document.getElementById('result-overlay').style.display = 'flex';
-            document.getElementById('res-score').innerText = "Результат дуэли: " + currentScore;
-        } catch(e) { 
-            tg.showAlert("Ошибка отправки счета"); 
-        }
+            const r = await fetch(`${API}/api/create-invoice`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, amount: parseInt(amt) }) });
+            const d = await r.json();
+            if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (status) => { if(status === 'paid') load(); });
+        } catch(e) { alert("Ошибка оплаты"); }
     }
 
-    // --- ЗАГРУЗКА ДАННЫХ И ПРОВЕРКА ВХОДА ---
     async function load() {
         try {
-            const r = await fetch(`${API}/api/user-data`, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ initData: tg.initData }) 
-            });
+            const r = await fetch(`${API}/api/user-data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
             const d = await r.json();
             document.getElementById('u-balance').innerText = d.balance;
             document.getElementById('u-name').innerText = d.name;
-        } catch(e) { console.error("Ошибка загрузки профиля"); }
+        } catch(e) { console.log("User load error"); }
     }
 
     async function checkInvite() {
@@ -225,22 +216,11 @@
         if (sp && sp.startsWith('lobby_')) {
             currentLobbyId = sp.replace('lobby_', '');
             isPractice = false;
-            
-            try {
-                await fetch(`${API}/api/join-lobby`, { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) 
-                });
-                
-                document.getElementById('mode-info').innerHTML = 
-                    `<b style="color:red">⚔️ ДУЭЛЬ АКТИВНА</b>`;
-                tg.showAlert("Вы вступили в дуэль!");
-            } catch(e) { console.error("Ошибка входа в лобби"); }
+            await fetch(`${API}/api/join-lobby`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) });
+            document.getElementById('mode-info').innerHTML = `<b style="color:red">⚔️ ДУЭЛЬ АКТИВНА</b>`;
+            preStart(false);
         }
     }
 
-    // Точка входа
-    load(); 
-    checkInvite();
+    load(); checkInvite();
 </script>
