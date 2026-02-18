@@ -15,38 +15,27 @@
             --tg-theme-text-color: #000000;
         }
         body { 
-            background: var(--tg-theme-secondary-bg-color); 
-            color: var(--tg-theme-text-color);
-            margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color);
+            margin: 0; font-family: -apple-system, system-ui, sans-serif;
             display: flex; justify-content: center; overflow: hidden;
         }
-        #app {
-            width: 100%; max-width: 500px; height: 100vh;
-            background: var(--tg-theme-bg-color); display: flex; flex-direction: column; position: relative;
-        }
+        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--tg-theme-bg-color); display: flex; flex-direction: column; }
         .screen { display: none; flex: 1; padding: 16px; flex-direction: column; align-items: center; overflow-y: auto; }
         .active { display: flex; }
-
-        .card {
-            background: var(--tg-theme-secondary-bg-color); border-radius: 12px;
-            width: 100%; padding: 16px; margin-bottom: 12px; box-sizing: border-box; text-align: center;
-        }
-        .btn {
-            background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color);
-            border: none; border-radius: 8px; padding: 12px 20px; width: 100%;
-            font-size: 16px; font-weight: 500; cursor: pointer; margin: 8px 0;
-        }
-        #game-container { display: none; width: 100%; flex-direction: column; align-items: center; }
-        canvas { background: #000; border-radius: 8px; touch-action: none; }
+        .card { background: var(--tg-theme-secondary-bg-color); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; box-sizing: border-box; text-align: center; }
+        .btn { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 8px 0; }
         
-        .controls { display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; margin-top: 20px; }
-        .ctrl-btn { width: 60px; height: 60px; background: #ddd; border: none; border-radius: 50%; font-size: 24px; }
+        /* Стили для игры */
+        #game-box { display: none; width: 100%; flex-direction: column; align-items: center; position: relative; }
+        canvas { background: #000; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #countdown { position: absolute; top: 100px; font-size: 80px; font-weight: bold; color: var(--tg-theme-button-color); text-shadow: 0 0 20px #fff; display: none; }
+        
+        .controls { display: grid; grid-template-columns: repeat(3, 70px); gap: 12px; margin-top: 20px; }
+        .ctrl-btn { width: 70px; height: 70px; background: #e0e0e0; border: none; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+        .ctrl-btn:active { background: #ccc; }
 
-        #nav {
-            display: flex; background: var(--tg-theme-bg-color); height: 60px;
-            border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--tg-theme-hint-color); cursor: pointer; }
+        #nav { display: flex; background: var(--tg-theme-bg-color); height: 65px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; color: var(--tg-theme-hint-color); cursor: pointer; }
         .nav-item.active { color: var(--tg-theme-button-color); }
     </style>
 </head>
@@ -55,57 +44,57 @@
 <div id="app">
     <div id="arena" class="screen active">
         <div class="card">
-            <h2 id="status">Загрузка...</h2>
-            <p style="color: var(--tg-theme-hint-color)">Выберите режим игры</p>
+            <h2 id="status">Retro Arena</h2>
+            <p id="p-sub" style="color: var(--tg-theme-hint-color)">Выберите режим сражения</p>
         </div>
         
-        <div id="menu-buttons" style="width:100%">
-            <button class="btn" onclick="startGame('tourney')">🏆 Турнир (50 ⭐)</button>
-            <button class="btn" style="background:#888" onclick="startGame('practice')">🕹 Тренировка</button>
+        <div id="menu" style="width:100%">
+            <button class="btn" onclick="preStart('tourney')">🏆 ТУРНИР (50 ⭐)</button>
+            <button class="btn" style="background:#8e8e93" onclick="preStart('practice')">🕹 ТРЕНИРОВКА</button>
         </div>
 
-        <div id="game-container">
-            <canvas id="snakeCanvas" width="300" height="300"></canvas>
+        <div id="game-box">
+            <div id="countdown">3</div>
+            <canvas id="canvas" width="300" height="300"></canvas>
             <div class="controls">
                 <div></div><button class="ctrl-btn" onclick="setDir(0,-1)">↑</button><div></div>
                 <button class="ctrl-btn" onclick="setDir(-1,0)">←</button>
                 <button class="ctrl-btn" onclick="setDir(0,1)">↓</button>
                 <button class="ctrl-btn" onclick="setDir(1,0)">→</button>
             </div>
-            <button class="btn" style="background:red; margin-top:20px;" onclick="location.reload()">Выйти</button>
+            <button class="btn" style="background:#ff3b30; margin-top:15px; width:120px;" onclick="location.reload()">ВЫЙТИ</button>
         </div>
     </div>
 
     <div id="top" class="screen">
-        <h3>Топ игроков</h3>
+        <h3>Лидеры Арены</h3>
         <div id="leaderboard" style="width:100%"></div>
     </div>
 
     <div id="profile" class="screen">
         <div class="card">
-            <h2 id="p-name">Игрок</h2>
-            <div style="font-size: 32px; font-weight: bold;">⭐ <span id="p-balance">0</span></div>
+            <h2 id="p-name">Загрузка...</h2>
+            <div style="font-size: 34px; font-weight: 800; color: var(--tg-theme-button-color)">⭐ <span id="p-balance">0</span></div>
         </div>
-        <button class="btn" onclick="buyStars()">Пополнить баланс</button>
+        <button class="btn" onclick="buyStars()">ПОПОЛНИТЬ БАЛАНС</button>
     </div>
 
     <nav id="nav">
-        <div class="nav-item active" onclick="tab('arena', this)"><span>🎮</span>Арена</div>
-        <div class="nav-item" onclick="tab('top', this)"><span>🏆</span>Топ</div>
-        <div class="nav-item" onclick="tab('profile', this)"><span>👤</span>Профиль</div>
+        <div class="nav-item active" onclick="tab('arena', this)"><span>🎮</span>АРЕНА</div>
+        <div class="nav-item" onclick="tab('top', this)"><span>🏆</span>ТОП</div>
+        <div class="nav-item" onclick="tab('profile', this)"><span>👤</span>ПРОФИЛЬ</div>
     </nav>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     const API = 'https://tg-game-arena.onrender.com';
-    let balance = 0;
-    let currentDir = {x: 1, y: 0};
+    let balance = 0, currentDir = {x: 1, y: 0}, snakeInterval;
 
     tg.expand();
     tg.ready();
 
-    async function loadData() {
+    async function loadUser() {
         try {
             const r = await fetch(`${API}/api/user-data`, {
                 method: 'POST',
@@ -116,8 +105,7 @@
             balance = d.balance;
             document.getElementById('p-balance').innerText = balance;
             document.getElementById('p-name').innerText = d.name;
-            document.getElementById('status').innerText = "Retro Arena";
-        } catch(e) { document.getElementById('status').innerText = "Сервер спит..."; }
+        } catch(e) { console.error("Server down"); }
     }
 
     function tab(id, el) {
@@ -132,30 +120,44 @@
         const r = await fetch(`${API}/api/leaderboard`);
         const d = await r.json();
         document.getElementById('leaderboard').innerHTML = d.map((u, i) => `
-            <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #eee;">
+            <div style="display:flex; justify-content:space-between; padding:15px; border-bottom:1px solid #eee; background:#fff; border-radius:8px; margin-bottom:5px;">
                 <span>${i+1}. ${u.name}</span><b>${u.balance} ⭐</b>
             </div>`).join('');
     }
 
     function setDir(x, y) { currentDir = {x, y}; }
 
-    function startGame(mode) {
-        if(mode === 'tourney' && balance < 50) return tg.showAlert("Недостаточно Stars!");
+    function preStart(mode) {
+        if(mode === 'tourney' && balance < 50) return tg.showAlert("Не хватает Stars!");
         
-        document.getElementById('menu-buttons').style.display = 'none';
-        document.getElementById('game-container').style.display = 'flex';
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('game-box').style.display = 'flex';
         
-        const canvas = document.getElementById('snakeCanvas');
-        const ctx = canvas.getContext('2d');
-        let snake = [{x: 10, y: 10}];
-        let food = {x: 15, y: 15};
-        
-        const gameLoop = setInterval(() => {
+        const cd = document.getElementById('countdown');
+        cd.style.display = 'block';
+        let count = 3;
+        cd.innerText = count;
+
+        const timer = setInterval(() => {
+            count--;
+            if(count <= 0) {
+                clearInterval(timer);
+                cd.style.display = 'none';
+                runGame();
+            } else { cd.innerText = count; }
+        }, 1000);
+    }
+
+    function runGame() {
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        let snake = [{x: 10, y: 10}], food = {x: 5, y: 5};
+        currentDir = {x: 1, y: 0};
+
+        snakeInterval = setInterval(() => {
             let head = {x: snake[0].x + currentDir.x, y: snake[0].y + currentDir.y};
-            
             if(head.x<0||head.x>=20||head.y<0||head.y>=20) {
-                clearInterval(gameLoop);
-                tg.showAlert("Игра окончена!");
+                clearInterval(snakeInterval);
+                tg.showAlert("ИГРА ОКОНЧЕНА!");
                 location.reload();
             }
 
@@ -170,7 +172,17 @@
         }, 150);
     }
 
-    loadData();
+    async function buyStars() {
+        const r = await fetch(`${API}/api/create-invoice`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData, amount: 50 })
+        });
+        const { invoiceLink } = await r.json();
+        tg.openInvoice(invoiceLink, (s) => { if(s==='paid') loadUser(); });
+    }
+
+    loadUser();
 </script>
 </body>
 </html>
