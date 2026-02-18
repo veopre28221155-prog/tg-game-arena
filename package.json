@@ -1,7 +1,7 @@
 {
   "name": "tg-game-arena",
   "version": "1.0.0",
-  "description": "",
+  "description": "Retro Battle Arena Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
