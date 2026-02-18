@@ -1,3 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Retro Arena</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bg: #fff; --btn: #2481cc; --sec: #f0f0f2; --text: #000; }
+        body { background: var(--sec); color: var(--text); margin: 0; font-family: sans-serif; display: flex; justify-content: center; overflow: hidden; }
+        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; }
+        .screen { display: none; flex: 1; padding: 16px; flex-direction: column; align-items: center; overflow-y: auto; }
+        .active { display: flex; }
+        .card { background: var(--sec); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
+        .btn { background: var(--btn); color: #fff; border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; text-align: center; font-size: 18px; }
+        canvas { background: #000; border-radius: 8px; display: none; margin: 0 auto; }
+        #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid #ddd; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 14px; }
+        .nav-item.active { color: var(--btn); font-weight: bold; }
+        #result-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); color: #fff; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; padding: 20px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="result-overlay">
+        <h2>Матч окончен</h2>
+        <p id="res-score" style="font-size: 20px; margin: 20px 0;">Загрузка...</p>
+        <button class="btn" onclick="preStart(isPractice)">Играть снова</button>
+        <button class="btn" style="background:#444" onclick="location.reload()">В меню</button>
+    </div>
+
+    <div id="arena" class="screen active">
+        <div class="card">
+            <h3>Игры</h3>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" id="s-snake" onclick="setGame('snake')">🐍 Змейка</button>
+                <button class="btn" id="s-tetris" onclick="setGame('tetris')" style="opacity:0.5">🧱 Тетрис</button>
+            </div>
+        </div>
+        
+        <div id="arena-menu" class="card">
+            <h4 id="mode-info">Выбрано: Змейка</h4>
+            <button class="btn" onclick="preStart(true)">🔥 ТРЕНИРОВКА</button>
+            <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" id="friend-btn">⚔️ ИГРАТЬ С ДРУГОМ</button>
+        </div>
+
+        <div id="game-ui" style="display:none; flex-direction:column; align-items:center; width:100%;">
+            <div id="countdown" style="font-size:40px; font-weight:bold; margin:10px; color:var(--btn)">3</div>
+            <div id="score-text" style="font-weight:bold; margin-bottom:5px;">Score: 0</div>
+            <canvas id="gameCanvas" width="300" height="450"></canvas>
+            <button class="btn" style="background:red; width:120px; margin-top:10px;" onclick="location.reload()">Выход</button>
+        </div>
+    </div>
+
+    <div id="profile" class="screen">
+        <div class="card">
+            <h2 id="u-name">Player</h2>
+            <div style="font-size:36px; font-weight:bold; color:var(--btn)">⭐ <span id="u-balance">0</span></div>
+        </div>
+        <div class="card">
+            <h4>Пополнить баланс</h4>
+            <input type="number" id="pay-amt" value="50" min="1">
+            <button class="btn" onclick="pay()">КУПИТЬ STARS</button>
+        </div>
+    </div>
+
+    <nav id="nav">
+        <div class="nav-item active" onclick="tab('arena', this)">АРЕНА</div>
+        <div class="nav-item" onclick="tab('profile', this)">ПРОФИЛЬ</div>
+    </nav>
+</div>
+
 <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
@@ -7,13 +80,13 @@
     let currentGame = 'snake', moveDir = {x:1, y:0}, isPractice = true;
     let gameLoop = null, currentLobbyId = null, currentScore = 0;
 
-    // --- ЛОГИКА ИНТЕРФЕЙСА ---
+    // --- ИНТЕРФЕЙС ---
     function tab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         el.classList.add('active');
-        if (gameLoop) stopGame(); // Останавливаем игру при переключении вкладок
+        if (gameLoop) stopGame();
     }
 
     function setGame(g) {
@@ -23,7 +96,7 @@
         document.getElementById('mode-info').innerText = "Выбрано: " + (g === 'snake' ? 'Змейка' : 'Тетрис');
     }
 
-    // --- ИГРА С ДРУГОМ ---
+    // --- КНОПКА ДРУГА ---
     function shareLobby() {
         try {
             const lobbyId = Math.random().toString(36).substr(2, 9);
@@ -33,9 +106,8 @@
             } else {
                 tg.switchInlineQuery(`lobby_${lobbyId}`);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Error sharing:", e); }
     }
-
     document.getElementById('friend-btn').onclick = shareLobby;
 
     // --- УПРАВЛЕНИЕ ---
@@ -54,9 +126,9 @@
         }
     });
 
-    // --- СТАРТ И СТОП ---
+    // --- ИГРОВАЯ ЛОГИКА ---
     function preStart(practice) {
-        if (gameLoop) clearInterval(gameLoop); // Защита от двойного запуска
+        if (gameLoop) clearInterval(gameLoop);
         isPractice = practice;
         document.getElementById('arena-menu').style.display = 'none';
         document.getElementById('result-overlay').style.display = 'none';
@@ -81,11 +153,7 @@
     }
 
     function stopGame() {
-        if (gameLoop) {
-            clearInterval(gameLoop);
-            gameLoop = null;
-        }
-        
+        if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
         if(!isPractice && currentLobbyId) {
             submitScore(); 
         } else {
@@ -96,7 +164,7 @@
 
     async function submitScore() {
         document.getElementById('result-overlay').style.display = 'flex';
-        document.getElementById('res-score').innerText = "Сохранение счета...";
+        document.getElementById('res-score').innerText = "Сохранение...";
         try {
             await fetch(`${API}/api/submit-score`, { 
                 method: 'POST', 
@@ -104,52 +172,38 @@
                 body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) 
             });
             document.getElementById('res-score').innerText = "Счет отправлен! Итого: " + currentScore;
-        } catch(e) { 
-            document.getElementById('res-score').innerText = "Ошибка сети. Счет: " + currentScore;
-        }
+        } catch(e) { document.getElementById('res-score').innerText = "Ошибка сети. Счет: " + currentScore; }
     }
 
-    // --- ЗМЕЙКА ---
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
         currentScore = 0; moveDir = {x:1, y:0};
         document.getElementById('score-text').innerText = "Score: 0";
-
         gameLoop = setInterval(() => {
             let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
-            // Проверка столкновений
-            if(h.x<0||h.x>=20||h.y<0||h.y>=30 || s.some(p => p.x === h.x && p.y === h.y)) { 
-                stopGame(); 
-                return; 
-            }
+            if(h.x<0||h.x>=20||h.y<0||h.y>=30 || s.some(p => p.x === h.x && p.y === h.y)) { stopGame(); return; }
             s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
-                currentScore++; 
-                document.getElementById('score-text').innerText = "Score: " + currentScore;
+                currentScore++; document.getElementById('score-text').innerText = "Score: " + currentScore;
                 f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*30)};
             } else s.pop();
-
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
             ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
             ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
         }, 150);
     }
 
-    // --- ТЕТРИС ---
     let tBoard, tPiece;
     function runTetris() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         tBoard = Array(20).fill().map(() => Array(10).fill(0));
-        currentScore = 0; 
-        document.getElementById('score-text').innerText = "Score: 0";
-        spawnTPiece();
+        currentScore = 0; spawnTPiece();
         gameLoop = setInterval(() => { tetrisDrop(); drawTetris(ctx); }, 600);
     }
     function spawnTPiece() {
         const pieces = 'IJOSTZL';
-        const t = pieces[Math.random() * pieces.length | 0];
-        tPiece = { pos: {x:3, y:0}, matrix: createTPiece(t) };
+        tPiece = { pos: {x:3, y:0}, matrix: createTPiece(pieces[Math.random()*pieces.length|0]) };
         if (tCollide()) stopGame();
     }
     function createTPiece(t) {
@@ -161,7 +215,7 @@
         return [[1,1,0],[0,1,1],[0,0,0]];
     }
     function tetrisDrop() {
-        if (!gameLoop) return;
+        if(!gameLoop) return;
         tPiece.pos.y++;
         if(tCollide()){ tPiece.pos.y--; tMerge(); spawnTPiece(); tClear(); }
     }
@@ -192,14 +246,14 @@
         if(tCollide()) tPiece.matrix = old;
     }
 
-    // --- ОСТАЛЬНОЕ ---
+    // --- СЕРВЕРНЫЕ ФУНКЦИИ ---
     async function pay() {
         const amt = document.getElementById('pay-amt').value;
         try {
             const r = await fetch(`${API}/api/create-invoice`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, amount: parseInt(amt) }) });
             const d = await r.json();
             if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (status) => { if(status === 'paid') load(); });
-        } catch(e) { alert("Ошибка оплаты"); }
+        } catch(e) { console.error(e); }
     }
 
     async function load() {
@@ -208,7 +262,7 @@
             const d = await r.json();
             document.getElementById('u-balance').innerText = d.balance;
             document.getElementById('u-name').innerText = d.name;
-        } catch(e) { console.log("User load error"); }
+        } catch(e) { console.log("Load error"); }
     }
 
     async function checkInvite() {
@@ -216,11 +270,15 @@
         if (sp && sp.startsWith('lobby_')) {
             currentLobbyId = sp.replace('lobby_', '');
             isPractice = false;
-            await fetch(`${API}/api/join-lobby`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) });
-            document.getElementById('mode-info').innerHTML = `<b style="color:red">⚔️ ДУЭЛЬ АКТИВНА</b>`;
-            preStart(false);
+            try {
+                await fetch(`${API}/api/join-lobby`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) });
+                document.getElementById('mode-info').innerHTML = `<b style="color:red">⚔️ ДУЭЛЬ АКТИВНА</b>`;
+                preStart(false);
+            } catch(e) { console.error(e); }
         }
     }
 
     load(); checkInvite();
 </script>
+</body>
+</html>
