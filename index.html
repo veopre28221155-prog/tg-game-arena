@@ -2,64 +2,74 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .card { background: #f0f0f2; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
-        .btn { background: #2481cc; color: #fff; border: none; border-radius: 10px; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; }
-        #log { font-size: 10px; color: red; margin-top: 20px; text-align: left; }
+        :root { --tg-bg: #ffffff; --tg-btn: #2481cc; --tg-text: #000000; }
+        body { background: var(--tg-bg); color: var(--tg-text); font-family: sans-serif; margin: 0; padding: 20px; text-align: center; }
+        .card { background: #f0f0f2; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .btn { background: var(--tg-btn); color: #fff; border: none; border-radius: 10px; padding: 16px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; }
+        #debug-log { font-size: 10px; color: #888; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2 id="name">Загрузка...</h2>
-        <div style="font-size: 30px;">⭐ <span id="balance">0</span></div>
+        <h2 id="user-name">Загрузка...</h2>
+        <div style="font-size: 36px; font-weight: bold;">⭐ <span id="user-balance">0</span></div>
     </div>
-    <button class="btn" onclick="makeOrder()">ПОПОЛНИТЬ БАЛАНС (50 XTR)</button>
-    <div id="log"></div>
+    
+    <button class="btn" onclick="topUp()">ПОПОЛНИТЬ БАЛАНС (50 ⭐)</button>
+
+    <div id="debug-log">Статус: Инициализация...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
         const API = 'https://tg-game-arena.onrender.com';
         tg.expand();
 
-        function debug(msg) { document.getElementById('log').innerText += msg + '\n'; }
+        function log(msg) { document.getElementById('debug-log').innerText += "\n> " + msg; }
 
-        async function load() {
+        async function loadProfile() {
             try {
-                debug("Запрос данных пользователя...");
-                const r = await fetch(`${API}/api/user-data`, {
+                log("Запрос к серверу...");
+                const response = await fetch(`${API}/api/user-data`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ initData: tg.initData })
                 });
-                const d = await r.json();
-                document.getElementById('name').innerText = d.name;
-                document.getElementById('balance').innerText = d.balance;
-                debug("Данные загружены ✅");
-            } catch(e) { debug("Ошибка загрузки: " + e.message); }
+                const user = await response.json();
+                document.getElementById('user-name').innerText = user.name;
+                document.getElementById('user-balance').innerText = user.balance;
+                log("Данные загружены ✅");
+            } catch (e) {
+                log("Ошибка связи: " + e.message);
+            }
         }
 
-        async function makeOrder() {
-            debug("Создание счета...");
+        async function topUp() {
+            log("Создание счета...");
             try {
-                const r = await fetch(`${API}/api/create-invoice`, {
+                const response = await fetch(`${API}/api/create-invoice`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ initData: tg.initData, amount: 50 })
                 });
-                const res = await r.json();
-                if (res.invoiceLink) {
-                    debug("Счет создан, открываю оплату...");
-                    tg.openInvoice(res.invoiceLink, (status) => {
-                        debug("Статус оплаты: " + status);
-                        if(status === 'paid') load();
+                const data = await response.json();
+                if (data.invoiceLink) {
+                    log("Счет готов, открываю окно оплаты...");
+                    tg.openInvoice(data.invoiceLink, (status) => {
+                        log("Результат оплаты: " + status);
+                        if (status === 'paid') loadProfile();
                     });
-                } else { debug("Ошибка: Сервер не дал ссылку"); }
-            } catch(e) { debug("Ошибка сети: " + e.message); }
+                } else {
+                    log("Ошибка: Сервер не прислал ссылку");
+                }
+            } catch (e) {
+                log("Ошибка сети: " + e.message);
+            }
         }
-        load();
+
+        loadProfile();
     </script>
 </body>
 </html>
