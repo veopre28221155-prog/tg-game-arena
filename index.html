@@ -2,350 +2,124 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0f172a; color: white; user-select: none; font-family: sans-serif; margin: 0; overflow: hidden; }
-        canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 280px; height: auto; }
-        .menu-card { background: #1e293b; border-radius: 16px; padding: 15px; border: 1px solid #475569; cursor: pointer; }
-        .joypad { position: fixed; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; z-index: 50; }
-        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); gap: 8px; }
-        .btn-direction { width: 60px; height: 60px; background: #1e293b; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 0 #000; font-size: 28px; color: #94a3b8; touch-action: manipulation; }
-        .btn-action { width: 85px; height: 85px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 6px 0 #000; text-align: center; touch-action: manipulation; }
-        .btn-direction:active, .btn-action:active { transform: translateY(4px); box-shadow: 0 2px 0 #000; background: #3b82f6; color: white; }
-        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
-        .lobby-checkbox { width: 28px; height: 28px; accent-color: #22c55e; }
+        :root { --bg: #0a0a0a; --accent: #00ff41; --text: #ffffff; }
+        body { 
+            background: #000; margin: 0; font-family: 'Courier New', monospace; 
+            color: var(--text); display: flex; justify-content: center;
+        }
+        /* Исправление для ПК: ограничиваем ширину */
+        #app-container {
+            width: 100%; max-width: 500px; height: 100vh;
+            background: var(--bg); position: relative; overflow: hidden;
+            border-left: 1px solid #333; border-right: 1px solid #333;
+        }
+        .screen { display: none; padding: 20px; height: 90%; flex-direction: column; align-items: center; }
+        .active { display: flex; }
+        
+        .btn {
+            background: transparent; border: 2px solid var(--accent);
+            color: var(--accent); padding: 15px 30px; margin: 10px;
+            font-size: 18px; cursor: pointer; width: 80%;
+            text-transform: uppercase; transition: 0.3s;
+        }
+        .btn:active { background: var(--accent); color: #000; }
+
+        #nav-menu {
+            position: absolute; bottom: 0; width: 100%; height: 60px;
+            display: flex; background: #111; border-top: 1px solid #333;
+        }
+        .nav-item { flex: 1; text-align: center; line-height: 60px; color: #666; cursor: pointer; }
+        .nav-item.active { color: var(--accent); border-top: 2px solid var(--accent); }
     </style>
 </head>
-<body class="flex flex-col items-center">
+<body>
 
-    <nav id="nav-bar" class="w-full flex justify-around bg-slate-900 border-b border-slate-800 p-2">
-        <button onclick="showScreen('screen-main')" id="tab-main" class="tab-active py-2 px-4 font-bold text-sm">АРЕНА</button>
-        <button onclick="showProfile()" id="tab-profile" class="py-2 px-4 font-bold text-slate-400 text-sm">ПРОФИЛЬ</button>
+<div id="app-container">
+    <div id="screen-arena" class="screen active">
+        <h2>АРЕНА</h2>
+        <div id="status-msg">Сервер просыпается...</div>
+        <button class="btn" onclick="startMode('practice')">Тренировка (0⭐)</button>
+        <button class="btn" onclick="openTournamentMenu()">Турнир (от 50⭐)</button>
+    </div>
+
+    <div id="screen-top" class="screen">
+        <h2>ТОП ИГРОКОВ</h2>
+        <div id="leaderboard-list" style="width: 100%;"></div>
+    </div>
+
+    <div id="screen-profile" class="screen">
+        <h2 id="user-name">Загрузка...</h2>
+        <div style="font-size: 24px; color: var(--accent);">⭐ <span id="user-balance">0</span></div>
+        <button class="btn" style="margin-top:40px;" onclick="buyStars()">Пополнить Stars</button>
+    </div>
+
+    <nav id="nav-menu">
+        <div class="nav-item active" onclick="showTab('arena')">АРЕНА</div>
+        <div class="nav-item" onclick="showTab('top')">ТОП</div>
+        <div class="nav-item" onclick="showTab('profile')">ПРОФИЛЬ</div>
     </nav>
+</div>
 
-    <div id="screen-main" class="p-6 w-full space-y-4 max-w-md">
-        <h1 class="text-3xl font-black text-center my-4 text-blue-400 italic">RETRO ARENA</h1>
-        <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500">
-            <h2 class="text-xl font-bold">🎮 Одиночная игра</h2>
-            <p class="text-sm text-slate-400">Тренировка бесплатно</p>
-        </div>
-        <div onclick="showMode('tournament')" class="menu-card border-l-4 border-l-yellow-500">
-            <h2 class="text-xl font-bold">🏆 Турнир (Stars)</h2>
-            <p class="text-sm text-yellow-400">Игра на реальные звезды</p>
-        </div>
-        <button onclick="inviteFriend()" class="w-full bg-slate-800 py-3 rounded-xl border border-slate-700 text-sm font-bold mt-4">👥 ПРИГЛАСИТЬ ДРУГА</button>
-    </div>
+<script>
+    const tg = window.Telegram.WebApp;
+    const BACKEND_URL = 'https://tg-game-arena.onrender.com';
+    let userBalance = 0;
 
-    <div id="screen-profile" class="p-6 w-full hidden max-w-md text-center">
-        <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl mb-6">
-            <h2 id="user-name" class="text-lg font-bold italic">Загрузка...</h2>
-            <p class="text-yellow-400 text-3xl font-black my-2">⭐ <span id="user-balance">0</span></p>
-            <p class="text-slate-400 text-xs uppercase tracking-widest">Твой баланс Stars</p>
-        </div>
-        <button onclick="topUpStars()" class="w-full bg-yellow-500 py-4 rounded-2xl font-bold text-black mb-3 shadow-lg">ПОПОЛНИТЬ ⭐</button>
-        <button onclick="showScreen('screen-main')" class="w-full bg-slate-700 py-4 rounded-2xl font-bold text-slate-300">НАЗАД</button>
-    </div>
+    tg.expand();
 
-    <div id="screen-setup" class="p-6 w-full hidden max-w-md">
-        <button onclick="showScreen('screen-main')" class="mb-4 text-blue-400">← Назад</button>
-        <h2 class="text-2xl font-bold mb-6 text-center">Настройка матча</h2>
-        <div class="space-y-6">
-            <div class="flex gap-2">
-                <button id="opt-snake" onclick="setGame('snake')" class="flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white">SNAKE</button>
-                <button id="opt-tetris" onclick="setGame('tetris')" class="flex-1 p-4 rounded-xl bg-slate-700">TETRIS</button>
-            </div>
-            <div id="price-block" class="hidden bg-slate-800 p-4 rounded-xl text-center">
-                <p class="mb-2 font-semibold text-yellow-400 text-sm">Взнос за турнир (Stars):</p>
-                <input type="number" id="tourney-price" value="10" min="10" class="w-full bg-slate-900 p-3 rounded-lg border border-slate-700 text-center text-white font-bold">
-            </div>
-            <button onclick="processLobbyEntry()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl shadow-lg">НАЙТИ ИГРУ</button>
-        </div>
-    </div>
-
-    <div id="screen-lobby" class="p-6 w-full hidden max-w-md text-center">
-        <button onclick="cancelLobby()" class="mb-4 text-red-400 text-left block">← Отмена</button>
-        <h2 class="text-xl font-bold mb-8">ОЖИДАНИЕ ИГРОКОВ</h2>
-        <div class="space-y-4 mb-8">
-            <div class="flex items-center justify-between bg-slate-800 p-5 rounded-2xl border border-slate-700">
-                <div class="flex items-center gap-3"><div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold">YOU</div><p class="font-bold">Вы</p></div>
-                <input type="checkbox" id="player-ready" class="lobby-checkbox" onchange="toggleReady()">
-            </div>
-            <div class="flex items-center justify-between bg-slate-800 p-5 rounded-2xl border border-slate-700 opacity-50">
-                <div class="flex items-center gap-3"><div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center font-bold">AI</div><p class="font-bold">Бот-соперник</p></div>
-                <input type="checkbox" checked disabled class="lobby-checkbox">
-            </div>
-        </div>
-        <div id="countdown" class="hidden text-8xl font-black text-blue-400">3</div>
-    </div>
-
-    <div id="screen-game" class="hidden w-full h-screen bg-black">
-        <div class="flex justify-between px-6 py-3 bg-slate-900 border-b border-slate-800">
-            <div><p class="text-xs text-slate-500 uppercase">Вы</p><p id="my-score" class="text-xl font-mono text-green-400 font-bold">0</p></div>
-            <div><p class="text-xs text-slate-500 uppercase">Бот</p><p id="opp-score" class="text-xl font-mono text-red-400 font-bold">0</p></div>
-        </div>
-        <div class="flex justify-center mt-6"><canvas id="mainCanvas"></canvas></div>
-        <div class="joypad">
-            <div class="d-pad">
-                <div></div><button class="btn-direction" id="btn-up">↑</button><div></div>
-                <button class="btn-direction" id="btn-left">←</button>
-                <button class="btn-direction" id="btn-down">↓</button>
-                <button class="btn-direction" id="btn-right">→</button>
-            </div>
-            <button class="btn-action bg-blue-600" id="btn-rotate">ROTATE</button>
-        </div>
-    </div>
-
-    <div id="screen-results" class="hidden p-8 text-center w-full max-w-md">
-        <h2 class="text-4xl font-black mb-6 text-yellow-400 italic">ФИНАЛ</h2>
-        <div class="bg-slate-800 p-8 rounded-3xl space-y-4 border border-slate-700 shadow-2xl">
-            <div class="flex justify-between text-2xl"><span>Счёт:</span> <span id="res-my" class="text-green-400 font-bold">0</span></div>
-            <div id="res-msg" class="text-4xl font-black pt-6 border-t border-slate-700 text-white">Победа!</div>
-            <p id="reward-msg" class="text-yellow-400 font-bold hidden">+18 Stars начислено</p>
-        </div>
-        <button onclick="location.reload()" class="mt-10 w-full bg-blue-600 py-5 rounded-2xl font-bold text-xl shadow-lg">В МЕНЮ</button>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        const BACKEND_URL = 'https://tg-game-arena.onrender.com'; // Твой адрес на Render
-        tg.expand();
-        tg.enableClosingConfirmation();
-
-        const canvas = document.getElementById('mainCanvas'); 
-        const ctx = canvas.getContext('2d');
-        let gameLoop, currentGame='snake', currentMode='casual', myScore=0, oppScore=0, balance=0;
-
-        // Навигация по экранам
-        function showScreen(id){
-            ['screen-main','screen-profile','screen-setup','screen-lobby','screen-game','screen-results'].forEach(s=>document.getElementById(s).classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-            document.getElementById('nav-bar').style.display = (id==='screen-game'||id==='screen-lobby'||id==='screen-results') ? 'none' : 'flex';
-        }
-
-        // Загрузка данных с твоего сервера
-        async function showProfile() {
-            showScreen('screen-profile');
-            document.getElementById('user-name').innerText = "Связь...";
-            try {
-                const response = await fetch(`${BACKEND_URL}/api/user-data`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ initData: tg.initData })
-                });
-                const data = await response.json();
-                document.getElementById('user-name').innerText = data.name;
-                document.getElementById('user-balance').innerText = data.balance;
-                balance = data.balance;
-            } catch (e) {
-                tg.showAlert("Сервер еще просыпается (Render Free), подождите 30 сек.");
-            }
-        }
-
-        // Система платежей Telegram Stars
-        async function topUpStars() {
-            const amount = 50; // Сколько звезд купить
-            try {
-                // Сервер должен создать Invoice через Bot API
-                const response = await fetch(`${BACKEND_URL}/api/create-invoice`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ initData: tg.initData, amount: amount })
-                });
-                const { invoiceLink } = await response.json();
-                
-                // Открываем нативное окно оплаты Telegram
-                tg.openInvoice(invoiceLink, function(status) {
-                    if (status === 'paid') {
-                        tg.showAlert("Оплата успешна! Stars зачислятся в течение минуты.");
-                        showProfile();
-                    } else if (status === 'failed') {
-                        tg.showAlert("Ошибка оплаты.");
-                    }
-                });
-            } catch (e) {
-                tg.showAlert("Функция пополнения настраивается на сервере...");
-            }
-        }
-
-        function showMode(m){
-            currentMode=m;
-            document.getElementById('price-block').classList.toggle('hidden', m==='casual');
-            showScreen('screen-setup');
-        }
-
-        function setGame(g){
-            currentGame=g;
-            document.getElementById('opt-snake').className=g==='snake'?'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white':'flex-1 p-4 rounded-xl bg-slate-700';
-            document.getElementById('opt-tetris').className=g==='tetris'?'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white':'flex-1 p-4 rounded-xl bg-slate-700';
-            document.getElementById('btn-rotate').style.opacity = g==='snake' ? '0.2' : '1';
-        }
-
-        function processLobbyEntry(){
-            if(currentMode === 'tournament') {
-                const price = parseInt(document.getElementById('tourney-price').value);
-                if(balance < price) { tg.showAlert("Недостаточно Stars! Пополни баланс в профиле."); return; }
-            }
-            showScreen('screen-lobby');
-            document.getElementById('player-ready').checked = false;
-            document.getElementById('countdown').classList.add('hidden');
-        }
-
-        function toggleReady(){
-            if(document.getElementById('player-ready').checked){
-                const cd = document.getElementById('countdown');
-                cd.classList.remove('hidden');
-                let count = 3;
-                cd.innerText = count;
-                const timer = setInterval(()=>{
-                    count--;
-                    cd.innerText = count;
-                    if(count <= 0){
-                        clearInterval(timer);
-                        initGame();
-                    }
-                }, 1000);
-            }
-        }
-
-        function cancelLobby(){ showScreen('screen-setup'); }
-
-        function inviteFriend(){
-            // Замени на юзернейм своего бота
-            tg.shareToChat("Сразись со мной в Retro Arena! https://t.me/RetroBattleArena_bot");
-        }
-
-        // --- ИГРОВАЯ ЛОГИКА ---
-        function initGame(){
-            showScreen('screen-game');
-            myScore=0; oppScore=0;
-            document.getElementById('my-score').innerText = "0";
-            document.getElementById('opp-score').innerText = "0";
-            if(currentGame==='snake') startSnake(); else startTetris();
-        }
-
-        function finishGame(){
-            clearInterval(gameLoop);
-            document.getElementById('res-my').innerText = myScore;
-            document.getElementById('res-opp').innerText = oppScore;
-            const win = myScore >= oppScore;
-            document.getElementById('res-msg').innerText = win ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
-            document.getElementById('res-msg').style.color = win ? "#4ade80" : "#f87171";
-            
-            if(win && currentMode === 'tournament') {
-                document.getElementById('reward-msg').classList.remove('hidden');
-            } else {
-                document.getElementById('reward-msg').classList.add('hidden');
-            }
-            showScreen('screen-results');
-        }
-
-        // SNAKE ENGINE
-        let sDir = {x:0, y:-1};
-        function startSnake(){
-            canvas.width=300; canvas.height=400;
-            let snk=[{x:10,y:15},{x:10,y:16}], apple={x:5,y:5};
-            sDir={x:0,y:-1};
-            gameLoop = setInterval(()=>{
-                let h = {x:snk[0].x+sDir.x, y:snk[0].y+sDir.y};
-                if(h.x<0||h.x>=20||h.y<0||h.y>=26||snk.some(p=>p.x===h.x&&p.y===h.y)) return finishGame();
-                snk.unshift(h);
-                if(h.x===apple.x && h.y===apple.y){
-                    myScore+=10;
-                    apple={x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*26)};
-                } else { snk.pop(); }
-                if(Math.random()>0.98) oppScore+=10;
-                
-                ctx.fillStyle='#020617'; ctx.fillRect(0,0,300,400);
-                ctx.fillStyle='#4ade80'; snk.forEach(p=>ctx.fillRect(p.x*15, p.y*15,14,14));
-                ctx.fillStyle='#f87171'; ctx.fillRect(apple.x*15, apple.y*15,14,14);
-                document.getElementById('my-score').innerText = myScore;
-                document.getElementById('opp-score').innerText = oppScore;
-            }, 150);
-        }
-
-        // TETRIS ENGINE
-        let tBoard, tPiece, tPos;
-        const SHAPES = [[[1,1,1,1]], [[1,1],[1,1]], [[0,1,0],[1,1,1]], [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]], [[1,0,0],[1,1,1]], [[0,0,1],[1,1,1]]];
-        function startTetris(){
-            canvas.width=200; canvas.height=400;
-            tBoard = Array(20).fill().map(()=>Array(10).fill(0));
-            spawnT();
-            gameLoop = setInterval(()=>{
-                if(!moveT(0,1)){ lockT(); clearT(); spawnT(); }
-                if(Math.random()>0.99) oppScore+=100;
-                drawT();
-            }, 450);
-        }
-        function spawnT(){ 
-            tPiece=SHAPES[Math.floor(Math.random()*7)]; tPos={x:3,y:0}; 
-            if(collT()) finishGame(); 
-        }
-        function moveT(dx,dy){
-            tPos.x+=dx; tPos.y+=dy;
-            if(collT()){ tPos.x-=dx; tPos.y-=dy; return false; }
-            return true;
-        }
-        function collT(){
-            return tPiece.some((r,y)=>r.some((v,x)=>{
-                let bx=tPos.x+x, by=tPos.y+y;
-                return v&&(bx<0||bx>=10||by>=20||(by>=0&&tBoard[by][bx]));
-            }));
-        }
-        function lockT(){
-            tPiece.forEach((r,y)=>r.forEach((v,x)=>{ if(v) tBoard[tPos.y+y][tPos.x+x]=1; }));
-        }
-        function clearT(){
-            for(let y=19; y>=0; y--){
-                if(tBoard[y].every(v=>v)){
-                    tBoard.splice(y,1); tBoard.unshift(Array(10).fill(0));
-                    myScore+=100; y++;
-                }
-            }
-        }
-        function drawT(){
-            ctx.fillStyle='#020617'; ctx.fillRect(0,0,200,400);
-            tBoard.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle='#334155'; ctx.fillRect(x*20,y*20,19,19); } }));
-            ctx.fillStyle='#3b82f6'; tPiece.forEach((r,y)=>r.forEach((v,x)=>{ if(v) ctx.fillRect((tPos.x+x)*20,(tPos.y+y)*20,19,19); }));
-            document.getElementById('my-score').innerText = myScore;
-            document.getElementById('opp-score').innerText = oppScore;
-        }
-
-        // УПРАВЛЕНИЕ
-        function handleIn(cmd){
-            if(currentGame==='snake'){
-                if(cmd==='up'&&sDir.y!==1) sDir={x:0,y:-1};
-                if(cmd==='down'&&sDir.y!==-1) sDir={x:0,y:1};
-                if(cmd==='left'&&sDir.x!==1) sDir={x:-1,y:0};
-                if(cmd==='right'&&sDir.x!==-1) sDir={x:1,y:0};
-            } else {
-                if(cmd==='left') moveT(-1,0); 
-                if(cmd==='right') moveT(1,0); 
-                if(cmd==='down') moveT(0,1);
-                if(cmd==='rotate'||cmd==='up'){
-                    const old=tPiece; tPiece=tPiece[0].map((_,i)=>tPiece.map(r=>r[i]).reverse());
-                    if(collT()) tPiece=old;
-                }
-                drawT();
-            }
-        }
-
-        ['up','down','left','right','rotate'].forEach(id=>{
-            const btn=document.getElementById('btn-'+id);
-            ['touchstart','mousedown'].forEach(ev=>btn.addEventListener(ev, (e)=>{
-                e.preventDefault(); handleIn(id);
-            }));
+    async function loadUserData() {
+        const res = await fetch(`${BACKEND_URL}/api/user-data`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData })
         });
+        const data = await res.json();
+        document.getElementById('user-name').innerText = data.name;
+        document.getElementById('user-balance').innerText = data.balance;
+        userBalance = data.balance;
+        document.getElementById('status-msg').innerText = "Связь установлена ✅";
+    }
 
-        window.addEventListener('keydown', (e)=>{
-            const k={'ArrowUp':'up','ArrowDown':'down','ArrowLeft':'left','ArrowRight':'right',' ':'rotate'};
-            if(k[e.key]) handleIn(k[e.key]);
+    async function loadLeaderboard() {
+        const res = await fetch(`${BACKEND_URL}/api/leaderboard`);
+        const data = await res.json();
+        const list = document.getElementById('leaderboard-list');
+        list.innerHTML = data.map((u, i) => 
+            `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #222;">
+                <span>${i+1}. ${u.name}</span> <span>${u.balance} ⭐</span>
+            </div>`
+        ).join('');
+    }
+
+    function showTab(tab) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(`screen-${tab}`).classList.add('active');
+        event.currentTarget.classList.add('active');
+        if(tab === 'top') loadLeaderboard();
+        if(tab === 'profile') loadUserData();
+    }
+
+    async function buyStars() {
+        const res = await fetch(`${BACKEND_URL}/api/create-invoice`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData, amount: 100 })
         });
+        const { invoiceLink } = await res.json();
+        tg.openInvoice(invoiceLink, (status) => {
+            if(status === 'paid') {
+                tg.showAlert("Оплата прошла! Баланс обновится через пару секунд.");
+                setTimeout(loadUserData, 3000);
+            }
+        });
+    }
 
-        // Первый запуск
-        showScreen('screen-main');
-    </script>
+    loadUserData();
+</script>
 </body>
 </html>
