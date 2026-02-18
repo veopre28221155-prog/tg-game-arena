@@ -20,14 +20,9 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', UserSchema);
 
-// Схема для заявок на вывод
-const WithdrawSchema = new mongoose.Schema({
-    tg_id: Number,
-    amount: Number,
-    status: { type: String, default: 'pending' },
-    date: { type: Date, default: Date.now }
-});
-const Withdraw = mongoose.model('Withdraw', WithdrawSchema);
+const Withdraw = mongoose.model('Withdraw', new mongoose.Schema({
+    tg_id: Number, amount: Number, date: { type: Date, default: Date.now }
+}));
 
 function verifyTelegramData(initData) {
     if (!initData) return false;
@@ -49,22 +44,6 @@ app.post('/api/user-data', async (req, res) => {
     res.json(user);
 });
 
-// Запрос на вывод средств
-app.post('/api/withdraw', async (req, res) => {
-    const { initData, amount } = req.body;
-    if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
-    const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
-    
-    const user = await User.findOne({ tg_id: tgUser.id });
-    if (user.balance < amount) return res.status(400).json({ error: "Недостаточно Stars" });
-
-    user.balance -= amount;
-    await user.save();
-    await Withdraw.create({ tg_id: tgUser.id, amount });
-    
-    res.json({ success: true, newBalance: user.balance });
-});
-
 app.post('/api/create-invoice', async (req, res) => {
     const { initData, amount } = req.body;
     if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
@@ -79,6 +58,18 @@ app.post('/api/create-invoice', async (req, res) => {
         });
         res.json({ invoiceLink: response.data.result });
     } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+app.post('/api/withdraw', async (req, res) => {
+    const { initData, amount } = req.body;
+    if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
+    const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
+    const user = await User.findOne({ tg_id: tgUser.id });
+    if (user.balance < amount) return res.status(400).send("No funds");
+    user.balance -= amount;
+    await user.save();
+    await Withdraw.create({ tg_id: tgUser.id, amount });
+    res.json({ success: true, balance: user.balance });
 });
 
 const PORT = process.env.PORT || 3000;
