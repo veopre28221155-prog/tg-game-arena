@@ -23,7 +23,7 @@
         canvas { background: #000; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
         #countdown { font-size: 80px; font-weight: bold; color: var(--btn); display: none; margin: 40px; }
         .controls { display: none; grid-template-columns: repeat(3, 70px); gap: 10px; margin-top: 15px; }
-        .ctrl-btn { width: 70px; height: 70px; background: var(--sec-bg); border-radius: 50%; border: 1px solid #ddd; font-size: 24px; color: var(--text); display: flex; align-items: center; justify-content: center; user-select: none; }
+        .ctrl-btn { width: 70px; height: 70px; background: var(--sec-bg); border-radius: 50%; border: 1px solid #ddd; font-size: 24px; color: var(--text); display: flex; align-items: center; justify-content: center; }
         #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--hint); cursor: pointer; }
         .nav-item.active { color: var(--btn); }
@@ -99,17 +99,15 @@
     tg.expand();
 
     async function load() {
-        try {
-            const r = await fetch(`${API}/api/user-data`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ initData: tg.initData })
-            });
-            const d = await r.json();
-            balance = d.balance;
-            document.getElementById('u-balance').innerText = balance;
-            document.getElementById('u-name').innerText = d.name;
-        } catch(e) { console.error(e); }
+        const r = await fetch(`${API}/api/user-data`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData })
+        });
+        const d = await r.json();
+        balance = d.balance;
+        document.getElementById('u-balance').innerText = balance;
+        document.getElementById('u-name').innerText = d.name;
     }
 
     // УПРАВЛЕНИЕ КЛАВИАТУРОЙ (ПК)
@@ -134,7 +132,7 @@
         }
     }
 
-    // ЛОГИКА ТЕТРИСА
+    // ТЕТРИС
     let board, piece, tetrisScore;
     function runTetris() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
@@ -149,9 +147,8 @@
 
     function spawnPiece() {
         const types = ['I','J','L','O','S','T','Z'];
-        const t = types[Math.floor(Math.random()*types.length)];
+        const t = types[Math.floor(Math.random()*7)];
         piece = { pos: {x: 4, y: 0}, matrix: createPiece(t) };
-        if(collide()) location.reload();
     }
 
     function createPiece(type) {
@@ -221,7 +218,7 @@
         if(collide()) piece.matrix = old;
     }
 
-    // ЛОГИКА ЗМЕЙКИ
+    // ЗМЕЙКА
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5}, score = 0;
@@ -239,12 +236,12 @@
         }, 150);
     }
 
-    // ИНИЦИАЛИЗАЦИЯ И ИНВАЙТЫ
+    // ЛОББИ И ИНВАЙТЫ
     async function checkInvite() {
         const startParam = tg.initDataUnsafe.start_param;
         if (startParam && startParam.startsWith('lobby_')) {
             const lobbyId = startParam.replace('lobby_', '');
-            tg.showConfirm(`Вы приглашены в игру! Присоединиться?`, async (ok) => {
+            tg.showConfirm(`Вы приглашены в лобби! Присоединиться?`, async (ok) => {
                 if (ok) {
                     const r = await fetch(`${API}/api/join-lobby`, {
                         method: 'POST',
