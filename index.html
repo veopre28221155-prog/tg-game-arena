@@ -30,7 +30,7 @@
             <h3>Игры</h3>
             <div style="display:flex; gap:10px;">
                 <button class="btn" id="s-snake" onclick="setGame('snake')">🐍 Змейка</button>
-                <button class="btn" style="opacity:0.5" id="s-tetris" onclick="setGame('tetris')">🧱 Тетрис</button>
+                <button class="btn" id="s-tetris" onclick="setGame('tetris')" style="opacity:0.5">🧱 Тетрис</button>
             </div>
         </div>
         <div id="arena-menu" class="card">
@@ -69,22 +69,20 @@
     tg.expand();
     tg.ready();
 
-    // ЖЕЛЕЗНОЕ УПРАВЛЕНИЕ
+    // 1. УПРАВЛЕНИЕ (КЛАВИАТУРА ПК)
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowUp') handleInput('up');
-        if (e.key === 'ArrowDown') handleInput('down');
-        if (e.key === 'ArrowLeft') handleInput('left');
-        if (e.key === 'ArrowRight') handleInput('right');
-    });
-
-    function handleInput(dir) {
         if (currentGame === 'snake') {
-            if (dir === 'up' && moveDir.y === 0) moveDir = {x:0, y:-1};
-            if (dir === 'down' && moveDir.y === 0) moveDir = {x:0, y:1};
-            if (dir === 'left' && moveDir.x === 0) moveDir = {x:-1, y:0};
-            if (dir === 'right' && moveDir.x === 0) moveDir = {x:1, y:0};
+            if (e.key === 'ArrowUp' && moveDir.y === 0) moveDir = {x:0, y:-1};
+            if (e.key === 'ArrowDown' && moveDir.y === 0) moveDir = {x:0, y:1};
+            if (e.key === 'ArrowLeft' && moveDir.x === 0) moveDir = {x:-1, y:0};
+            if (e.key === 'ArrowRight' && moveDir.x === 0) moveDir = {x:1, y:0};
+        } else if (currentGame === 'tetris') {
+            if (e.key === 'ArrowLeft') tetrisMove(-1);
+            if (e.key === 'ArrowRight') tetrisMove(1);
+            if (e.key === 'ArrowDown') tetrisDrop();
+            if (e.key === 'ArrowUp') tetrisRotate();
         }
-    }
+    });
 
     async function load() {
         const r = await fetch(`${API}/api/user-data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
@@ -93,7 +91,7 @@
         document.getElementById('u-name').innerText = d.name;
     }
 
-    // КНОПКА ДРУГА
+    // 2. КНОПКА ДРУГА (ФИКС)
     document.getElementById('friend-btn').addEventListener('click', () => {
         const lobbyId = Math.random().toString(36).substr(2, 9);
         tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats']);
@@ -113,6 +111,7 @@
         currentGame = g;
         document.getElementById('s-snake').style.opacity = g === 'snake' ? '1' : '0.5';
         document.getElementById('s-tetris').style.opacity = g === 'tetris' ? '1' : '0.5';
+        document.getElementById('mode-info').innerText = "Выбрано: " + (g === 'snake' ? 'Змейка' : 'Тетрис');
     }
 
     function preStart(practice) {
@@ -130,29 +129,83 @@
                 clearInterval(t);
                 cd.style.display = 'none';
                 document.getElementById('gameCanvas').style.display = 'block';
-                runSnake();
+                if(currentGame === 'snake') runSnake(); else runTetris();
             }
         }, 1000);
     }
 
+    // 3. ДВИЖОК ЗМЕЙКИ
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
-        currentScore = 0;
-        moveDir = {x:1, y:0};
+        currentScore = 0; moveDir = {x:1, y:0};
         gameLoop = setInterval(() => {
             let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
             if(h.x<0||h.x>=20||h.y<0||h.y>=26) { stopGame(); return; }
             s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
-                currentScore++;
-                document.getElementById('score-text').innerText = "Score: " + currentScore;
+                currentScore++; document.getElementById('score-text').innerText = "Score: " + currentScore;
                 f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
             } else s.pop();
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,400);
             ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
             ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
         }, 150);
+    }
+
+    // 4. ДВИЖОК ТЕТРИСА (ПОЛНЫЙ)
+    let tBoard, tPiece;
+    function runTetris() {
+        const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
+        tBoard = Array(20).fill().map(() => Array(10).fill(0));
+        currentScore = 0; spawnTPiece();
+        gameLoop = setInterval(() => {
+            tetrisDrop();
+            drawTetris(ctx);
+        }, 600);
+    }
+    function spawnTPiece() {
+        const t = 'IJOSTZL'[Math.random()*7|0];
+        tPiece = { pos: {x:3, y:0}, matrix: createTPiece(t) };
+        if (tCollide()) stopGame();
+    }
+    function createTPiece(t) {
+        if(t==='I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
+        if(t==='T') return [[0,1,0],[1,1,1],[0,0,0]];
+        if(t==='O') return [[1,1],[1,1]];
+        return [[1,1,0],[0,1,1],[0,0,0]];
+    }
+    function tetrisDrop() {
+        tPiece.pos.y++;
+        if(tCollide()){ tPiece.pos.y--; tMerge(); spawnTPiece(); tClear(); }
+    }
+    function tCollide() {
+        const [m, o] = [tPiece.matrix, tPiece.pos];
+        for(let y=0; y<m.length; y++) for(let x=0; x<m[y].length; x++)
+            if(m[y][x] && (tBoard[y+o.y] && tBoard[y+o.y][x+o.x]) !== 0) return true;
+        return false;
+    }
+    function tMerge() {
+        tPiece.matrix.forEach((r,y)=>r.forEach((v,x)=>{ if(v) tBoard[y+tPiece.pos.y][x+tPiece.pos.x]=1; }));
+    }
+    function tClear() {
+        outer: for(let y=tBoard.length-1; y>0; y--) {
+            for(let x=0; x<tBoard[y].length; x++) if(!tBoard[y][x]) continue outer;
+            tBoard.splice(y,1); tBoard.unshift(Array(10).fill(0));
+            currentScore += 10; document.getElementById('score-text').innerText = "Score: "+currentScore;
+            y++;
+        }
+    }
+    function drawTetris(ctx) {
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,300,400);
+        tBoard.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle='#2481cc'; ctx.fillRect(x*30, y*20, 29, 19); } }));
+        tPiece.matrix.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle='#fff'; ctx.fillRect((x+tPiece.pos.x)*30, (y+tPiece.pos.y)*20, 29, 19); } }));
+    }
+    function tetrisMove(d){ tPiece.pos.x += d; if(tCollide()) tPiece.pos.x -= d; }
+    function tetrisRotate(){ 
+        const old=tPiece.matrix; 
+        tPiece.matrix = tPiece.matrix[0].map((_,i)=>tPiece.matrix.map(r=>r[i]).reverse());
+        if(tCollide()) tPiece.matrix = old;
     }
 
     function stopGame() {
@@ -163,9 +216,8 @@
 
     async function submitScore() {
         const r = await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) });
-        const l = await r.json();
         document.getElementById('result-overlay').style.display = 'flex';
-        document.getElementById('res-score').innerText = "Твой счет отправлен в лобби!";
+        document.getElementById('res-score').innerText = "Твой счет отправлен!";
     }
 
     function tab(id, el) {
