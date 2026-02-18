@@ -16,11 +16,18 @@ mongoose.connect(MONGO_URI).then(() => console.log('✅ DB Connected'));
 const UserSchema = new mongoose.Schema({
     tg_id: { type: Number, unique: true },
     name: String,
-    balance: { type: Number, default: 1000 },
-    record_snake: { type: Number, default: 0 },
-    record_tetris: { type: Number, default: 0 }
+    balance: { type: Number, default: 1000 }
 });
 const User = mongoose.model('User', UserSchema);
+
+// Схема для заявок на вывод
+const WithdrawSchema = new mongoose.Schema({
+    tg_id: Number,
+    amount: Number,
+    status: { type: String, default: 'pending' },
+    date: { type: Date, default: Date.now }
+});
+const Withdraw = mongoose.model('Withdraw', WithdrawSchema);
 
 function verifyTelegramData(initData) {
     if (!initData) return false;
@@ -40,6 +47,22 @@ app.post('/api/user-data', async (req, res) => {
     let user = await User.findOne({ tg_id: tgUser.id });
     if (!user) user = await User.create({ tg_id: tgUser.id, name: tgUser.first_name });
     res.json(user);
+});
+
+// Запрос на вывод средств
+app.post('/api/withdraw', async (req, res) => {
+    const { initData, amount } = req.body;
+    if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
+    const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
+    
+    const user = await User.findOne({ tg_id: tgUser.id });
+    if (user.balance < amount) return res.status(400).json({ error: "Недостаточно Stars" });
+
+    user.balance -= amount;
+    await user.save();
+    await Withdraw.create({ tg_id: tgUser.id, amount });
+    
+    res.json({ success: true, newBalance: user.balance });
 });
 
 app.post('/api/create-invoice', async (req, res) => {
