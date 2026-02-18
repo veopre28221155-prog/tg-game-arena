@@ -11,7 +11,7 @@
         canvas { background-color: #020617; border: 2px solid #334155; border-radius: 8px; image-rendering: pixelated; width: 100%; max-width: 280px; height: auto; }
         .menu-card { background: #1e293b; border-radius: 16px; padding: 15px; border: 1px solid #475569; cursor: pointer; }
         .joypad { position: fixed; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 20px; z-index: 50; }
-        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); gap: 8px; }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 60px); gap: 8px; }
         .btn-direction { width: 60px; height: 60px; background: #1e293b; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 0 #000; font-size: 28px; color: #94a3b8; touch-action: manipulation; }
         .btn-action { width: 85px; height: 85px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 6px 0 #000; text-align: center; touch-action: manipulation; }
         .btn-direction:active, .btn-action:active { transform: translateY(4px); box-shadow: 0 2px 0 #000; background: #3b82f6; color: white; }
@@ -20,91 +20,59 @@
     </style>
 </head>
 <body class="flex flex-col items-center">
-
     <nav id="nav-bar" class="w-full flex justify-around bg-slate-900 border-b border-slate-800 p-2">
-        <button onclick="showScreen('screen-main')" id="tab-main" class="tab-active py-2 px-4 font-bold">ИГРЫ</button>
-        <button onclick="showProfile()" id="tab-profile" class="py-2 px-4 font-bold text-slate-400">ПРОФИЛЬ</button>
+        <button onclick="showScreen('screen-main')" id="tab-main" class="tab-active py-2 px-4 font-bold text-sm">АРЕНА</button>
+        <button onclick="showProfile()" id="tab-profile" class="py-2 px-4 font-bold text-slate-400 text-sm">ПРОФИЛЬ</button>
     </nav>
-
     <div id="screen-main" class="p-6 w-full space-y-4 max-w-md">
         <h1 class="text-3xl font-black text-center my-4 text-blue-400 italic">RETRO ARENA</h1>
-        <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500">
-            <h2 class="text-xl font-bold">🎮 Обычная игра</h2>
-            <p class="text-sm text-slate-400">Бесплатно против бота</p>
-        </div>
-        <div onclick="showMode('tournament')" class="menu-card border-l-4 border-l-yellow-500">
-            <h2 class="text-xl font-bold">🏆 Турнир</h2>
-            <p class="text-sm text-slate-400">Игра на звезды (Stars)</p>
-        </div>
-        <div onclick="inviteFriend()" class="menu-card border-l-4 border-l-blue-500 text-center">
-            <h2 class="text-lg font-bold">👥 Пригласить друга</h2>
-        </div>
+        <div onclick="showMode('casual')" class="menu-card border-l-4 border-l-green-500"><h2 class="text-xl font-bold">🎮 Одиночная игра</h2><p class="text-sm text-slate-400">Тренировка бесплатно</p></div>
+        <div onclick="showMode('friend')" class="menu-card border-l-4 border-l-blue-500"><h2 class="text-xl font-bold">🏆 Турнир с другом</h2><p class="text-sm text-yellow-400">Игра на Stars</p></div>
     </div>
-
     <div id="screen-profile" class="p-6 w-full hidden max-w-md text-center">
         <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-xl mb-6">
-            <div id="user-avatar" class="w-16 h-16 bg-blue-500 rounded-full mx-auto mb-3 flex items-center justify-center text-xl font-bold">?</div>
             <h2 id="user-name" class="text-lg font-bold">Gamer</h2>
             <p class="text-yellow-400 text-2xl font-black my-2">⭐ <span id="user-balance">0</span></p>
         </div>
-        <button onclick="topUp()" class="w-full bg-yellow-500 py-4 rounded-2xl font-bold text-black mb-3">ПОПОЛНИТЬ БАЛАНС</button>
+        <button onclick="topUp()" class="w-full bg-yellow-500 py-4 rounded-2xl font-bold text-black mb-3">ПОПОЛНИТЬ</button>
         <button onclick="showScreen('screen-main')" class="w-full bg-slate-700 py-4 rounded-2xl font-bold text-slate-300">НАЗАД</button>
     </div>
-
     <div id="screen-setup" class="p-6 w-full hidden max-w-md">
         <button onclick="showScreen('screen-main')" class="mb-4 text-blue-400">← Назад</button>
-        <h2 class="text-2xl font-bold mb-6">Настройка</h2>
+        <h2 class="text-2xl font-bold mb-6 text-center">Настройка</h2>
         <div class="space-y-6">
             <div class="flex gap-2">
                 <button id="opt-snake" onclick="setGame('snake')" class="flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white">SNAKE</button>
                 <button id="opt-tetris" onclick="setGame('tetris')" class="flex-1 p-4 rounded-xl bg-slate-700">TETRIS</button>
             </div>
-            <div id="price-block" class="hidden bg-slate-800 p-4 rounded-xl">
-                <p class="mb-2 font-semibold text-yellow-400">Взнос за участие:</p>
-                <select id="tourney-price" class="w-full bg-slate-900 p-3 rounded-lg border border-slate-700">
-                    <option value="10">⭐ 10 Stars</option>
-                    <option value="50">⭐ 50 Stars</option>
-                    <option value="100">⭐ 100 Stars</option>
-                </select>
+            <div id="price-block" class="hidden bg-slate-800 p-4 rounded-xl text-center">
+                <p class="mb-2 font-semibold text-yellow-400 text-sm text-center">Ставка (Stars):</p>
+                <input type="number" id="tourney-price" value="10" min="10" class="w-full bg-slate-900 p-3 rounded-lg border border-slate-700 text-center text-white">
             </div>
             <button onclick="processLobbyEntry()" class="w-full bg-green-500 py-4 rounded-2xl font-bold text-xl">ПОИСК</button>
         </div>
     </div>
-
     <div id="screen-lobby" class="p-6 w-full hidden max-w-md text-center">
-        <button onclick="cancelLobby()" class="mb-4 text-blue-400 text-left block">← Отмена</button>
+        <button onclick="cancelLobby()" class="mb-4 text-red-400 text-left block">← Отмена</button>
         <h2 class="text-xl font-bold mb-6">ПОДГОТОВКА</h2>
-        <div class="space-y-4 mb-6">
+        <div class="space-y-4 mb-6 text-white">
             <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold">ME</div>
-                    <div class="text-left"><p class="font-bold">Вы</p><p class="text-xs text-slate-400" id="lobby-stats">Рекорд: 0</p></div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400">Готов</span>
-                    <input type="checkbox" id="player-ready" class="lobby-checkbox" onchange="toggleReady()">
-                </div>
+                <span>Вы: <b class="text-green-400">Готов</b></span>
+                <input type="checkbox" id="player-ready" class="lobby-checkbox" onchange="toggleReady()">
             </div>
             <div class="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700 opacity-60">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center font-bold">AI</div>
-                    <p class="font-bold">Бот</p>
-                </div>
+                <span>Бот: <b class="text-green-400">Готов</b></span>
                 <input type="checkbox" checked disabled class="lobby-checkbox">
             </div>
         </div>
-        <div id="wait-timer" class="text-yellow-500 font-mono text-lg mb-2">Ожидание: 60с</div>
-        <div id="countdown" class="hidden text-6xl font-black">3</div>
+        <div id="countdown" class="hidden text-6xl font-black text-white">3</div>
     </div>
-
     <div id="screen-game" class="hidden w-full h-screen bg-black">
         <div class="flex justify-between px-6 py-2 bg-slate-900 border-b border-slate-800">
-            <div><p class="text-[10px] text-slate-500 uppercase">YOU</p><p id="my-score" class="text-xl font-mono text-green-400 font-bold">0</p></div>
-            <div class="text-right"><p class="text-[10px] text-slate-500">BOT</p><p id="opp-score" class="text-xl font-mono text-red-400 font-bold">0</p></div>
+            <div><p id="my-score" class="text-xl font-mono text-green-400 font-bold">0</p></div>
+            <div><p id="opp-score" class="text-xl font-mono text-red-400 font-bold">0</p></div>
         </div>
-        <div class="flex justify-center mt-4">
-            <canvas id="mainCanvas"></canvas>
-        </div>
+        <div class="flex justify-center mt-4"><canvas id="mainCanvas"></canvas></div>
         <div class="joypad">
             <div class="d-pad">
                 <div></div><button class="btn-direction" id="btn-up">↑</button><div></div>
@@ -115,241 +83,50 @@
             <button class="btn-action bg-blue-600" id="btn-rotate">ROTATE</button>
         </div>
     </div>
-
     <div id="screen-results" class="hidden p-8 text-center w-full max-w-md">
         <h2 class="text-4xl font-black mb-6 text-yellow-400">ФИНАЛ</h2>
         <div class="bg-slate-800 p-6 rounded-3xl space-y-4 border border-slate-700 shadow-2xl">
-            <div class="flex justify-between text-xl"><span>Ваш счет:</span> <span id="res-my" class="text-green-400 font-bold">0</span></div>
+            <div class="flex justify-between text-xl"><span>Вы:</span> <span id="res-my" class="text-green-400 font-bold">0</span></div>
             <div class="flex justify-between text-xl"><span>Бот:</span> <span id="res-opp" class="text-red-400 font-bold">0</span></div>
-            <div id="res-msg" class="text-3xl font-black pt-4 border-t border-slate-700">ПОБЕДА!</div>
+            <div id="res-msg" class="text-3xl font-black pt-4 border-t border-slate-700 text-yellow-400">ПОБЕДА!</div>
         </div>
-        <div class="flex flex-col gap-3 mt-8">
-            <button onclick="goToLobby()" class="w-full bg-green-500 py-4 rounded-xl font-bold text-lg">ИГРАТЬ СНОВА</button>
-            <button onclick="location.reload()" class="w-full bg-slate-700 py-4 rounded-xl font-bold text-slate-300">В МЕНЮ</button>
-        </div>
+        <button onclick="location.reload()" class="mt-8 w-full bg-blue-600 py-4 rounded-2xl font-bold text-white">В МЕНЮ</button>
     </div>
-
     <script>
-        const tg = window.Telegram.WebApp;
-        const canvas = document.getElementById('mainCanvas');
-        const ctx = canvas.getContext('2d');
-        let gameLoop, currentGame = 'snake', currentMode = 'casual', myScore = 0, oppScore = 0;
-        let balance = parseInt(localStorage.getItem('user_balance')) || 500;
-        let waitTimer, waitSeconds = 60;
-
-        // --- NAVIGATION ---
-        function showScreen(id) {
-            ['screen-main', 'screen-profile', 'screen-setup', 'screen-lobby', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-            document.getElementById('nav-bar').classList.toggle('hidden', id === 'screen-game' || id === 'screen-lobby' || id === 'screen-results');
-        }
-
-        function showMode(mode) {
-            currentMode = mode;
-            document.getElementById('price-block').classList.toggle('hidden', mode === 'casual');
-            showScreen('screen-setup');
-        }
-
-        function setGame(game) {
-            currentGame = game;
-            document.getElementById('opt-snake').className = game === 'snake' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
-            document.getElementById('opt-tetris').className = game === 'tetris' ? 'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white' : 'flex-1 p-4 rounded-xl bg-slate-700';
-            document.getElementById('btn-rotate').style.opacity = game === 'snake' ? '0.2' : '1';
-        }
-
-        function showProfile() {
-            document.getElementById('user-name').innerText = tg.initDataUnsafe.user?.first_name || "Gamer";
-            document.getElementById('user-balance').innerText = balance;
-            showScreen('screen-profile');
-        }
-
-        // --- LOBBY ---
-        function processLobbyEntry() {
+        const tg = window.Telegram.WebApp; tg.expand();
+        const canvas = document.getElementById('mainCanvas'); const ctx = canvas.getContext('2d');
+        let gameLoop, currentGame='snake', currentMode='casual', myScore=0, oppScore=0, balance=parseInt(localStorage.getItem('user_balance')) || 500;
+        function showScreen(id){['screen-main','screen-profile','screen-setup','screen-lobby','screen-game','screen-results'].forEach(s=>document.getElementById(s).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.getElementById('nav-bar').style.display = (id==='screen-game'||id==='screen-lobby'||id==='screen-results') ? 'none' : 'flex';}
+        function showMode(m){currentMode=m;document.getElementById('price-block').classList.toggle('hidden',m==='casual');showScreen('screen-setup');}
+        function setGame(g){currentGame=g;document.getElementById('opt-snake').className=g==='snake'?'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white':'flex-1 p-4 rounded-xl bg-slate-700';document.getElementById('opt-tetris').className=g==='tetris'?'flex-1 p-4 rounded-xl bg-blue-600 border-2 border-white':'flex-1 p-4 rounded-xl bg-slate-700';document.getElementById('btn-rotate').style.opacity=g==='snake'?'0.2':'1';}
+        function showProfile(){document.getElementById('user-name').innerText=tg.initDataUnsafe.user?.first_name||"Gamer";document.getElementById('user-balance').innerText=balance;showScreen('screen-profile');}
+        function processLobbyEntry(){
             if(currentMode === 'tournament') {
                 const price = parseInt(document.getElementById('tourney-price').value);
                 if(balance < price) { tg.showAlert("Недостаточно Stars!"); return; }
                 balance -= price; localStorage.setItem('user_balance', balance);
             }
-            goToLobby();
+            showScreen('screen-lobby'); document.getElementById('player-ready').checked = false; document.getElementById('countdown').classList.add('hidden');
         }
-
-        function goToLobby() {
-            showScreen('screen-lobby');
-            document.getElementById('player-ready').checked = false;
-            document.getElementById('countdown').classList.add('hidden');
-            document.getElementById('wait-timer').classList.remove('hidden');
-            waitSeconds = 60;
-            const record = localStorage.getItem(currentGame + 'Record') || 0;
-            document.getElementById('lobby-stats').innerText = `Рекорд: ${record}`;
-            clearInterval(waitTimer);
-            waitTimer = setInterval(() => {
-                waitSeconds--;
-                document.getElementById('wait-timer').innerText = `Ожидание: ${waitSeconds}с`;
-                if(waitSeconds <= 0) { cancelLobby(); tg.showAlert("Время вышло."); }
-            }, 1000);
-        }
-
-        function toggleReady() {
-            if(document.getElementById('player-ready').checked) {
-                clearInterval(waitTimer);
-                document.getElementById('wait-timer').classList.add('hidden');
-                const cd = document.getElementById('countdown');
-                cd.classList.remove('hidden');
-                let c = 3; cd.innerText = c;
-                const t = setInterval(() => {
-                    c--; cd.innerText = c;
-                    if(c <= 0) { clearInterval(t); initGame(); }
-                }, 1000);
-            }
-        }
-
-        function cancelLobby() {
-            if(currentMode === 'tournament') {
-                balance += parseInt(document.getElementById('tourney-price').value);
-                localStorage.setItem('user_balance', balance);
-            }
-            clearInterval(waitTimer);
-            showScreen('screen-setup');
-        }
-
-        function initGame() {
-            showScreen('screen-game');
-            myScore = 0; oppScore = 0;
-            if(currentGame === 'snake') initSnake(); else initTetris();
-        }
-
-        function finish() {
-            clearInterval(gameLoop);
-            const best = parseInt(localStorage.getItem(currentGame + 'Record') || 0);
-            if(myScore > best) localStorage.setItem(currentGame + 'Record', myScore);
-            document.getElementById('res-my').innerText = myScore;
-            document.getElementById('res-opp').innerText = oppScore;
-            const win = myScore >= oppScore;
-            document.getElementById('res-msg').innerText = win ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
-            if(win && currentMode === 'tournament') {
-                balance += Math.floor(parseInt(document.getElementById('tourney-price').value) * 1.8);
-                localStorage.setItem('user_balance', balance);
-            }
-            showScreen('screen-results');
-        }
-
-        // --- CONTROLS ---
-        let sDir = {x:0, y:-1};
-        const handleInput = (cmd) => {
-            if(currentGame === 'snake') {
-                if(cmd==='up' && sDir.y !== 1) sDir = {x:0, y:-1};
-                if(cmd==='down' && sDir.y !== -1) sDir = {x:0, y:1};
-                if(cmd==='left' && sDir.x !== 1) sDir = {x:-1, y:0};
-                if(cmd==='right' && sDir.x !== -1) sDir = {x:1, y:0};
-            } else if(currentGame === 'tetris') {
-                if(cmd==='left') tMove(-1);
-                if(cmd==='right') tMove(1);
-                if(cmd==='down') tDrop();
-                if(cmd==='rotate') tRotate();
-                if(cmd==='up') tRotate();
-            }
-        };
-
-        ['up','down','left','right','rotate'].forEach(id => {
-            const el = document.getElementById('btn-' + id);
-            ['touchstart', 'mousedown'].forEach(ev => el.addEventListener(ev, (e) => {
-                e.preventDefault(); handleInput(id);
-            }));
-        });
-
-        window.addEventListener('keydown', (e) => {
-            const keys = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', ' ':'rotate'};
-            if(keys[e.key]) handleInput(keys[e.key]);
-        });
-
-        // --- SNAKE ENGINE ---
-        function initSnake() {
-            canvas.width = 300; canvas.height = 400;
-            let snk = [{x:10, y:15}, {x:10, y:16}]; let apple = {x:5, y:5}; sDir = {x:0, y:-1};
-            gameLoop = setInterval(() => {
-                const head = {x: snk[0].x + sDir.x, y: snk[0].y + sDir.y};
-                if(head.x<0||head.x>=20||head.y<0||head.y>=26||snk.some(p=>p.x===head.x&&p.y===head.y)) return finish();
-                snk.unshift(head);
-                if(head.x===apple.x && head.y===apple.y) {
-                    myScore += 10;
-                    apple = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*26)};
-                } else snk.pop();
-                if(Math.random()>0.985) oppScore+=10;
-                ctx.fillStyle='#020617'; ctx.fillRect(0,0,300,400);
-                ctx.fillStyle='#4ade80'; snk.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
-                ctx.fillStyle='#f87171'; ctx.fillRect(apple.x*15, apple.y*15, 14, 14);
-                document.getElementById('my-score').innerText = myScore;
-                document.getElementById('opp-score').innerText = oppScore;
-            }, 150);
-        }
-
-        // --- TETRIS ENGINE ---
-        let tBoard, tPiece, tPos;
-        const SHAPES = [[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]]];
-        function initTetris() {
-            canvas.width = 200; canvas.height = 400;
-            tBoard = Array(20).fill().map(() => Array(10).fill(0));
-            newPiece();
-            gameLoop = setInterval(() => {
-                if(!tMove(0,1)) { tLock(); tClear(); newPiece(); }
-                if(Math.random()>0.99) oppScore += 100;
-                tDraw();
-            }, 400);
-        }
-        function newPiece() {
-            tPiece = SHAPES[Math.floor(Math.random()*7)];
-            tPos = {x: 3, y: 0};
-            if(tCollide()) finish();
-        }
-        function tMove(dx, dy=0) {
-            tPos.x += dx; tPos.y += dy;
-            if(tCollide()) { tPos.x -= dx; tPos.y -= dy; return false; }
-            return true;
-        }
-        function tDrop() { while(tMove(0,1)); tLock(); tClear(); newPiece(); }
-        function tRotate() {
-            const p = tPiece;
-            tPiece = tPiece[0].map((_, i) => tPiece.map(row => row[i]).reverse());
-            if(tCollide()) tPiece = p;
-        }
-        function tCollide() {
-            return tPiece.some((row, y) => row.some((v, x) => {
-                let bx = tPos.x + x, by = tPos.y + y;
-                return v && (bx < 0 || bx >= 10 || by >= 20 || (by >= 0 && tBoard[by][bx]));
-            }));
-        }
-        function tLock() {
-            tPiece.forEach((row, y) => row.forEach((v, x) => {
-                if(v) tBoard[tPos.y + y][tPos.x + x] = 1;
-            }));
-        }
-        function tClear() {
-            for(let y=19; y>=0; y--) {
-                if(tBoard[y].every(v => v)) {
-                    tBoard.splice(y, 1); tBoard.unshift(Array(10).fill(0));
-                    myScore += 100; y++;
-                }
-            }
-        }
-        function tDraw() {
-            ctx.fillStyle='#020617'; ctx.fillRect(0,0,200,400);
-            tBoard.forEach((row, y) => row.forEach((v, x) => {
-                if(v) { ctx.fillStyle='#334155'; ctx.fillRect(x*20, y*20, 19, 19); }
-            }));
-            ctx.fillStyle='#3b82f6';
-            tPiece.forEach((row, y) => row.forEach((v, x) => {
-                if(v) ctx.fillRect((tPos.x+x)*20, (tPos.y+y)*20, 19, 19);
-            }));
-            document.getElementById('my-score').innerText = myScore;
-            document.getElementById('opp-score').innerText = oppScore;
-        }
-
-        function topUp() {
-            tg.showConfirm("Купить 100 Stars?", (ok) => { if(ok) { balance += 100; localStorage.setItem('user_balance', balance); showProfile(); }});
-        }
-        function inviteFriend() {
-            tg.shareToChat("Давай сразимся! https://t.me/YOUR_BOT_USERNAME");
-        }
+        function toggleReady(){if(document.getElementById('player-ready').checked){const cd=document.getElementById('countdown');cd.classList.remove('hidden');let c=3;cd.innerText=c;const t=setInterval(()=>{c--;cd.innerText=c;if(c<=0){clearInterval(t);initGame();}},1000);}}
+        function cancelLobby(){if(currentMode === 'tournament') { balance += parseInt(document.getElementById('tourney-price').value); localStorage.setItem('user_balance', balance); } showScreen('screen-setup');}
+        function initGame(){showScreen('screen-game');myScore=0;oppScore=0;if(currentGame==='snake')initSnake();else initTetris();}
+        function finish(){clearInterval(gameLoop);document.getElementById('res-my').innerText=myScore;document.getElementById('res-opp').innerText=oppScore;const win = myScore >= oppScore;document.getElementById('res-msg').innerText = win ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";if(win && currentMode === 'tournament'){ balance += Math.floor(parseInt(document.getElementById('tourney-price').value) * 1.8); localStorage.setItem('user_balance', balance);}showScreen('screen-results');}
+        let sDir={x:0,y:-1}, tPos={x:4,y:0}, tBoard, tPiece;
+        const SHAPES=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]]];
+        function handleInput(c){if(currentGame==='snake'){if(c==='up'&&sDir.y!==1)sDir={x:0,y:-1};if(c==='down'&&sDir.y!==-1)sDir={x:0,y:1};if(c==='left'&&sDir.x!==1)sDir={x:-1,y:0};if(c==='right'&&sDir.x!==-1)sDir={x:1,y:0};}else{if(c==='left')tMove(-1,0);if(c==='right')tMove(1,0);if(c==='down')tMove(0,1);if(c==='rotate'||c==='up'){const p=tPiece;tPiece=tPiece[0].map((_,i)=>tPiece.map(r=>r[i]).reverse());if(tCollide())tPiece=p;}tDraw();}}
+        function tCollide(){return tPiece.some((r,y)=>r.some((v,x)=>{let bx=tPos.x+x,by=tPos.y+y;return v&&(bx<0||bx>=10||by>=20||(by>=0&&tBoard[by][bx]));}));}
+        function tMove(dx,dy){tPos.x+=dx;tPos.y+=dy;if(tCollide()){tPos.x-=dx;tPos.y-=dy;return false;}return true;}
+        function tLock(){tPiece.forEach((r,y)=>r.forEach((v,x)=>{if(v)tBoard[tPos.y+y][tPos.x+x]=1;}));}
+        function tClear(){for(let y=19;y>=0;y--){if(tBoard[y].every(v=>v)){tBoard.splice(y,1);tBoard.unshift(Array(10).fill(0));myScore+=100;y++;}}}
+        function initSnake(){canvas.width=300;canvas.height=400;let snk=[{x:10,y:15},{x:10,y:16}],apl={x:5,y:5};sDir={x:0,y:-1};gameLoop=setInterval(()=>{let h={x:snk[0].x+sDir.x,y:snk[0].y+sDir.y};if(h.x<0||h.x>=20||h.y<0||h.y>=26||snk.some(p=>p.x===h.x&&p.y===h.y))return finish();snk.unshift(h);if(h.x===apl.x&&h.y===apl.y){myScore+=10;apl={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*26)};}else snk.pop();if(Math.random()>0.98)oppScore+=10;ctx.fillStyle='#020617';ctx.fillRect(0,0,300,400);ctx.fillStyle='#4ade80';snk.forEach(p=>ctx.fillRect(p.x*15,p.y*15,14,14));ctx.fillStyle='#f87171';ctx.fillRect(apl.x*15,apl.y*15,14,14);document.getElementById('my-score').innerText=myScore;document.getElementById('opp-score').innerText=oppScore;},150);}
+        function initTetris(){canvas.width=200;canvas.height=400;tBoard=Array(20).fill().map(()=>Array(10).fill(0));spawnPiece();gameLoop=setInterval(()=>{if(!tMove(0,1)){tLock();tClear();spawnPiece();}if(Math.random()>0.99)oppScore+=100;tDraw();},400);}
+        function spawnPiece(){tPiece=SHAPES[Math.floor(Math.random()*7)];tPos={x:3,y:0};if(tCollide())finish();}
+        function tDraw(){ctx.fillStyle='#020617';ctx.fillRect(0,0,200,400);tBoard.forEach((r,y)=>r.forEach((v,x)=>{if(v){ctx.fillStyle='#334155';ctx.fillRect(x*20,y*20,19,19);}}));ctx.fillStyle='#3b82f6';tPiece.forEach((r,y)=>r.forEach((v,x)=>{if(v)ctx.fillRect((tPos.x+x)*20,(tPos.y+y)*20,19,19);}));document.getElementById('my-score').innerText=myScore;document.getElementById('opp-score').innerText=oppScore;}
+        ['up','down','left','right','rotate'].forEach(id=>{const el=document.getElementById('btn-'+id);['touchstart','mousedown'].forEach(ev=>el.addEventListener(ev,(e)=>{e.preventDefault();handleInput(id);}));});
+        window.addEventListener('keydown',(e)=>{const keys={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',' ':'rotate'};if(keys[e.key])handleInput(keys[e.key]);});
+        function topUp(){tg.showConfirm("Купить 100 Stars?",(ok)=>{if(ok){balance+=100;showProfile();}});}
+        function inviteFriend(){tg.shareToChat("Давай сразимся! https://t.me/RetroBattleArena_bot");}
     </script>
 </body>
 </html>
