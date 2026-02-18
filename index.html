@@ -15,24 +15,23 @@
             --text: var(--tg-theme-text-color, #000000);
         }
         body { background: var(--sec-bg); color: var(--text); margin: 0; font-family: -apple-system, sans-serif; display: flex; justify-content: center; overflow: hidden; }
-        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; }
+        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
         
         .screen { display: none; flex: 1; padding: 16px; flex-direction: column; align-items: center; overflow-y: auto; }
         .active { display: flex; }
 
-        .card { background: var(--sec-bg); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; box-sizing: border-box; text-align: center; }
+        .card { background: var(--sec-bg); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
         .btn { background: var(--btn); color: var(--btn-text); border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
-        .btn:disabled { opacity: 0.5; cursor: default; }
         
-        #game-canvas { background: #000; border-radius: 8px; display: none; }
-        #countdown { font-size: 80px; font-weight: bold; color: var(--btn); display: none; margin: 20px; }
+        canvas { background: #000; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        #countdown { font-size: 80px; font-weight: bold; color: var(--btn); display: none; margin: 40px; }
+
+        .controls { display: none; grid-template-columns: repeat(3, 70px); gap: 10px; margin-top: 15px; }
+        .ctrl-btn { width: 70px; height: 70px; background: var(--sec-bg); border-radius: 50%; border: 1px solid #ddd; font-size: 24px; color: var(--text); }
 
         #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--hint); cursor: pointer; }
         .nav-item.active { color: var(--btn); }
-
-        .game-controls { display: none; grid-template-columns: repeat(3, 65px); gap: 10px; margin-top: 15px; }
-        .ctrl-btn { width: 65px; height: 65px; background: var(--sec-bg); border-radius: 50%; border: none; font-size: 24px; }
     </style>
 </head>
 <body>
@@ -40,29 +39,29 @@
 <div id="app">
     <div id="arena" class="screen active">
         <div class="card">
-            <h3>Выбор игры</h3>
+            <h3>Игры</h3>
             <div style="display:flex; gap:10px;">
-                <button class="btn" id="sel-snake" onclick="selectGame('snake')">🐍 Змейка</button>
-                <button class="btn" style="background:#888" id="sel-tetris" onclick="selectGame('tetris')">🧱 Тетрис</button>
+                <button class="btn" id="s-snake" onclick="setGame('snake')">🐍 Змейка</button>
+                <button class="btn" style="opacity:0.5" id="s-tetris" onclick="setGame('tetris')">🧱 Тетрис</button>
             </div>
         </div>
         
-        <div id="lobby-card" class="card">
-            <h4 id="lobby-title">Режим: Тренировка</h4>
-            <button class="btn" onclick="startLobby()">🔥 Готов к игре</button>
-            <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" onclick="inviteFriend()">⚔️ Пригласить друга</button>
+        <div id="arena-menu" class="card">
+            <h4 id="mode-info">Выбрано: Змейка</h4>
+            <button class="btn" onclick="preStart()">🔥 ГОТОВ (Тренировка)</button>
+            <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" onclick="tg.switchInlineQuery('invite', ['users'])">⚔️ ИГРАТЬ С ДРУГОМ</button>
         </div>
 
-        <div id="game-zone" style="display:none; flex-direction:column; align-items:center; width:100%;">
+        <div id="game-ui" style="display:none; flex-direction:column; align-items:center;">
             <div id="countdown">3</div>
-            <div id="score" style="font-size: 20px; font-weight:bold; margin-bottom:5px;">Score: 0</div>
-            <canvas id="gameCanvas" width="300" height="300"></canvas>
+            <div id="score" style="font-size:20px; font-weight:bold; margin-bottom:5px;">Score: 0</div>
+            <canvas id="gameCanvas" width="300" height="400"></canvas>
             
-            <div id="controls" class="game-controls">
-                <div></div><button class="ctrl-btn" onclick="setDir(0,-1)">↑</button><div></div>
-                <button class="ctrl-btn" onclick="setDir(-1,0)">←</button>
-                <button class="ctrl-btn" onclick="setDir(0,1)">↓</button>
-                <button class="ctrl-btn" onclick="setDir(1,0)">→</button>
+            <div id="game-ctrls" class="controls">
+                <div></div><button class="ctrl-btn" onclick="move(0,-1)">↑</button><div></div>
+                <button class="ctrl-btn" onclick="move(-1,0)">←</button>
+                <button class="ctrl-btn" onclick="move(0,1)">↓</button>
+                <button class="ctrl-btn" onclick="move(1,0)">→</button>
             </div>
             <button class="btn" style="background:red; width:120px; margin-top:15px;" onclick="location.reload()">Выход</button>
         </div>
@@ -70,28 +69,26 @@
 
     <div id="search" class="screen">
         <div class="card">
-            <h3>Рандомный поиск</h3>
-            <p style="color:var(--hint)">Выберите ставку:</p>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="btn" onclick="tg.showAlert('Поиск на 10 ⭐ начат')">10 ⭐</button>
-                <button class="btn" onclick="tg.showAlert('Поиск на 50 ⭐ начат')">50 ⭐</button>
-                <button class="btn" onclick="tg.showAlert('Поиск на 100 ⭐ начат')">100 ⭐</button>
-                <button class="btn" onclick="tg.showAlert('Поиск на 500 ⭐ начат')">500 ⭐</button>
+            <h3>Рандомный соперник</h3>
+            <p>Ставка (Stars):</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn" onclick="tg.showAlert('Поиск 10')">10</button>
+                <button class="btn" onclick="tg.showAlert('Поиск 50')">50</button>
+                <button class="btn" onclick="tg.showAlert('Поиск 100')">100</button>
+                <button class="btn" onclick="tg.showAlert('Поиск 1000')">1000</button>
             </div>
         </div>
     </div>
 
     <div id="profile" class="screen">
         <div class="card">
-            <h2 id="u-name">Игрок</h2>
-            <div style="font-size: 36px; font-weight: 800; color: var(--btn)">⭐ <span id="u-balance">0</span></div>
+            <h2 id="u-name">Player</h2>
+            <div style="font-size:36px; font-weight:800; color:var(--btn)">⭐ <span id="u-balance">0</span></div>
         </div>
-        
         <div class="card">
-            <h4>Операции</h4>
-            <input type="number" id="stars-amt" value="50" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; margin-bottom:10px;">
-            <button class="btn" onclick="pay()">Пополнить</button>
-            <button class="btn" style="background:#ff3b30" onclick="withdraw()">Вывести средства</button>
+            <input type="number" id="pay-amt" value="50" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; margin-bottom:10px;">
+            <button class="btn" onclick="pay()">ПОПОЛНИТЬ</button>
+            <button class="btn" style="background:#ff3b30" onclick="withdraw()">ВЫВОД СРЕДСТВ</button>
         </div>
     </div>
 
@@ -105,7 +102,7 @@
 <script>
     const tg = window.Telegram.WebApp;
     const API = 'https://tg-game-arena.onrender.com';
-    let balance = 0, currentGame = 'snake', snakeDir = {x:1, y:0};
+    let balance = 0, currentGame = 'snake', moveDir = {x:1, y:0};
 
     tg.expand();
 
@@ -128,79 +125,78 @@
         el.classList.add('active');
     }
 
-    function selectGame(g) {
+    function setGame(g) {
         currentGame = g;
-        document.getElementById('sel-snake').style.opacity = g === 'snake' ? '1' : '0.5';
-        document.getElementById('sel-tetris').style.opacity = g === 'tetris' ? '1' : '0.5';
+        document.getElementById('s-snake').style.opacity = g==='snake'?1:0.5;
+        document.getElementById('s-tetris').style.opacity = g==='tetris'?1:0.5;
+        document.getElementById('mode-info').innerText = "Выбрано: " + (g==='snake'?'Змейка':'Тетрис');
     }
 
-    function startLobby() {
-        document.getElementById('lobby-card').style.display = 'none';
-        document.getElementById('game-zone').style.display = 'flex';
+    function move(x, y) { moveDir = {x, y}; }
+
+    function preStart() {
+        document.getElementById('arena-menu').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'flex';
         const cd = document.getElementById('countdown');
         cd.style.display = 'block';
-        let count = 3;
-        const timer = setInterval(() => {
-            cd.innerText = count;
-            count--;
-            if(count < 0) {
-                clearInterval(timer);
+        let c = 3;
+        const t = setInterval(() => {
+            cd.innerText = c;
+            c--;
+            if(c < 0) {
+                clearInterval(t);
                 cd.style.display = 'none';
                 document.getElementById('gameCanvas').style.display = 'block';
-                document.getElementById('controls').style.display = 'grid';
-                if(currentGame === 'snake') runSnake(); else runTetris();
+                document.getElementById('game-ctrls').style.display = 'grid';
+                if(currentGame==='snake') runSnake(); else runTetris();
             }
         }, 1000);
     }
 
-    function setDir(x, y) { snakeDir = {x, y}; }
-
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
-        let snake = [{x:10, y:10}], food = {x:5, y:5}, score = 0;
+        let s = [{x:10, y:10}], f = {x:5, y:5}, score = 0;
         setInterval(() => {
-            let head = {x: snake[0].x + snakeDir.x, y: snake[0].y + snakeDir.y};
-            if(head.x<0||head.x>=20||head.y<0||head.y>=20) return location.reload();
-            snake.unshift(head);
-            if(head.x===food.x && head.y===food.y) {
-                score++;
-                document.getElementById('score').innerText = "Score: " + score;
-                food = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
-            } else { snake.pop(); }
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,300);
-            ctx.fillStyle = "#2481cc"; snake.forEach(s=>ctx.fillRect(s.x*15, s.y*15, 14, 14));
-            ctx.fillStyle = "red"; ctx.fillRect(food.x*15, food.y*15, 14, 14);
+            let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
+            if(h.x<0||h.x>=20||h.y<0||h.y>=26) return location.reload();
+            s.unshift(h);
+            if(h.x===f.x && h.y===f.y) {
+                score++; document.getElementById('score').innerText = "Score: "+score;
+                f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
+            } else s.pop();
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,400);
+            ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
+            ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
         }, 150);
     }
 
-    function inviteFriend() {
-        tg.switchInlineQuery("play_with_me", ["users", "chats"]);
-    }
-
-    async function withdraw() {
-        const amt = prompt("Введите сумму для вывода Stars:");
-        if(!amt || amt < 50) return tg.showAlert("Минимум 50 Stars!");
-        const r = await fetch(`${API}/api/withdraw`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData, amount: parseInt(amt) })
-        });
-        const d = await r.json();
-        if(d.success) {
-            tg.showAlert("Заявка на вывод создана!");
-            load();
-        }
+    function runTetris() {
+        const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
+        ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,400);
+        ctx.fillStyle = "#fff"; ctx.fillText("TETRIS LOADING...", 100, 200);
+        tg.showAlert("Тетрис почти готов! Пока играй в Змейку.");
     }
 
     async function pay() {
-        const amt = document.getElementById('stars-amt').value;
+        const a = document.getElementById('pay-amt').value;
         const r = await fetch(`${API}/api/create-invoice`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData, amount: parseInt(amt) })
+            body: JSON.stringify({ initData: tg.initData, amount: parseInt(a) })
         });
-        const d = await r.json();
-        if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (s) => { if(s==='paid') load(); });
+        const { invoiceLink } = await r.json();
+        tg.openInvoice(invoiceLink, (st) => { if(st==='paid') load(); });
+    }
+
+    async function withdraw() {
+        const a = prompt("Сумма вывода:");
+        if(a < 50) return tg.showAlert("Минимум 50 Stars");
+        const r = await fetch(`${API}/api/withdraw`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData, amount: parseInt(a) })
+        });
+        if(r.ok) { tg.showAlert("Заявка принята!"); load(); }
     }
 
     load();
