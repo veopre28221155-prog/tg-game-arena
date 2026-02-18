@@ -18,14 +18,64 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', UserSchema);
 
-// Таблица лидеров
+const TournamentSchema = new mongoose.Schema({
+    creatorId: Number,
+    bet: Number,
+    status: { type: String, default: 'waiting' },
+    players: [{ tg_id: Number, name: String, score: Number }]
+});
+const Tournament = mongoose.model('Tournament', TournamentSchema);
+
+function verifyTelegramData(initData) {
+    if (!initData) return false;
+    const urlParams = new URLSearchParams(initData);
+    const hash = urlParams.get('hash');
+    urlParams.delete('hash');
+    urlParams.sort();
+    const dataCheckString = Array.from(urlParams.entries()).map(([k,v]) => `${k}=${v}`).join('\n');
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+    return crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex') === hash;
+}
+
+app.post('/api/user-data', async (req, res) => {
+    const { initData } = req.body;
+    if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
+    const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
+    let user = await User.findOne({ tg_id: tgUser.id });
+    if (!user) user = await User.create({ tg_id: tgUser.id, name: tgUser.first_name });
+    res.json(user);
+});
+
 app.get('/api/leaderboard', async (req, res) => {
     const topUsers = await User.find().sort({ balance: -1 }).limit(10);
     res.json(topUsers);
 });
 
-// ... (оставь функции verifyTelegramData, /api/user-data, /api/create-invoice и /api/webhook из прошлого сообщения)
-// Добавь эндпоинты /api/create-tournament и /api/finish-tournament, которые я давал выше.
+app.post('/api/create-invoice', async (req, res) => {
+    const { initData, amount } = req.body;
+    if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
+    const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
+    try {
+        const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
+            title: "Пополнение Stars",
+            description: `Зачисление ${amount} звезд`,
+            payload: `stars_topup_${tgUser.id}`,
+            currency: "XTR",
+            prices: [{ label: "Stars", amount: amount }]
+        });
+        res.json({ invoiceLink: response.data.result });
+    } catch (e) { res.status(500).json({ error: "Invoice error" }); }
+});
+
+app.post('/api/webhook', async (req, res) => {
+    const update = req.body;
+    if (update.message && update.message.successful_payment) {
+        const pay = update.message.successful_payment;
+        const tgId = parseInt(pay.invoice_payload.replace('stars_topup_', ''));
+        await User.findOneAndUpdate({ tg_id: tgId }, { $inc: { balance: pay.total_amount } });
+    }
+    res.sendStatus(200);
+});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server on ${PORT}`));
