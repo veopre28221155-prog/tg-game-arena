@@ -24,6 +24,7 @@ const Withdraw = mongoose.model('Withdraw', new mongoose.Schema({
     tg_id: Number, amount: Number, date: { type: Date, default: Date.now }
 }));
 
+// Схема лобби для игры с другом
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     lobbyId: String,
     players: [Number],
@@ -41,7 +42,6 @@ function verifyTelegramData(initData) {
     return crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex') === hash;
 }
 
-// Эндпоинты
 app.post('/api/user-data', async (req, res) => {
     const { initData } = req.body;
     if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
@@ -51,6 +51,7 @@ app.post('/api/user-data', async (req, res) => {
     res.json(user);
 });
 
+// Эндпоинт для присоединения к лобби по ссылке
 app.post('/api/join-lobby', async (req, res) => {
     const { initData, lobbyId } = req.body;
     if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
