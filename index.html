@@ -1,85 +1,14 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Arena</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root { --bg: #fff; --btn: #2481cc; --sec: #f0f0f2; --text: #000; }
-        body { background: var(--sec); color: var(--text); margin: 0; font-family: sans-serif; display: flex; justify-content: center; overflow: hidden; }
-        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; }
-        .screen { display: none; flex: 1; padding: 16px; flex-direction: column; align-items: center; overflow-y: auto; }
-        .active { display: flex; }
-        .card { background: var(--sec); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
-        .btn { background: var(--btn); color: #fff; border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; text-align: center; font-size: 18px; }
-        canvas { background: #000; border-radius: 8px; display: none; }
-        #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid #ddd; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 14px; }
-        .nav-item.active { color: var(--btn); font-weight: bold; }
-        #result-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); color: #fff; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-    </style>
-</head>
-<body>
-<div id="app">
-    
-    <div id="result-overlay">
-        <h2>Матч окончен</h2>
-        <p id="res-score">Загрузка...</p>
-        <button class="btn" onclick="preStart(isPractice)">Играть снова</button>
-        <button class="btn" style="background:#444" onclick="location.reload()">В меню</button>
-    </div>
-
-    <div id="arena" class="screen active">
-        <div class="card">
-            <h3>Игры</h3>
-            <div style="display:flex; gap:10px;">
-                <button class="btn" id="s-snake" onclick="setGame('snake')">🐍 Змейка</button>
-                <button class="btn" id="s-tetris" onclick="setGame('tetris')" style="opacity:0.5">🧱 Тетрис</button>
-            </div>
-        </div>
-        <div id="arena-menu" class="card">
-            <h4 id="mode-info">Выбрано: Змейка</h4>
-            <button class="btn" onclick="preStart(true)">🔥 ТРЕНИРОВКА</button>
-            <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" id="friend-btn">⚔️ ИГРАТЬ С ДРУГОМ</button>
-        </div>
-        <div id="game-ui" style="display:none; flex-direction:column; align-items:center; width:100%;">
-            <div id="countdown" style="font-size:40px; font-weight:bold; margin:10px; color:var(--btn)">3</div>
-            <div id="score-text" style="font-weight:bold; margin-bottom:5px;">Score: 0</div>
-            <canvas id="gameCanvas" width="300" height="450"></canvas>
-            <button class="btn" style="background:red; width:120px; margin-top:10px;" onclick="location.reload()">Выход</button>
-        </div>
-    </div>
-
-    <div id="profile" class="screen">
-        <div class="card">
-            <h2 id="u-name">Player</h2>
-            <div style="font-size:36px; font-weight:bold; color:var(--btn)">⭐ <span id="u-balance">0</span></div>
-        </div>
-        <div class="card">
-            <h4>Пополнить баланс</h4>
-            <input type="number" id="pay-amt" value="50" min="1">
-            <button class="btn" onclick="pay()">КУПИТЬ STARS</button>
-        </div>
-    </div>
-
-    <nav id="nav">
-        <div class="nav-item active" onclick="tab('arena', this)">АРЕНА</div>
-        <div class="nav-item" onclick="tab('profile', this)">ПРОФИЛЬ</div>
-    </nav>
-</div>
-
 <script>
     const tg = window.Telegram.WebApp;
+    // Принудительно сообщаем Telegram, что приложение готово
     tg.ready();
     tg.expand();
 
     const API = 'https://tg-game-arena.onrender.com';
-    let currentGame = 'snake', moveDir = {x:1, y:0}, isPractice = true;
+    let balance = 0, currentGame = 'snake', moveDir = {x:1, y:0}, isPractice = true;
     let gameLoop, currentLobbyId = null, currentScore = 0;
 
-    // --- ЛОГИКА ИНТЕРФЕЙСА ---
+    // --- ЛОГИКА ИНТЕРФЕЙСА (ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК) ---
     function tab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -94,7 +23,43 @@
         document.getElementById('mode-info').innerText = "Выбрано: " + (g === 'snake' ? 'Змейка' : 'Тетрис');
     }
 
-    // --- ПОПОЛНЕНИЕ БАЛАНСА ---
+    // --- ОТЛАДОЧНАЯ ФУНКЦИЯ "ИГРАТЬ С ДРУГОМ" ---
+    function shareLobby() {
+        console.log("Кнопка нажата, начинаем вызов...");
+        try {
+            const lobbyId = Math.random().toString(36).substr(2, 9);
+            currentLobbyId = lobbyId;
+            
+            // Проверяем, видит ли скрипт объект Telegram
+            if (!window.Telegram || !window.Telegram.WebApp) {
+                alert("Ошибка: Telegram SDK не загружен!");
+                return;
+            }
+
+            // Если это сработает, значит JS код выполняется верно
+            alert("Вызываем меню выбора чата для лобби: " + lobbyId);
+            
+            // Вызов API Telegram
+            if (tg.isVersionAtLeast('6.7')) {
+                tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats', 'groups']);
+            } else {
+                tg.switchInlineQuery(`lobby_${lobbyId}`);
+            }
+            
+        } catch (e) {
+            alert("Критическая ошибка скрипта: " + e.message);
+        }
+    }
+
+    // Привязываем функцию к кнопке после загрузки страницы
+    document.addEventListener('DOMContentLoaded', () => {
+        const friendBtn = document.getElementById('friend-btn');
+        if (friendBtn) {
+            friendBtn.onclick = shareLobby;
+        }
+    });
+
+    // --- ПОПОЛНЕНИЕ STARS ---
     async function pay() {
         const amt = document.getElementById('pay-amt').value;
         try {
@@ -109,26 +74,12 @@
                     if(status === 'paid') load();
                 });
             }
-        } catch(e) { alert("Ошибка оплаты"); }
-    }
-
-    // --- ИГРА С ДРУГОМ (switchInlineQuery) ---
-    function shareLobby() {
-        const lobbyId = Math.random().toString(36).substr(2, 9);
-        currentLobbyId = lobbyId;
-        
-        if (tg.isVersionAtLeast('6.7')) {
-            // Открывает выбор чата и вставляет туда инлайн-запрос лобби
-            tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats', 'groups']);
-        } else {
-            tg.showAlert("Обновите Telegram или используйте ID: " + lobbyId);
-            tg.switchInlineQuery(`lobby_${lobbyId}`);
+        } catch(e) { 
+            alert("Ошибка при создании счета"); 
         }
     }
 
-    document.getElementById('friend-btn').onclick = shareLobby;
-
-    // --- УПРАВЛЕНИЕ ---
+    // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ (ПК) ---
     window.addEventListener('keydown', (e) => {
         if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
         if (currentGame === 'snake') {
@@ -144,7 +95,7 @@
         }
     });
 
-    // --- ДВИЖКИ ИГР ---
+    // --- ЗАПУСК ИГРЫ ---
     function preStart(practice) {
         isPractice = practice;
         document.getElementById('arena-menu').style.display = 'none';
@@ -163,7 +114,7 @@
         }, 1000);
     }
 
-    // [Змейка]
+    // --- ДВИЖОК: ЗМЕЙКА ---
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
@@ -182,7 +133,7 @@
         }, 150);
     }
 
-    // [Тетрис]
+    // --- ДВИЖОК: ТЕТРИС ---
     let tBoard, tPiece;
     function runTetris() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
@@ -235,25 +186,40 @@
         if(tCollide()) tPiece.matrix = old;
     }
 
+    // --- ОСТАНОВКА И ОТПРАВКА ОЧКОВ ---
     function stopGame() {
         clearInterval(gameLoop);
         if(!isPractice) submitScore(); else tg.showAlert("Счет: " + currentScore);
     }
 
     async function submitScore() {
-        await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) });
-        document.getElementById('result-overlay').style.display = 'flex';
-        document.getElementById('res-score').innerText = "Твой результат в дуэли: " + currentScore;
+        try {
+            await fetch(`${API}/api/submit-score`, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) 
+            });
+            document.getElementById('result-overlay').style.display = 'flex';
+            document.getElementById('res-score').innerText = "Результат дуэли: " + currentScore;
+        } catch(e) { 
+            tg.showAlert("Ошибка отправки счета"); 
+        }
     }
 
+    // --- ЗАГРУЗКА ДАННЫХ И ПРОВЕРКА ВХОДА ---
     async function load() {
-        const r = await fetch(`${API}/api/user-data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
-        const d = await r.json();
-        document.getElementById('u-balance').innerText = d.balance;
-        document.getElementById('u-name').innerText = d.name;
+        try {
+            const r = await fetch(`${API}/api/user-data`, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ initData: tg.initData }) 
+            });
+            const d = await r.json();
+            document.getElementById('u-balance').innerText = d.balance;
+            document.getElementById('u-name').innerText = d.name;
+        } catch(e) { console.error("Ошибка загрузки профиля"); }
     }
 
-    // --- ЛОГИКА ВХОДА ПО ПРИГЛАШЕНИЮ ---
     async function checkInvite() {
         const sp = tg.initDataUnsafe.start_param;
         if (sp && sp.startsWith('lobby_')) {
@@ -261,23 +227,20 @@
             isPractice = false;
             
             try {
-                const r = await fetch(`${API}/api/join-lobby`, { 
+                await fetch(`${API}/api/join-lobby`, { 
                     method: 'POST', 
                     headers: {'Content-Type': 'application/json'}, 
                     body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) 
                 });
-                await r.json();
                 
-                // Визуальный индикатор дуэли
                 document.getElementById('mode-info').innerHTML = 
-                    `<b style="color:#d9534f">⚔️ ДУЭЛЬ АКТИВНА (Лобби: ${currentLobbyId})</b>`;
-                tg.showAlert("Вы вступили в дуэль! Результат будет сохранен в лобби.");
+                    `<b style="color:red">⚔️ ДУЭЛЬ АКТИВНА</b>`;
+                tg.showAlert("Вы вступили в дуэль!");
             } catch(e) { console.error("Ошибка входа в лобби"); }
         }
     }
 
+    // Точка входа
     load(); 
     checkInvite();
 </script>
-</body>
-</html>
