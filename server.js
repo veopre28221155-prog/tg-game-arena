@@ -18,10 +18,6 @@ const User = mongoose.model('User', new mongoose.Schema({
     balance: { type: Number, default: 1000 }
 }));
 
-const Withdraw = mongoose.model('Withdraw', new mongoose.Schema({
-    tg_id: Number, amount: Number, date: { type: Date, default: Date.now }
-}));
-
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     lobbyId: String,
     players: [Number],
@@ -53,34 +49,27 @@ app.post('/api/join-lobby', async (req, res) => {
     const { initData, lobbyId } = req.body;
     if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
     const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
-    
     let lobby = await Lobby.findOne({ lobbyId });
     if (!lobby) {
         lobby = await Lobby.create({ lobbyId, players: [tgUser.id] });
     } else if (!lobby.players.includes(tgUser.id)) {
-        if (lobby.players.length < 2) {
-            lobby.players.push(tgUser.id);
-            if (lobby.players.length === 2) lobby.status = 'ready';
-            await lobby.save();
-        }
+        lobby.players.push(tgUser.id);
+        if (lobby.players.length >= 2) lobby.status = 'ready';
+        await lobby.save();
     }
     res.json(lobby);
 });
 
-// Сохранение счета в лобби
 app.post('/api/submit-score', async (req, res) => {
     const { initData, lobbyId, score } = req.body;
     if (!verifyTelegramData(initData)) return res.status(403).send('Unauthorized');
     const tgUser = JSON.parse(new URLSearchParams(initData).get('user'));
-
     let lobby = await Lobby.findOne({ lobbyId });
     if (lobby) {
         lobby.scores.set(tgUser.id.toString(), score);
         await lobby.save();
         res.json(lobby);
-    } else {
-        res.status(404).send("Lobby not found");
-    }
+    } else res.status(404).send("Lobby not found");
 });
 
 app.post('/api/create-invoice', async (req, res) => {
