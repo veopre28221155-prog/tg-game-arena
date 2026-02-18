@@ -7,119 +7,117 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --bg: #0a0a0a; --accent: #00ff41; --text: #ffffff; }
-        body { 
-            background: #000; margin: 0; font-family: 'Courier New', monospace; 
-            color: var(--text); display: flex; justify-content: center;
-        }
-        /* Исправление для ПК: ограничиваем ширину */
-        #app-container {
+        body { background: #000; margin: 0; display: flex; justify-content: center; font-family: sans-serif; }
+        
+        /* Главный контейнер для фикса верстки на ПК */
+        #app {
             width: 100%; max-width: 500px; height: 100vh;
             background: var(--bg); position: relative; overflow: hidden;
-            border-left: 1px solid #333; border-right: 1px solid #333;
+            display: flex; flex-direction: column;
         }
-        .screen { display: none; padding: 20px; height: 90%; flex-direction: column; align-items: center; }
-        .active { display: flex; }
-        
-        .btn {
-            background: transparent; border: 2px solid var(--accent);
-            color: var(--accent); padding: 15px 30px; margin: 10px;
-            font-size: 18px; cursor: pointer; width: 80%;
-            text-transform: uppercase; transition: 0.3s;
-        }
-        .btn:active { background: var(--accent); color: #000; }
 
-        #nav-menu {
-            position: absolute; bottom: 0; width: 100%; height: 60px;
-            display: flex; background: #111; border-top: 1px solid #333;
+        .screen { display: none; flex: 1; padding: 20px; flex-direction: column; align-items: center; overflow-y: auto; }
+        .active { display: flex; }
+
+        .btn {
+            width: 90%; padding: 15px; margin: 10px 0;
+            background: transparent; border: 2px solid var(--accent);
+            color: var(--accent); font-weight: bold; cursor: pointer;
+            text-transform: uppercase;
         }
-        .nav-item { flex: 1; text-align: center; line-height: 60px; color: #666; cursor: pointer; }
-        .nav-item.active { color: var(--accent); border-top: 2px solid var(--accent); }
+
+        #nav {
+            display: flex; background: #111; height: 70px;
+            border-top: 1px solid #333; width: 100%;
+        }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #555; font-size: 12px; cursor: pointer; }
+        .nav-item.active { color: var(--accent); }
+
+        .leader-row {
+            display: flex; justify-content: space-between; width: 100%;
+            padding: 12px; border-bottom: 1px solid #222;
+        }
     </style>
 </head>
 <body>
 
-<div id="app-container">
-    <div id="screen-arena" class="screen active">
-        <h2>АРЕНА</h2>
-        <div id="status-msg">Сервер просыпается...</div>
-        <button class="btn" onclick="startMode('practice')">Тренировка (0⭐)</button>
-        <button class="btn" onclick="openTournamentMenu()">Турнир (от 50⭐)</button>
+<div id="app">
+    <div id="arena" class="screen active">
+        <h1 style="color: var(--accent)">АРЕНА</h1>
+        <p id="server-status">Подключение...</p>
+        <button class="btn" onclick="tg.showAlert('Турниры скоро появятся!')">Найти турнир (50⭐)</button>
+        <button class="btn" onclick="tg.showAlert('Тренировка запущена!')">Тренировка</button>
     </div>
 
-    <div id="screen-top" class="screen">
-        <h2>ТОП ИГРОКОВ</h2>
-        <div id="leaderboard-list" style="width: 100%;"></div>
+    <div id="top" class="screen">
+        <h1>ТОП ЛИДЕРОВ</h1>
+        <div id="leaderboard" style="width: 100%"></div>
     </div>
 
-    <div id="screen-profile" class="screen">
-        <h2 id="user-name">Загрузка...</h2>
-        <div style="font-size: 24px; color: var(--accent);">⭐ <span id="user-balance">0</span></div>
-        <button class="btn" style="margin-top:40px;" onclick="buyStars()">Пополнить Stars</button>
+    <div id="profile" class="screen">
+        <h1 id="p-name">Игрок</h1>
+        <div style="font-size: 30px;">⭐ <span id="p-balance">0</span></div>
+        <button class="btn" style="margin-top: 50px" onclick="buyStars()">Пополнить Stars</button>
     </div>
 
-    <nav id="nav-menu">
-        <div class="nav-item active" onclick="showTab('arena')">АРЕНА</div>
-        <div class="nav-item" onclick="showTab('top')">ТОП</div>
-        <div class="nav-item" onclick="showTab('profile')">ПРОФИЛЬ</div>
-    </nav>
+    <div id="nav">
+        <div class="nav-item active" onclick="showTab('arena', this)"><span>🎮</span>АРЕНА</div>
+        <div class="nav-item" onclick="showTab('top', this)"><span>🏆</span>ТОП</div>
+        <div class="nav-item" onclick="showTab('profile', this)"><span>👤</span>ПРОФИЛЬ</div>
+    </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://tg-game-arena.onrender.com';
-    let userBalance = 0;
-
+    const API = 'https://tg-game-arena.onrender.com';
     tg.expand();
 
-    async function loadUserData() {
-        const res = await fetch(`${BACKEND_URL}/api/user-data`, {
+    async function loadUser() {
+        const r = await fetch(`${API}/api/user-data`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ initData: tg.initData })
         });
-        const data = await res.json();
-        document.getElementById('user-name').innerText = data.name;
-        document.getElementById('user-balance').innerText = data.balance;
-        userBalance = data.balance;
-        document.getElementById('status-msg').innerText = "Связь установлена ✅";
+        const d = await r.json();
+        document.getElementById('p-name').innerText = d.name;
+        document.getElementById('p-balance').innerText = d.balance;
+        document.getElementById('server-status').innerText = "✅ Сервер онлайн";
     }
 
-    async function loadLeaderboard() {
-        const res = await fetch(`${BACKEND_URL}/api/leaderboard`);
-        const data = await res.json();
-        const list = document.getElementById('leaderboard-list');
-        list.innerHTML = data.map((u, i) => 
-            `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #222;">
-                <span>${i+1}. ${u.name}</span> <span>${u.balance} ⭐</span>
-            </div>`
-        ).join('');
+    async function loadTop() {
+        const r = await fetch(`${API}/api/leaderboard`);
+        const d = await r.json();
+        const container = document.getElementById('leaderboard');
+        container.innerHTML = d.map((u, i) => `
+            <div class="leader-row">
+                <span>${i+1}. ${u.name}</span>
+                <span style="color:var(--accent)">${u.balance} ⭐</span>
+            </div>
+        `).join('');
     }
 
-    function showTab(tab) {
+    function showTab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(`screen-${tab}`).classList.add('active');
-        event.currentTarget.classList.add('active');
-        if(tab === 'top') loadLeaderboard();
-        if(tab === 'profile') loadUserData();
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+        if(id === 'top') loadTop();
+        if(id === 'profile') loadUser();
     }
 
     async function buyStars() {
-        const res = await fetch(`${BACKEND_URL}/api/create-invoice`, {
+        const r = await fetch(`${API}/api/create-invoice`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData, amount: 100 })
+            body: JSON.stringify({ initData: tg.initData, amount: 50 })
         });
-        const { invoiceLink } = await res.json();
+        const { invoiceLink } = await r.json();
         tg.openInvoice(invoiceLink, (status) => {
-            if(status === 'paid') {
-                tg.showAlert("Оплата прошла! Баланс обновится через пару секунд.");
-                setTimeout(loadUserData, 3000);
-            }
+            if(status === 'paid') loadUser();
         });
     }
 
-    loadUserData();
+    loadUser();
 </script>
 </body>
 </html>
