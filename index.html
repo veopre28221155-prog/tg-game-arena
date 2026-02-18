@@ -16,19 +16,14 @@
         }
         body { background: var(--sec-bg); color: var(--text); margin: 0; font-family: -apple-system, sans-serif; display: flex; justify-content: center; overflow: hidden; }
         #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
-        
         .screen { display: none; flex: 1; padding: 16px; flex-direction: column; align-items: center; overflow-y: auto; }
         .active { display: flex; }
-
-        .card { background: var(--sec-bg); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
+        .card { background: var(--sec-bg); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; box-sizing: border-box; text-align: center; }
         .btn { background: var(--btn); color: var(--btn-text); border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
-        
         canvas { background: #000; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
         #countdown { font-size: 80px; font-weight: bold; color: var(--btn); display: none; margin: 40px; }
-
         .controls { display: none; grid-template-columns: repeat(3, 70px); gap: 10px; margin-top: 15px; }
         .ctrl-btn { width: 70px; height: 70px; background: var(--sec-bg); border-radius: 50%; border: 1px solid #ddd; font-size: 24px; color: var(--text); }
-
         #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--hint); cursor: pointer; }
         .nav-item.active { color: var(--btn); }
@@ -45,23 +40,20 @@
                 <button class="btn" style="opacity:0.5" id="s-tetris" onclick="setGame('tetris')">🧱 Тетрис</button>
             </div>
         </div>
-        
         <div id="arena-menu" class="card">
             <h4 id="mode-info">Выбрано: Змейка</h4>
             <button class="btn" onclick="preStart()">🔥 ГОТОВ (Тренировка)</button>
-            <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" onclick="tg.switchInlineQuery('invite', ['users'])">⚔️ ИГРАТЬ С ДРУГОМ</button>
+            <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" id="friend-btn">⚔️ ИГРАТЬ С ДРУГОМ</button>
         </div>
-
         <div id="game-ui" style="display:none; flex-direction:column; align-items:center;">
             <div id="countdown">3</div>
             <div id="score" style="font-size:20px; font-weight:bold; margin-bottom:5px;">Score: 0</div>
-            <canvas id="gameCanvas" width="300" height="400"></canvas>
-            
+            <canvas id="gameCanvas" width="300" height="450"></canvas>
             <div id="game-ctrls" class="controls">
-                <div></div><button class="ctrl-btn" onclick="move(0,-1)">↑</button><div></div>
-                <button class="ctrl-btn" onclick="move(-1,0)">←</button>
-                <button class="ctrl-btn" onclick="move(0,1)">↓</button>
-                <button class="ctrl-btn" onclick="move(1,0)">→</button>
+                <div></div><button class="ctrl-btn" onclick="handleInput('up')">↑</button><div></div>
+                <button class="ctrl-btn" onclick="handleInput('left')">←</button>
+                <button class="ctrl-btn" onclick="handleInput('down')">↓</button>
+                <button class="ctrl-btn" onclick="handleInput('right')">→</button>
             </div>
             <button class="btn" style="background:red; width:120px; margin-top:15px;" onclick="location.reload()">Выход</button>
         </div>
@@ -72,10 +64,10 @@
             <h3>Рандомный соперник</h3>
             <p>Ставка (Stars):</p>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <button class="btn" onclick="tg.showAlert('Поиск 10')">10</button>
-                <button class="btn" onclick="tg.showAlert('Поиск 50')">50</button>
-                <button class="btn" onclick="tg.showAlert('Поиск 100')">100</button>
-                <button class="btn" onclick="tg.showAlert('Поиск 1000')">1000</button>
+                <button class="btn" onclick="startRandom(10)">10</button>
+                <button class="btn" onclick="startRandom(50)">50</button>
+                <button class="btn" onclick="startRandom(100)">100</button>
+                <button class="btn" onclick="startRandom(1000)">1000</button>
             </div>
         </div>
     </div>
@@ -103,6 +95,7 @@
     const tg = window.Telegram.WebApp;
     const API = 'https://tg-game-arena.onrender.com';
     let balance = 0, currentGame = 'snake', moveDir = {x:1, y:0};
+    let gameLoop;
 
     tg.expand();
 
@@ -118,6 +111,28 @@
         document.getElementById('u-name').innerText = d.name;
     }
 
+    // УПРАВЛЕНИЕ КЛАВИАТУРОЙ
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') handleInput('up');
+        if (e.key === 'ArrowDown') handleInput('down');
+        if (e.key === 'ArrowLeft') handleInput('left');
+        if (e.key === 'ArrowRight') handleInput('right');
+    });
+
+    function handleInput(dir) {
+        if (currentGame === 'snake') {
+            if (dir === 'up' && moveDir.y === 0) moveDir = {x:0, y:-1};
+            if (dir === 'down' && moveDir.y === 0) moveDir = {x:0, y:1};
+            if (dir === 'left' && moveDir.x === 0) moveDir = {x:-1, y:0};
+            if (dir === 'right' && moveDir.x === 0) moveDir = {x:1, y:0};
+        } else if (currentGame === 'tetris') {
+            if (dir === 'left') tetrisMove(-1);
+            if (dir === 'right') tetrisMove(1);
+            if (dir === 'down') tetrisDrop();
+            if (dir === 'up') tetrisRotate();
+        }
+    }
+
     function tab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -131,8 +146,6 @@
         document.getElementById('s-tetris').style.opacity = g==='tetris'?1:0.5;
         document.getElementById('mode-info').innerText = "Выбрано: " + (g==='snake'?'Змейка':'Тетрис');
     }
-
-    function move(x, y) { moveDir = {x, y}; }
 
     function preStart() {
         document.getElementById('arena-menu').style.display = 'none';
@@ -153,28 +166,115 @@
         }, 1000);
     }
 
+    // ЛОГИКА ЗМЕЙКИ
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5}, score = 0;
-        setInterval(() => {
+        gameLoop = setInterval(() => {
             let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
-            if(h.x<0||h.x>=20||h.y<0||h.y>=26) return location.reload();
+            if(h.x<0||h.x>=20||h.y<0||h.y>=30) return location.reload();
             s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
                 score++; document.getElementById('score').innerText = "Score: "+score;
                 f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
             } else s.pop();
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,400);
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
             ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
             ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
         }, 150);
     }
 
+    // ЛОГИКА ТЕТРИСА
+    let board, piece, tetrisScore;
     function runTetris() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
-        ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,400);
-        ctx.fillStyle = "#fff"; ctx.fillText("TETRIS LOADING...", 100, 200);
-        tg.showAlert("Тетрис почти готов! Пока играй в Змейку.");
+        board = Array(20).fill().map(() => Array(10).fill(0));
+        tetrisScore = 0;
+        spawnPiece();
+        gameLoop = setInterval(() => {
+            tetrisDrop();
+            drawTetris(ctx);
+        }, 800);
+    }
+
+    function spawnPiece() {
+        const types = ['I','J','L','O','S','T','Z'];
+        piece = { pos: {x: 4, y: 0}, matrix: createPiece(types[Math.random()*7|0]) };
+    }
+
+    function createPiece(type) {
+        if (type === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
+        if (type === 'T') return [[0,1,0],[1,1,1],[0,0,0]];
+        if (type === 'O') return [[1,1],[1,1]];
+        return [[1,1,0],[0,1,1],[0,0,0]];
+    }
+
+    function tetrisDrop() {
+        piece.pos.y++;
+        if (collide()) {
+            piece.pos.y--;
+            merge();
+            spawnPiece();
+            clearLines();
+        }
+    }
+
+    function collide() {
+        const [m, o] = [piece.matrix, piece.pos];
+        for (let y = 0; y < m.length; ++y) {
+            for (let x = 0; x < m[y].length; ++x) {
+                if (m[y][x] !== 0 && (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) return true;
+            }
+        }
+        return false;
+    }
+
+    function merge() {
+        piece.matrix.forEach((row, y) => {
+            row.forEach((value, x) => {
+                if (value !== 0) board[y + piece.pos.y][x + piece.pos.x] = value;
+            });
+        });
+    }
+
+    function clearLines() {
+        outer: for (let y = board.length - 1; y > 0; --y) {
+            for (let x = 0; x < board[y].length; ++x) {
+                if (board[y][x] === 0) continue outer;
+            }
+            const row = board.splice(y, 1)[0].fill(0);
+            board.unshift(row);
+            tetrisScore += 10;
+            document.getElementById('score').innerText = "Score: " + tetrisScore;
+        }
+    }
+
+    function drawTetris(ctx) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 450);
+        board.forEach((row, y) => row.forEach((val, x) => {
+            if (val) { ctx.fillStyle = '#2481cc'; ctx.fillRect(x*30, y*22.5, 29, 21.5); }
+        }));
+        piece.matrix.forEach((row, y) => row.forEach((val, x) => {
+            if (val) { ctx.fillStyle = '#fff'; ctx.fillRect((x+piece.pos.x)*30, (y+piece.pos.y)*22.5, 29, 21.5); }
+        }));
+    }
+
+    function tetrisMove(dir) { piece.pos.x += dir; if(collide()) piece.pos.x -= dir; }
+    function tetrisRotate() { 
+        const old = piece.matrix;
+        piece.matrix = piece.matrix[0].map((_, i) => piece.matrix.map(row => row[i]).reverse());
+        if(collide()) piece.matrix = old;
+    }
+
+    // ИГРА С ДРУГОМ
+    document.getElementById('friend-btn').onclick = () => {
+        const url = `https://t.me/RetroBattleArena_bot/app?startapp=lobby_${Math.random().toString(36).substr(2,9)}`;
+        tg.switchInlineQuery(url, ['users', 'chats']);
+    };
+
+    function startRandom(bet) {
+        if(balance < bet) return tg.showAlert("Мало Stars!");
+        tg.showAlert("Поиск соперника на " + bet + " Stars начат...");
     }
 
     async function pay() {
@@ -190,13 +290,13 @@
 
     async function withdraw() {
         const a = prompt("Сумма вывода:");
-        if(a < 50) return tg.showAlert("Минимум 50 Stars");
+        if(!a || a < 50) return tg.showAlert("Минимум 50 Stars");
         const r = await fetch(`${API}/api/withdraw`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ initData: tg.initData, amount: parseInt(a) })
         });
-        if(r.ok) { tg.showAlert("Заявка принята!"); load(); }
+        if(r.ok) { tg.showAlert("Заявка принята! Ожидайте обработки."); load(); }
     }
 
     load();
