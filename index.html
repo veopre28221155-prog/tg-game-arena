@@ -84,6 +84,14 @@
 
     tg.expand();
 
+    // 1. ФИКС УПРАВЛЕНИЯ ПК
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') handleInput('up');
+        if (e.key === 'ArrowDown') handleInput('down');
+        if (e.key === 'ArrowLeft') handleInput('left');
+        if (e.key === 'ArrowRight') handleInput('right');
+    });
+
     async function load() {
         const r = await fetch(`${API}/api/user-data`, {
             method: 'POST',
@@ -113,6 +121,7 @@
         }
     }
 
+    // 2. ФИКС КНОПКИ ДРУГА
     document.getElementById('friend-btn').onclick = () => {
         const lobbyId = Math.random().toString(36).substr(2, 9);
         currentLobbyId = lobbyId;
@@ -152,9 +161,7 @@
             tg.showConfirm("Игра окончена! Счет: " + currentScore + ". Начать заново?", (ok) => {
                 if(ok) preStart(true); else location.reload();
             });
-        } else {
-            submitScore(currentScore);
-        }
+        } else submitScore(currentScore);
     }
 
     async function submitScore(score) {
@@ -172,11 +179,7 @@
         const myId = tg.initDataUnsafe.user.id.toString();
         let myScore = lobby.scores[myId] || 0;
         let oppScore = "Ожидание...";
-        
-        for (let id in lobby.scores) {
-            if (id !== myId) oppScore = lobby.scores[id];
-        }
-
+        for (let id in lobby.scores) { if (id !== myId) oppScore = lobby.scores[id]; }
         document.getElementById('res-score').innerText = `Вы: ${myScore} | Соперник: ${oppScore}`;
     }
 
@@ -191,9 +194,61 @@
             if (dir === 'down' && moveDir.y === 0) moveDir = {x:0, y:1};
             if (dir === 'left' && moveDir.x === 0) moveDir = {x:-1, y:0};
             if (dir === 'right' && moveDir.x === 0) moveDir = {x:1, y:0};
+        } else if (currentGame === 'tetris') {
+            if (dir === 'left') tetrisMove(-1);
+            if (dir === 'right') tetrisMove(1);
+            if (dir === 'down') tetrisDrop();
+            if (dir === 'up') tetrisRotate();
         }
-        // ... (тетрис логика)
     }
+
+    // 3. ПОЛНОЦЕННЫЙ ТЕТРИС
+    let board, piece, tetrisScore;
+    function runTetris() {
+        const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
+        board = Array(20).fill().map(() => Array(10).fill(0));
+        tetrisScore = 0;
+        spawnPiece();
+        gameLoop = setInterval(() => { tetrisDrop(); drawTetris(ctx); }, 800);
+    }
+    function spawnPiece() {
+        const types = ['I','J','L','O','S','T','Z'];
+        piece = { pos: {x: 4, y: 0}, matrix: createPiece(types[Math.floor(Math.random()*7)]) };
+        if(collide()) gameOver();
+    }
+    function createPiece(t) {
+        if (t === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
+        if (t === 'T') return [[0,1,0],[1,1,1],[0,0,0]];
+        if (t === 'O') return [[1,1],[1,1]];
+        return [[1,1,0],[0,1,1],[0,0,0]];
+    }
+    function tetrisDrop() {
+        piece.pos.y++;
+        if (collide()) { piece.pos.y--; merge(); spawnPiece(); clearLines(); }
+    }
+    function collide() {
+        const [m, o] = [piece.matrix, piece.pos];
+        for (let y = 0; y < m.length; ++y) {
+            for (let x = 0; x < m[y].length; ++x) {
+                if (m[y][x] !== 0 && (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) return true;
+            }
+        } return false;
+    }
+    function merge() { piece.matrix.forEach((row, y) => { row.forEach((val, x) => { if (val) board[y + piece.pos.y][x + piece.pos.x] = val; }); }); }
+    function clearLines() {
+        outer: for (let y = board.length - 1; y > 0; --y) {
+            for (let x = 0; x < board[y].length; ++x) { if (board[y][x] === 0) continue outer; }
+            board.unshift(board.splice(y, 1)[0].fill(0));
+            tetrisScore += 10; document.getElementById('score').innerText = "Score: " + tetrisScore;
+        }
+    }
+    function drawTetris(ctx) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0,0,300,450);
+        board.forEach((row, y) => row.forEach((val, x) => { if (val) { ctx.fillStyle = '#2481cc'; ctx.fillRect(x*30, y*22.5, 29, 21.5); } }));
+        piece.matrix.forEach((row, y) => row.forEach((val, x) => { if (val) { ctx.fillStyle = '#fff'; ctx.fillRect((x+piece.pos.x)*30, (y+piece.pos.y)*22.5, 29, 21.5); } }));
+    }
+    function tetrisMove(d) { piece.pos.x += d; if(collide()) piece.pos.x -= d; }
+    function tetrisRotate() { const old = piece.matrix; piece.matrix = piece.matrix[0].map((_, i) => piece.matrix.map(row => row[i]).reverse()); if(collide()) piece.matrix = old; }
 
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
@@ -204,8 +259,7 @@
             if(h.x<0||h.x>=20||h.y<0||h.y>=30) { gameOver(); return; }
             s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
-                currentScore++; 
-                document.getElementById('score').innerText = "Score: " + currentScore;
+                currentScore++; document.getElementById('score').innerText = "Score: " + currentScore;
                 f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
             } else s.pop();
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
@@ -214,16 +268,7 @@
         }, 150);
     }
 
-    // Тетрис упрощенно для структуры
-    function runTetris() {
-        tg.showAlert("Тетрис запущен!");
-        // Сюда вставить вашу логику тетриса и вызвать gameOver() при конце
-    }
-
-    async function init() {
-        await load();
-        checkInvite();
-    }
+    async function init() { await load(); checkInvite(); }
     init();
 
     function tab(id, el) {
@@ -231,5 +276,11 @@
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         el.classList.add('active');
+    }
+
+    async function pay() {
+        const r = await fetch(`${API}/api/create-invoice`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, amount: 50 }) });
+        const d = await r.json();
+        if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (st) => { if(st==='paid') load(); });
     }
 </script></body></html>
