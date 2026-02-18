@@ -11,16 +11,17 @@
         .active { display: flex; }
         .card { background: var(--sec); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
         .btn { background: var(--btn); color: #fff; border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; text-align: center; font-size: 18px; }
         canvas { background: #000; border-radius: 8px; display: none; }
-        #nav { display: flex; background: var(--bg); height: 60px; border-top: 1px solid #ddd; }
-        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; }
+        #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid #ddd; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 14px; }
         .nav-item.active { color: var(--btn); font-weight: bold; }
-        #result-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: #fff; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        #result-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); color: #fff; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
     </style></head><body><div id="app">
     
     <div id="result-overlay">
         <h2>Матч окончен</h2>
-        <p id="res-score">Загрузка итогов...</p>
+        <p id="res-score">Вы: 0 | Соперник: 0</p>
         <button class="btn" onclick="preStart(isPractice)">Играть снова</button>
         <button class="btn" style="background:#444" onclick="location.reload()">В меню</button>
     </div>
@@ -39,19 +40,23 @@
             <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" id="friend-btn">⚔️ ИГРАТЬ С ДРУГОМ</button>
         </div>
         <div id="game-ui" style="display:none; flex-direction:column; align-items:center; width:100%;">
-            <div id="countdown" style="font-size:40px; font-weight:bold; margin:20px; color:var(--btn)">3</div>
-            <div id="score-text" style="font-weight:bold;">Score: 0</div>
-            <canvas id="gameCanvas" width="300" height="400"></canvas>
-            <button class="btn" style="background:red; width:100px" onclick="location.reload()">Выход</button>
+            <div id="countdown" style="font-size:40px; font-weight:bold; margin:10px; color:var(--btn)">3</div>
+            <div id="score-text" style="font-weight:bold; margin-bottom:5px;">Score: 0</div>
+            <canvas id="gameCanvas" width="300" height="450"></canvas>
+            <button class="btn" style="background:red; width:120px; margin-top:10px;" onclick="location.reload()">Выход</button>
         </div>
     </div>
 
     <div id="profile" class="screen">
         <div class="card">
             <h2 id="u-name">Player</h2>
-            <div style="font-size:32px; font-weight:bold; color:var(--btn)">⭐ <span id="u-balance">0</span></div>
+            <div style="font-size:36px; font-weight:bold; color:var(--btn)">⭐ <span id="u-balance">0</span></div>
         </div>
-        <button class="btn" onclick="pay()">ПОПОЛНИТЬ</button>
+        <div class="card">
+            <h4>Пополнить баланс</h4>
+            <input type="number" id="pay-amt" value="50" min="10">
+            <button class="btn" onclick="pay()">КУПИТЬ STARS</button>
+        </div>
     </div>
 
     <nav id="nav">
@@ -69,7 +74,7 @@
     tg.expand();
     tg.ready();
 
-    // 1. УПРАВЛЕНИЕ (КЛАВИАТУРА ПК)
+    // 1. УПРАВЛЕНИЕ ПК (Стрелки)
     window.addEventListener('keydown', (e) => {
         if (currentGame === 'snake') {
             if (e.key === 'ArrowUp' && moveDir.y === 0) moveDir = {x:0, y:-1};
@@ -91,7 +96,7 @@
         document.getElementById('u-name').innerText = d.name;
     }
 
-    // 2. КНОПКА ДРУГА (ФИКС)
+    // 2. РАБОЧАЯ КНОПКА ДРУГА
     document.getElementById('friend-btn').addEventListener('click', () => {
         const lobbyId = Math.random().toString(36).substr(2, 9);
         tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats']);
@@ -134,35 +139,32 @@
         }, 1000);
     }
 
-    // 3. ДВИЖОК ЗМЕЙКИ
+    // 3. ЗМЕЙКА
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
         currentScore = 0; moveDir = {x:1, y:0};
         gameLoop = setInterval(() => {
             let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
-            if(h.x<0||h.x>=20||h.y<0||h.y>=26) { stopGame(); return; }
+            if(h.x<0||h.x>=20||h.y<0||h.y>=30) { stopGame(); return; }
             s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
                 currentScore++; document.getElementById('score-text').innerText = "Score: " + currentScore;
-                f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
+                f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*30)};
             } else s.pop();
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,400);
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
             ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
             ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
         }, 150);
     }
 
-    // 4. ДВИЖОК ТЕТРИСА (ПОЛНЫЙ)
+    // 4. ТЕТРИС
     let tBoard, tPiece;
     function runTetris() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         tBoard = Array(20).fill().map(() => Array(10).fill(0));
         currentScore = 0; spawnTPiece();
-        gameLoop = setInterval(() => {
-            tetrisDrop();
-            drawTetris(ctx);
-        }, 600);
+        gameLoop = setInterval(() => { tetrisDrop(); drawTetris(ctx); }, 600);
     }
     function spawnTPiece() {
         const t = 'IJOSTZL'[Math.random()*7|0];
@@ -173,6 +175,8 @@
         if(t==='I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
         if(t==='T') return [[0,1,0],[1,1,1],[0,0,0]];
         if(t==='O') return [[1,1],[1,1]];
+        if(t==='L') return [[0,1,0],[0,1,0],[0,1,1]];
+        if(t==='J') return [[0,1,0],[0,1,0],[1,1,0]];
         return [[1,1,0],[0,1,1],[0,0,0]];
     }
     function tetrisDrop() {
@@ -185,9 +189,7 @@
             if(m[y][x] && (tBoard[y+o.y] && tBoard[y+o.y][x+o.x]) !== 0) return true;
         return false;
     }
-    function tMerge() {
-        tPiece.matrix.forEach((r,y)=>r.forEach((v,x)=>{ if(v) tBoard[y+tPiece.pos.y][x+tPiece.pos.x]=1; }));
-    }
+    function tMerge() { tPiece.matrix.forEach((r,y)=>r.forEach((v,x)=>{ if(v) tBoard[y+tPiece.pos.y][x+tPiece.pos.x]=1; })); }
     function tClear() {
         outer: for(let y=tBoard.length-1; y>0; y--) {
             for(let x=0; x<tBoard[y].length; x++) if(!tBoard[y][x]) continue outer;
@@ -197,9 +199,9 @@
         }
     }
     function drawTetris(ctx) {
-        ctx.fillStyle='#000'; ctx.fillRect(0,0,300,400);
-        tBoard.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle='#2481cc'; ctx.fillRect(x*30, y*20, 29, 19); } }));
-        tPiece.matrix.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle='#fff'; ctx.fillRect((x+tPiece.pos.x)*30, (y+tPiece.pos.y)*20, 29, 19); } }));
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,300,450);
+        tBoard.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle='#2481cc'; ctx.fillRect(x*30, y*22.5, 29, 21.5); } }));
+        tPiece.matrix.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle='#fff'; ctx.fillRect((x+tPiece.pos.x)*30, (y+tPiece.pos.y)*22.5, 29, 21.5); } }));
     }
     function tetrisMove(d){ tPiece.pos.x += d; if(tCollide()) tPiece.pos.x -= d; }
     function tetrisRotate(){ 
@@ -210,14 +212,14 @@
 
     function stopGame() {
         clearInterval(gameLoop);
-        if(!isPractice) submitScore();
-        else tg.showAlert("Финиш! Счет: " + currentScore);
+        if(!isPractice) submitScore(); else tg.showAlert("Счет: " + currentScore);
     }
 
     async function submitScore() {
         const r = await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) });
+        const l = await r.json();
         document.getElementById('result-overlay').style.display = 'flex';
-        document.getElementById('res-score').innerText = "Твой счет отправлен!";
+        document.getElementById('res-score').innerText = "Счет отправлен другу!";
     }
 
     function tab(id, el) {
@@ -225,6 +227,13 @@
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         el.classList.add('active');
+    }
+
+    async function pay() {
+        const a = document.getElementById('pay-amt').value;
+        const r = await fetch(`${API}/api/create-invoice`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, amount: parseInt(a) }) });
+        const d = await r.json();
+        if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (st) => { if(st==='paid') load(); });
     }
 
     load(); checkInvite();
