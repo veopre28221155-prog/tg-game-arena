@@ -1,170 +1,194 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --tg-bg: #1a1a1a; --tg-panel: #2c2c2c; --accent: #ffcc00; }
-        body { background: var(--tg-bg); color: white; font-family: sans-serif; margin: 0; overflow: hidden; }
+        :root { --accent: #00ff41; --bg: #0a0a0a; --card: #161616; }
+        body { 
+            background: #000; margin: 0; font-family: 'Courier New', monospace; 
+            color: white; display: flex; justify-content: center; overflow: hidden;
+        }
         
-        /* Вкладки */
-        .tab-content { display: none; padding: 20px; height: 100vh; box-sizing: border-box; }
-        .active { display: flex; flex-direction: column; }
-        
-        .card { background: var(--tg-panel); border-radius: 15px; padding: 20px; margin-bottom: 15px; text-align: center; }
-        .balance-val { font-size: 32px; font-weight: bold; color: var(--accent); }
-        
-        /* Сетка игры */
-        #game-canvas { background: #000; border: 2px solid #333; display: block; margin: 0 auto; touch-action: none; }
-        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; width: 200px; align-self: center; }
-        .ctrl-btn { background: #444; border: none; padding: 20px; border-radius: 10px; color: white; font-weight: bold; }
-        
-        /* Навигация снизу */
-        .nav { position: fixed; bottom: 0; width: 100%; background: #222; display: flex; border-top: 1px solid #333; }
-        .nav-btn { flex: 1; padding: 15px; text-align: center; color: #888; cursor: pointer; }
-        .nav-btn.active-tab { color: var(--accent); font-weight: bold; }
-        
-        .btn { background: #2481cc; color: white; border: none; border-radius: 10px; padding: 15px; font-weight: bold; width: 100%; margin: 10px 0; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box; }
+        /* Фикс для ПК: ограничиваем ширину, чтобы кнопки не залезали на экран */
+        #app {
+            width: 100%; max-width: 500px; height: 100vh;
+            background: var(--bg); position: relative; display: flex; flex-direction: column;
+            border-left: 1px solid #333; border-right: 1px solid #333;
+        }
+
+        .screen { display: none; flex: 1; padding: 20px; flex-direction: column; align-items: center; overflow-y: auto; }
+        .active { display: flex; }
+
+        .card { background: var(--card); border: 1px solid #333; border-radius: 12px; width: 100%; padding: 15px; margin-bottom: 15px; text-align: center; box-sizing: border-box; }
+
+        /* Те самые неоновые кнопки */
+        .btn {
+            width: 100%; padding: 15px; margin: 10px 0;
+            background: transparent; border: 2px solid var(--accent);
+            color: var(--accent); font-weight: bold; font-size: 16px;
+            text-transform: uppercase; cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        }
+        .btn:active { background: var(--accent); color: #000; }
+
+        input { 
+            width: 100%; padding: 12px; background: #000; border: 1px solid #444; 
+            color: var(--accent); border-radius: 8px; margin-bottom: 10px; text-align: center; font-family: monospace;
+        }
+
+        #game-box { display: none; width: 100%; flex-direction: column; align-items: center; position: relative; }
+        canvas { background: #000; border: 2px solid #222; margin-top: 10px; }
+        #countdown { position: absolute; top: 80px; font-size: 60px; color: var(--accent); font-weight: bold; text-shadow: 0 0 15px var(--accent); z-index: 10; }
+
+        .controls { display: grid; grid-template-columns: repeat(3, 65px); gap: 10px; margin-top: 15px; }
+        .ctrl-btn { width: 65px; height: 65px; background: #222; border: 1px solid #444; color: var(--accent); font-size: 24px; border-radius: 8px; }
+
+        #nav {
+            display: flex; background: #000; height: 70px; border-top: 1px solid #333;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #555; cursor: pointer; font-size: 11px; }
+        .nav-item.active { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
     </style>
 </head>
 <body>
 
-    <div id="tab-profile" class="tab-content active">
+<div id="app">
+    <div id="arena" class="screen active">
+        <h1 style="color: var(--accent); text-shadow: 0 0 10px var(--accent);">ARENA</h1>
+        <div id="arena-menu" style="width: 100%;">
+            <button class="btn" onclick="preStart('tourney')">🏆 ТУРНИР (50 ⭐)</button>
+            <button class="btn" onclick="preStart('practice')">🕹 ТРЕНИРОВКА</button>
+        </div>
+
+        <div id="game-box">
+            <div id="countdown"></div>
+            <canvas id="canvas" width="280" height="280"></canvas>
+            <div class="controls">
+                <div></div><button class="ctrl-btn" onclick="setDir(0,-1)">↑</button><div></div>
+                <button class="ctrl-btn" onclick="setDir(-1,0)">←</button>
+                <button class="ctrl-btn" onclick="setDir(0,1)">↓</button>
+                <button class="ctrl-btn" onclick="setDir(1,0)">→</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile" class="screen">
+        <h1 style="color: var(--accent);">PROFILE</h1>
         <div class="card">
-            <h2 id="name">Загрузка...</h2>
-            <div class="balance-val">⭐ <span id="balance">0</span></div>
+            <h2 id="p-name" style="margin: 0;">PLAYER</h2>
+            <div style="font-size: 32px; color: var(--accent); margin-top: 10px;">⭐ <span id="p-balance">0</span></div>
         </div>
         <div class="card">
-            <h3>Пополнение</h3>
+            <p style="margin-bottom: 10px; color: #888;">МИНИМАЛЬНОЕ ПОПОЛНЕНИЕ 10 ⭐</p>
             <input type="number" id="pay-amount" value="10" min="10">
             <button class="btn" onclick="pay()">КУПИТЬ STARS</button>
         </div>
     </div>
 
-    <div id="tab-arena" class="tab-content">
-        <div style="text-align: center; margin-bottom: 10px;">
-            <span>Счет: <b id="score">0</b></span>
-        </div>
-        <canvas id="game-canvas" width="300" height="300"></canvas>
-        
-        <div class="controls">
-            <div></div><button class="ctrl-btn" onclick="changeDir('up')">↑</button><div></div>
-            <button class="ctrl-btn" onclick="changeDir('left')">←</button>
-            <button class="ctrl-btn" onclick="changeDir('down')">↓</button>
-            <button class="ctrl-btn" onclick="changeDir('right')">→</button>
-        </div>
-        
-        <button id="start-btn" class="btn" onclick="startGame()" style="margin-top:20px;">ИГРАТЬ (50 ⭐)</button>
-    </div>
-
-    <div class="nav">
-        <div class="nav-btn active-tab" onclick="showTab('profile', this)">ПРОФИЛЬ</div>
-        <div class="nav-btn" onclick="showTab('arena', this)">АРЕНА</div>
-    </div>
+    <nav id="nav">
+        <div class="nav-item active" onclick="tab('arena', this)"><span>🎮</span>ARENA</div>
+        <div class="nav-item" onclick="tab('profile', this)"><span>👤</span>PROFILE</div>
+    </nav>
+</div>
 
 <script>
     const tg = window.Telegram.WebApp;
     const API = 'https://tg-game-arena.onrender.com';
+    let balance = 0, currentDir = {x: 1, y: 0}, gameInterval;
+
     tg.expand();
 
-    // Переключение вкладок
-    function showTab(name, el) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-tab'));
-        document.getElementById('tab-' + name).classList.add('active');
-        el.classList.add('active-tab');
+    async function loadUser() {
+        try {
+            const r = await fetch(`${API}/api/user-data`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ initData: tg.initData })
+            });
+            const d = await r.json();
+            balance = d.balance;
+            document.getElementById('p-balance').innerText = balance;
+            document.getElementById('p-name').innerText = d.name;
+        } catch(e) { console.error("API Error"); }
     }
 
-    // Логика кошелька
-    async function load() {
-        const r = await fetch(`${API}/api/user-data`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData })
-        });
-        const d = await r.json();
-        document.getElementById('name').innerText = d.name;
-        document.getElementById('balance').innerText = d.balance;
+    function tab(id, el) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+        if(id === 'profile') loadUser();
+        if(id === 'arena') {
+            document.getElementById('game-box').style.display = 'none';
+            document.getElementById('arena-menu').style.display = 'block';
+            clearInterval(gameInterval);
+        }
     }
 
     async function pay() {
-        const amount = document.getElementById('pay-amount').value;
+        const amt = document.getElementById('pay-amount').value;
         const r = await fetch(`${API}/api/create-invoice`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData, amount: parseInt(amount) })
+            body: JSON.stringify({ initData: tg.initData, amount: parseInt(amt) })
         });
-        const res = await r.json();
-        if(res.invoiceLink) tg.openInvoice(res.invoiceLink, (s) => { if(s=='paid') load(); });
+        const d = await r.json();
+        if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (s) => { if(s==='paid') loadUser(); });
     }
 
-    // ЛОГИКА ЗМЕЙКИ
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    let snake, food, direction, gameInterval, score;
-    const box = 15;
+    function setDir(x, y) { currentDir = {x, y}; }
 
-    function startGame() {
-        document.getElementById('start-btn').style.display = 'none';
-        snake = [{x: 10 * box, y: 10 * box}];
-        food = { x: Math.floor(Math.random()*19+1)*box, y: Math.floor(Math.random()*19+1)*box };
-        direction = 'right';
-        score = 0;
-        if(gameInterval) clearInterval(gameInterval);
-        gameInterval = setInterval(draw, 150);
+    function preStart(mode) {
+        if(mode === 'tourney' && balance < 50) return tg.showAlert("Нужно 50 Stars!");
+        
+        document.getElementById('arena-menu').style.display = 'none';
+        document.getElementById('game-box').style.display = 'flex';
+        
+        const cd = document.getElementById('countdown');
+        let count = 3;
+        cd.innerText = count;
+
+        const timer = setInterval(() => {
+            count--;
+            if(count <= 0) {
+                clearInterval(timer);
+                cd.innerText = "";
+                runGame();
+            } else { cd.innerText = count; }
+        }, 1000);
     }
 
-    function changeDir(d) { direction = d; }
+    function runGame() {
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        let snake = [{x: 10, y: 10}], food = {x: 5, y: 5};
+        currentDir = {x: 1, y: 0};
 
-    function draw() {
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        gameInterval = setInterval(() => {
+            let head = {x: snake[0].x + currentDir.x, y: snake[0].y + currentDir.y};
+            
+            if(head.x<0||head.x>=20||head.y<0||head.y>=20) {
+                clearInterval(gameInterval);
+                tg.showAlert("ИГРА ОКОНЧЕНА!");
+                tab('arena', document.querySelectorAll('.nav-item')[0]);
+                return;
+            }
 
-        for(let i=0; i<snake.length; i++) {
-            ctx.fillStyle = (i == 0) ? "#ffcc00" : "#fff";
-            ctx.fillRect(snake[i].x, snake[i].y, box, box);
-        }
+            snake.unshift(head);
+            if(head.x === food.x && head.y === food.y) {
+                food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
+            } else { snake.pop(); }
 
-        ctx.fillStyle = "red";
-        ctx.fillRect(food.x, food.y, box, box);
-
-        let headX = snake[0].x;
-        let headY = snake[0].y;
-
-        if(direction == 'left') headX -= box;
-        if(direction == 'up') headY -= box;
-        if(direction == 'right') headX += box;
-        if(direction == 'down') headY += box;
-
-        if(headX == food.x && headY == food.y) {
-            score++;
-            document.getElementById('score').innerText = score;
-            food = { x: Math.floor(Math.random()*19+1)*box, y: Math.floor(Math.random()*19+1)*box };
-        } else {
-            snake.pop();
-        }
-
-        let newHead = {x: headX, y: headY};
-
-        if(headX < 0 || headX >= canvas.width || headY < 0 || headY >= canvas.height || collision(newHead, snake)) {
-            clearInterval(gameInterval);
-            tg.showAlert("Игра окончена! Счет: " + score);
-            document.getElementById('start-btn').style.display = 'block';
-        }
-
-        snake.unshift(newHead);
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,300);
+            ctx.fillStyle = "#00ff41"; snake.forEach(s => ctx.fillRect(s.x*14, s.y*14, 13, 13));
+            ctx.fillStyle = "#ff0000"; ctx.fillRect(food.x*14, food.y*14, 13, 13);
+        }, 150);
     }
 
-    function collision(head, array) {
-        for(let i=0; i<array.length; i++) {
-            if(head.x == array[i].x && head.y == array[i].y) return true;
-        }
-        return false;
-    }
-
-    load();
+    loadUser();
 </script>
 </body>
 </html>
