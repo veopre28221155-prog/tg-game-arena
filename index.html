@@ -4,37 +4,25 @@
     <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg: var(--tg-theme-bg-color, #ffffff);
-            --hint: var(--tg-theme-hint-color, #999999);
-            --btn: var(--tg-theme-button-color, #2481cc);
-            --btn-text: var(--tg-theme-button-text-color, #ffffff);
-            --sec-bg: var(--tg-theme-secondary-bg-color, #f0f0f2);
-            --text: var(--tg-theme-text-color, #000000);
-        }
-        body { background: var(--sec-bg); color: var(--text); margin: 0; font-family: -apple-system, sans-serif; display: flex; justify-content: center; overflow: hidden; }
-        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
+        :root { --bg: #fff; --btn: #2481cc; --sec: #f0f0f2; --text: #000; }
+        body { background: var(--sec); color: var(--text); margin: 0; font-family: sans-serif; display: flex; justify-content: center; overflow: hidden; }
+        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; }
         .screen { display: none; flex: 1; padding: 16px; flex-direction: column; align-items: center; overflow-y: auto; }
         .active { display: flex; }
-        .card { background: var(--sec-bg); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; box-sizing: border-box; text-align: center; }
-        .btn { background: var(--btn); color: var(--btn-text); border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
-        canvas { background: #000; border-radius: 8px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        #countdown { font-size: 80px; font-weight: bold; color: var(--btn); display: none; margin: 40px; }
-        .controls { display: none; grid-template-columns: repeat(3, 70px); gap: 10px; margin-top: 15px; }
-        .ctrl-btn { width: 70px; height: 70px; background: var(--sec-bg); border-radius: 50%; border: 1px solid #ddd; font-size: 24px; color: var(--text); display: flex; align-items: center; justify-content: center; }
-        #nav { display: flex; background: var(--bg); height: 65px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
-        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--hint); cursor: pointer; }
-        .nav-item.active { color: var(--btn); }
-        #result-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); color: #fff; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .card { background: var(--sec); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
+        .btn { background: var(--btn); color: #fff; border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
+        canvas { background: #000; border-radius: 8px; display: none; }
+        #nav { display: flex; background: var(--bg); height: 60px; border-top: 1px solid #ddd; }
+        .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; }
+        .nav-item.active { color: var(--btn); font-weight: bold; }
+        #result-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: #fff; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
     </style></head><body><div id="app">
     
     <div id="result-overlay">
-        <h2 id="res-title">Матч окончен</h2>
-        <div class="card" style="background:#333; color:#fff">
-            <p id="res-score">Вы: 0 | Соперник: 0</p>
-        </div>
-        <button class="btn" onclick="restartCurrent()">Играть снова</button>
-        <button class="btn" style="background:#555" onclick="location.reload()">В меню</button>
+        <h2>Матч окончен</h2>
+        <p id="res-score">Загрузка итогов...</p>
+        <button class="btn" onclick="preStart(isPractice)">Играть снова</button>
+        <button class="btn" style="background:#444" onclick="location.reload()">В меню</button>
     </div>
 
     <div id="arena" class="screen active">
@@ -47,34 +35,30 @@
         </div>
         <div id="arena-menu" class="card">
             <h4 id="mode-info">Выбрано: Змейка</h4>
-            <button class="btn" id="practice-btn" onclick="preStart(true)">🔥 ТРЕНИРОВКА (Бесплатно)</button>
+            <button class="btn" onclick="preStart(true)">🔥 ТРЕНИРОВКА</button>
             <button class="btn" style="background:none; color:var(--btn); border:1px solid var(--btn)" id="friend-btn">⚔️ ИГРАТЬ С ДРУГОМ</button>
         </div>
-        <div id="game-ui" style="display:none; flex-direction:column; align-items:center;">
-            <div id="countdown">3</div>
-            <div id="score" style="font-size:20px; font-weight:bold; margin-bottom:5px;">Score: 0</div>
-            <canvas id="gameCanvas" width="300" height="450"></canvas>
-            <div id="game-ctrls" class="controls">
-                <div></div><button class="ctrl-btn" onclick="handleInput('up')">↑</button><div></div>
-                <button class="ctrl-btn" onclick="handleInput('left')">←</button>
-                <button class="ctrl-btn" onclick="handleInput('down')">↓</button>
-                <button class="ctrl-btn" onclick="handleInput('right')">→</button>
-            </div>
+        <div id="game-ui" style="display:none; flex-direction:column; align-items:center; width:100%;">
+            <div id="countdown" style="font-size:40px; font-weight:bold; margin:20px; color:var(--btn)">3</div>
+            <div id="score-text" style="font-weight:bold;">Score: 0</div>
+            <canvas id="gameCanvas" width="300" height="400"></canvas>
+            <button class="btn" style="background:red; width:100px" onclick="location.reload()">Выход</button>
         </div>
     </div>
 
     <div id="profile" class="screen">
         <div class="card">
             <h2 id="u-name">Player</h2>
-            <div style="font-size:36px; font-weight:800; color:var(--btn)">⭐ <span id="u-balance">0</span></div>
+            <div style="font-size:32px; font-weight:bold; color:var(--btn)">⭐ <span id="u-balance">0</span></div>
         </div>
         <button class="btn" onclick="pay()">ПОПОЛНИТЬ</button>
     </div>
 
     <nav id="nav">
-        <div class="nav-item active" onclick="tab('arena', this)"><span>🎮</span>Арена</div>
-        <div class="nav-item" onclick="tab('profile', this)"><span>👤</span>Профиль</div>
-    </nav></div>
+        <div class="nav-item active" onclick="tab('arena', this)">АРЕНА</div>
+        <div class="nav-item" onclick="tab('profile', this)">ПРОФИЛЬ</div>
+    </nav>
+</div>
 
 <script>
     const tg = window.Telegram.WebApp;
@@ -83,110 +67,15 @@
     let gameLoop, currentLobbyId = null, currentScore = 0;
 
     tg.expand();
+    tg.ready();
 
-    // 1. ФИКС УПРАВЛЕНИЯ ПК
-    document.addEventListener('keydown', (e) => {
+    // ЖЕЛЕЗНОЕ УПРАВЛЕНИЕ
+    window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowUp') handleInput('up');
         if (e.key === 'ArrowDown') handleInput('down');
         if (e.key === 'ArrowLeft') handleInput('left');
         if (e.key === 'ArrowRight') handleInput('right');
     });
-
-    async function load() {
-        const r = await fetch(`${API}/api/user-data`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData })
-        });
-        const d = await r.json();
-        balance = d.balance;
-        document.getElementById('u-balance').innerText = balance;
-        document.getElementById('u-name').innerText = d.name;
-    }
-
-    async function checkInvite() {
-        const startParam = tg.initDataUnsafe.start_param;
-        if (startParam && startParam.startsWith('lobby_')) {
-            const lobbyId = startParam.replace('lobby_', '');
-            currentLobbyId = lobbyId;
-            isPractice = false;
-            const r = await fetch(`${API}/api/join-lobby`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ initData: tg.initData, lobbyId })
-            });
-            const lobby = await r.json();
-            if (lobby.status === 'ready') preStart(false);
-            else tg.showAlert("Ожидание второго игрока...");
-        }
-    }
-
-    // 2. ФИКС КНОПКИ ДРУГА
-    document.getElementById('friend-btn').onclick = () => {
-        const lobbyId = Math.random().toString(36).substr(2, 9);
-        currentLobbyId = lobbyId;
-        tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats']);
-    };
-
-    function setGame(g) {
-        currentGame = g;
-        document.getElementById('s-snake').style.opacity = g==='snake'?1:0.5;
-        document.getElementById('s-tetris').style.opacity = g==='tetris'?1:0.5;
-    }
-
-    function preStart(practice) {
-        isPractice = practice;
-        document.getElementById('arena-menu').style.display = 'none';
-        document.getElementById('result-overlay').style.display = 'none';
-        document.getElementById('game-ui').style.display = 'flex';
-        const cd = document.getElementById('countdown');
-        cd.style.display = 'block';
-        let c = 3;
-        const t = setInterval(() => {
-            cd.innerText = c;
-            c--;
-            if(c < 0) {
-                clearInterval(t);
-                cd.style.display = 'none';
-                document.getElementById('gameCanvas').style.display = 'block';
-                document.getElementById('game-ctrls').style.display = 'grid';
-                if(currentGame==='snake') runSnake(); else runTetris();
-            }
-        }, 1000);
-    }
-
-    function gameOver() {
-        clearInterval(gameLoop);
-        if (isPractice) {
-            tg.showConfirm("Игра окончена! Счет: " + currentScore + ". Начать заново?", (ok) => {
-                if(ok) preStart(true); else location.reload();
-            });
-        } else submitScore(currentScore);
-    }
-
-    async function submitScore(score) {
-        const r = await fetch(`${API}/api/submit-score`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: score })
-        });
-        const lobby = await r.json();
-        showResultOverlay(lobby);
-    }
-
-    function showResultOverlay(lobby) {
-        document.getElementById('result-overlay').style.display = 'flex';
-        const myId = tg.initDataUnsafe.user.id.toString();
-        let myScore = lobby.scores[myId] || 0;
-        let oppScore = "Ожидание...";
-        for (let id in lobby.scores) { if (id !== myId) oppScore = lobby.scores[id]; }
-        document.getElementById('res-score').innerText = `Вы: ${myScore} | Соперник: ${oppScore}`;
-    }
-
-    function restartCurrent() {
-        if (isPractice) preStart(true);
-        else preStart(false);
-    }
 
     function handleInput(dir) {
         if (currentGame === 'snake') {
@@ -194,82 +83,90 @@
             if (dir === 'down' && moveDir.y === 0) moveDir = {x:0, y:1};
             if (dir === 'left' && moveDir.x === 0) moveDir = {x:-1, y:0};
             if (dir === 'right' && moveDir.x === 0) moveDir = {x:1, y:0};
-        } else if (currentGame === 'tetris') {
-            if (dir === 'left') tetrisMove(-1);
-            if (dir === 'right') tetrisMove(1);
-            if (dir === 'down') tetrisDrop();
-            if (dir === 'up') tetrisRotate();
         }
     }
 
-    // 3. ПОЛНОЦЕННЫЙ ТЕТРИС
-    let board, piece, tetrisScore;
-    function runTetris() {
-        const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
-        board = Array(20).fill().map(() => Array(10).fill(0));
-        tetrisScore = 0;
-        spawnPiece();
-        gameLoop = setInterval(() => { tetrisDrop(); drawTetris(ctx); }, 800);
+    async function load() {
+        const r = await fetch(`${API}/api/user-data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
+        const d = await r.json();
+        document.getElementById('u-balance').innerText = d.balance;
+        document.getElementById('u-name').innerText = d.name;
     }
-    function spawnPiece() {
-        const types = ['I','J','L','O','S','T','Z'];
-        piece = { pos: {x: 4, y: 0}, matrix: createPiece(types[Math.floor(Math.random()*7)]) };
-        if(collide()) gameOver();
-    }
-    function createPiece(t) {
-        if (t === 'I') return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
-        if (t === 'T') return [[0,1,0],[1,1,1],[0,0,0]];
-        if (t === 'O') return [[1,1],[1,1]];
-        return [[1,1,0],[0,1,1],[0,0,0]];
-    }
-    function tetrisDrop() {
-        piece.pos.y++;
-        if (collide()) { piece.pos.y--; merge(); spawnPiece(); clearLines(); }
-    }
-    function collide() {
-        const [m, o] = [piece.matrix, piece.pos];
-        for (let y = 0; y < m.length; ++y) {
-            for (let x = 0; x < m[y].length; ++x) {
-                if (m[y][x] !== 0 && (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) return true;
-            }
-        } return false;
-    }
-    function merge() { piece.matrix.forEach((row, y) => { row.forEach((val, x) => { if (val) board[y + piece.pos.y][x + piece.pos.x] = val; }); }); }
-    function clearLines() {
-        outer: for (let y = board.length - 1; y > 0; --y) {
-            for (let x = 0; x < board[y].length; ++x) { if (board[y][x] === 0) continue outer; }
-            board.unshift(board.splice(y, 1)[0].fill(0));
-            tetrisScore += 10; document.getElementById('score').innerText = "Score: " + tetrisScore;
+
+    // КНОПКА ДРУГА
+    document.getElementById('friend-btn').addEventListener('click', () => {
+        const lobbyId = Math.random().toString(36).substr(2, 9);
+        tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats']);
+    });
+
+    async function checkInvite() {
+        const startParam = tg.initDataUnsafe.start_param;
+        if (startParam && startParam.startsWith('lobby_')) {
+            currentLobbyId = startParam.replace('lobby_', '');
+            isPractice = false;
+            await fetch(`${API}/api/join-lobby`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) });
+            preStart(false);
         }
     }
-    function drawTetris(ctx) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0,0,300,450);
-        board.forEach((row, y) => row.forEach((val, x) => { if (val) { ctx.fillStyle = '#2481cc'; ctx.fillRect(x*30, y*22.5, 29, 21.5); } }));
-        piece.matrix.forEach((row, y) => row.forEach((val, x) => { if (val) { ctx.fillStyle = '#fff'; ctx.fillRect((x+piece.pos.x)*30, (y+piece.pos.y)*22.5, 29, 21.5); } }));
+
+    function setGame(g) {
+        currentGame = g;
+        document.getElementById('s-snake').style.opacity = g === 'snake' ? '1' : '0.5';
+        document.getElementById('s-tetris').style.opacity = g === 'tetris' ? '1' : '0.5';
     }
-    function tetrisMove(d) { piece.pos.x += d; if(collide()) piece.pos.x -= d; }
-    function tetrisRotate() { const old = piece.matrix; piece.matrix = piece.matrix[0].map((_, i) => piece.matrix.map(row => row[i]).reverse()); if(collide()) piece.matrix = old; }
+
+    function preStart(practice) {
+        isPractice = practice;
+        document.getElementById('arena-menu').style.display = 'none';
+        document.getElementById('result-overlay').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'flex';
+        let c = 3;
+        const cd = document.getElementById('countdown');
+        cd.style.display = 'block';
+        const t = setInterval(() => {
+            cd.innerText = c;
+            c--;
+            if(c < 0) {
+                clearInterval(t);
+                cd.style.display = 'none';
+                document.getElementById('gameCanvas').style.display = 'block';
+                runSnake();
+            }
+        }, 1000);
+    }
 
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
         currentScore = 0;
+        moveDir = {x:1, y:0};
         gameLoop = setInterval(() => {
             let h = {x: s[0].x + moveDir.x, y: s[0].y + moveDir.y};
-            if(h.x<0||h.x>=20||h.y<0||h.y>=30) { gameOver(); return; }
+            if(h.x<0||h.x>=20||h.y<0||h.y>=26) { stopGame(); return; }
             s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
-                currentScore++; document.getElementById('score').innerText = "Score: " + currentScore;
+                currentScore++;
+                document.getElementById('score-text').innerText = "Score: " + currentScore;
                 f = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
             } else s.pop();
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,450);
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,400);
             ctx.fillStyle = "#2481cc"; s.forEach(p=>ctx.fillRect(p.x*15, p.y*15, 14, 14));
             ctx.fillStyle = "red"; ctx.fillRect(f.x*15, f.y*15, 14, 14);
         }, 150);
     }
 
-    async function init() { await load(); checkInvite(); }
-    init();
+    function stopGame() {
+        clearInterval(gameLoop);
+        if(!isPractice) submitScore();
+        else tg.showAlert("Финиш! Счет: " + currentScore);
+    }
+
+    async function submitScore() {
+        const r = await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) });
+        const l = await r.json();
+        document.getElementById('result-overlay').style.display = 'flex';
+        document.getElementById('res-score').innerText = "Твой счет отправлен в лобби!";
+    }
 
     function tab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -278,9 +175,5 @@
         el.classList.add('active');
     }
 
-    async function pay() {
-        const r = await fetch(`${API}/api/create-invoice`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, amount: 50 }) });
-        const d = await r.json();
-        if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (st) => { if(st==='paid') load(); });
-    }
+    load(); checkInvite();
 </script></body></html>
