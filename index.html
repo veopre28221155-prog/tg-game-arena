@@ -6,118 +6,146 @@
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #0a0a0a; --accent: #00ff41; --text: #ffffff; }
-        body { background: #000; margin: 0; display: flex; justify-content: center; font-family: sans-serif; }
+        :root { --accent: #00ff41; --bg: #050505; --card: #111; }
+        body { background: #000; margin: 0; font-family: 'Courier New', monospace; color: white; overflow: hidden; }
         
-        /* Главный контейнер для фикса верстки на ПК */
+        /* Исправленный контейнер */
         #app {
-            width: 100%; max-width: 500px; height: 100vh;
-            background: var(--bg); position: relative; overflow: hidden;
-            display: flex; flex-direction: column;
+            width: 100%; max-width: 500px; height: 100vh; margin: 0 auto;
+            background: var(--bg); display: flex; flex-direction: column;
+            border-left: 1px solid #222; border-right: 1px solid #222;
         }
 
-        .screen { display: none; flex: 1; padding: 20px; flex-direction: column; align-items: center; overflow-y: auto; }
+        .screen { display: none; flex: 1; padding: 20px; flex-direction: column; align-items: center; }
         .active { display: flex; }
 
+        /* Красивые кнопки */
         .btn {
-            width: 90%; padding: 15px; margin: 10px 0;
-            background: transparent; border: 2px solid var(--accent);
-            color: var(--accent); font-weight: bold; cursor: pointer;
-            text-transform: uppercase;
+            width: 100%; padding: 18px; margin: 10px 0;
+            background: black; border: 2px solid var(--accent);
+            color: var(--accent); font-weight: bold; font-size: 16px;
+            text-transform: uppercase; cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
         }
+        .btn:active { background: var(--accent); color: black; }
+
+        /* Стили игры */
+        #game-canvas { background: #000; border: 2px solid #333; display: none; margin-top: 20px; }
 
         #nav {
-            display: flex; background: #111; height: 70px;
-            border-top: 1px solid #333; width: 100%;
+            display: flex; background: #000; height: 70px; border-top: 2px solid #222;
         }
-        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #555; font-size: 12px; cursor: pointer; }
-        .nav-item.active { color: var(--accent); }
-
-        .leader-row {
-            display: flex; justify-content: space-between; width: 100%;
-            padding: 12px; border-bottom: 1px solid #222;
-        }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #444; cursor: pointer; font-size: 10px; }
+        .nav-item.active { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
+        .nav-item span { font-size: 20px; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div id="arena" class="screen active">
-        <h1 style="color: var(--accent)">АРЕНА</h1>
-        <p id="server-status">Подключение...</p>
-        <button class="btn" onclick="tg.showAlert('Турниры скоро появятся!')">Найти турнир (50⭐)</button>
-        <button class="btn" onclick="tg.showAlert('Тренировка запущена!')">Тренировка</button>
+        <h1 style="color: var(--accent); text-shadow: 0 0 10px var(--accent);">RETRO ARENA</h1>
+        <p id="status" style="color: #666;">Подключение к серверу...</p>
+        
+        <button class="btn" onclick="startSnake('tourney')">🏆 ТУРНИР (50⭐)</button>
+        <button class="btn" onclick="startSnake('practice')">🕹️ ТРЕНИРОВКА</button>
+        
+        <canvas id="game-canvas" width="300" height="300"></canvas>
     </div>
 
     <div id="top" class="screen">
-        <h1>ТОП ЛИДЕРОВ</h1>
+        <h1 style="color: var(--accent)">TOP PLAYERS</h1>
         <div id="leaderboard" style="width: 100%"></div>
     </div>
 
     <div id="profile" class="screen">
-        <h1 id="p-name">Игрок</h1>
-        <div style="font-size: 30px;">⭐ <span id="p-balance">0</span></div>
-        <button class="btn" style="margin-top: 50px" onclick="buyStars()">Пополнить Stars</button>
+        <h1 id="user-name">PLAYER</h1>
+        <div style="font-size: 40px; margin: 20px 0;">⭐ <span id="balance">0</span></div>
+        <button class="btn" onclick="buyStars()">➕ КУПИТЬ STARS</button>
     </div>
 
     <div id="nav">
-        <div class="nav-item active" onclick="showTab('arena', this)"><span>🎮</span>АРЕНА</div>
-        <div class="nav-item" onclick="showTab('top', this)"><span>🏆</span>ТОП</div>
-        <div class="nav-item" onclick="showTab('profile', this)"><span>👤</span>ПРОФИЛЬ</div>
+        <div class="nav-item active" onclick="switchTab('arena', this)"><span>🎮</span>ARENA</div>
+        <div class="nav-item" onclick="switchTab('top', this)"><span>🏆</span>TOP</div>
+        <div class="nav-item" onclick="switchTab('profile', this)"><span>👤</span>PROFILE</div>
     </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     const API = 'https://tg-game-arena.onrender.com';
+    let balance = 0;
+
     tg.expand();
 
-    async function loadUser() {
-        const r = await fetch(`${API}/api/user-data`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData })
-        });
-        const d = await r.json();
-        document.getElementById('p-name').innerText = d.name;
-        document.getElementById('p-balance').innerText = d.balance;
-        document.getElementById('server-status').innerText = "✅ Сервер онлайн";
+    // Загрузка данных
+    async function init() {
+        try {
+            const r = await fetch(`${API}/api/user-data`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ initData: tg.initData })
+            });
+            const d = await r.json();
+            balance = d.balance;
+            document.getElementById('balance').innerText = balance;
+            document.getElementById('user-name').innerText = d.name;
+            document.getElementById('status').innerText = "ONLINE";
+        } catch(e) { document.getElementById('status').innerText = "SERVER SLEEPING..."; }
     }
 
-    async function loadTop() {
+    function switchTab(id, el) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+        if(id === 'top') loadLeaderboard();
+        document.getElementById('game-canvas').style.display = 'none';
+    }
+
+    async function loadLeaderboard() {
         const r = await fetch(`${API}/api/leaderboard`);
         const d = await r.json();
-        const container = document.getElementById('leaderboard');
-        container.innerHTML = d.map((u, i) => `
-            <div class="leader-row">
+        document.getElementById('leaderboard').innerHTML = d.map((u, i) => `
+            <div style="display:flex; justify-content:space-between; padding:15px; border-bottom:1px solid #222;">
                 <span>${i+1}. ${u.name}</span>
                 <span style="color:var(--accent)">${u.balance} ⭐</span>
             </div>
         `).join('');
     }
 
-    function showTab(id, el) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        el.classList.add('active');
-        if(id === 'top') loadTop();
-        if(id === 'profile') loadUser();
+    // МИНИ-ИГРА ЗМЕЙКА
+    let canvas = document.getElementById('game-canvas');
+    let ctx = canvas.getContext('2d');
+    function startSnake(mode) {
+        if(mode === 'tourney' && balance < 50) return tg.showAlert("Нужно 50 Stars!");
+        
+        canvas.style.display = 'block';
+        document.querySelectorAll('.btn').forEach(b => b.style.display = 'none');
+        
+        let snake = [{x: 10, y: 10}];
+        let food = {x: 5, y: 5};
+        let dx = 1, dy = 0;
+        
+        let game = setInterval(() => {
+            let head = {x: snake[0].x + dx, y: snake[0].y + dy};
+            if(head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20) {
+                clearInterval(game);
+                tg.showAlert("ИГРА ОКОНЧЕНА!");
+                location.reload();
+            }
+            snake.unshift(head);
+            if(head.x === food.x && head.y === food.y) {
+                food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
+            } else { snake.pop(); }
+            
+            ctx.fillStyle = 'black'; ctx.fillRect(0,0,300,300);
+            ctx.fillStyle = '#00ff41'; snake.forEach(s => ctx.fillRect(s.x*15, s.y*15, 14, 14));
+            ctx.fillStyle = 'red'; ctx.fillRect(food.x*15, food.y*15, 14, 14);
+        }, 150);
     }
 
-    async function buyStars() {
-        const r = await fetch(`${API}/api/create-invoice`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData, amount: 50 })
-        });
-        const { invoiceLink } = await r.json();
-        tg.openInvoice(invoiceLink, (status) => {
-            if(status === 'paid') loadUser();
-        });
-    }
-
-    loadUser();
+    init();
 </script>
 </body>
 </html>
