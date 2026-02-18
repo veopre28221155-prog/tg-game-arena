@@ -3,126 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Battle Arena</title>
+    <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --accent: #00ff41; --bg: #0a0a0a; --card: #161616; }
-        body { 
-            background: #000; margin: 0; font-family: 'Courier New', monospace; 
-            color: white; display: flex; justify-content: center; overflow: hidden;
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --hint: var(--tg-theme-hint-color, #999999);
+            --btn: var(--tg-theme-button-color, #2481cc);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --sec-bg: var(--tg-theme-secondary-bg-color, #f0f0f2);
+            --text: var(--tg-theme-text-color, #000000);
         }
+        body { background: var(--sec-bg); color: var(--text); margin: 0; font-family: -apple-system, sans-serif; display: flex; justify-content: center; overflow: hidden; }
+        #app { width: 100%; max-width: 500px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; }
         
-        /* Контейнер для фикса верстки на ПК */
-        #app {
-            width: 100%; max-width: 500px; height: 100vh;
-            background: var(--bg); position: relative; display: flex; flex-direction: column;
-            border-left: 1px solid #333; border-right: 1px solid #333;
-        }
-
-        .screen { display: none; flex: 1; padding: 20px; flex-direction: column; align-items: center; overflow-y: auto; }
+        .screen { display: none; flex: 1; padding: 16px; flex-direction: column; align-items: center; overflow-y: auto; }
         .active { display: flex; }
 
-        .card { background: var(--card); border: 1px solid #333; border-radius: 12px; width: 100%; padding: 15px; margin-bottom: 15px; text-align: center; box-sizing: border-box; }
+        .card { background: var(--sec-bg); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; box-sizing: border-box; }
+        .btn { background: var(--btn); color: var(--btn-text); border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 6px 0; }
+        .btn-sec { background: none; color: var(--btn); border: 1px solid var(--btn); }
 
-        /* Тот самый неоновый стиль кнопок */
-        .btn {
-            width: 100%; padding: 15px; margin: 10px 0;
-            background: transparent; border: 2px solid var(--accent);
-            color: var(--accent); font-weight: bold; font-size: 16px;
-            text-transform: uppercase; cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
-            transition: 0.2s;
-        }
-        .btn:active { background: var(--accent); color: #000; }
-
-        input { 
-            width: 100%; padding: 12px; background: #000; border: 1px solid #444; 
-            color: var(--accent); border-radius: 8px; margin-bottom: 10px; text-align: center; font-family: monospace; font-size: 18px;
-        }
-
-        /* Игровой блок */
-        #game-box { display: none; width: 100%; flex-direction: column; align-items: center; position: relative; }
-        canvas { background: #000; border: 2px solid #222; margin-top: 10px; box-shadow: 0 0 15px rgba(0, 255, 65, 0.1); }
-        #countdown { position: absolute; top: 80px; font-size: 70px; color: var(--accent); font-weight: bold; text-shadow: 0 0 20px var(--accent); z-index: 10; }
-
-        .controls { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; margin-top: 20px; }
-        .ctrl-btn { width: 70px; height: 70px; background: #111; border: 1px solid var(--accent); color: var(--accent); font-size: 24px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-
-        /* Нижнее меню */
-        #nav {
-            display: flex; background: #000; height: 75px; border-top: 1px solid #333;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #555; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .nav-item.active { color: var(--accent); text-shadow: 0 0 8px var(--accent); }
+        canvas { background: #000; border-radius: 8px; margin: 10px 0; display: none; }
+        
+        #nav { display: flex; background: var(--bg); height: 60px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--hint); cursor: pointer; }
+        .nav-item.active { color: var(--btn); }
+        
+        .game-controls { display: none; grid-template-columns: repeat(3, 60px); gap: 10px; margin-top: 10px; }
+        .ctrl-btn { width: 60px; height: 60px; background: var(--sec-bg); border: none; border-radius: 50%; font-size: 20px; color: var(--text); }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div id="arena" class="screen active">
-        <h1 style="color: var(--accent); text-shadow: 0 0 10px var(--accent); letter-spacing: 5px;">ARENA</h1>
-        
-        <div id="arena-menu" style="width: 100%;">
-            <button class="btn" onclick="preStart('tourney')">🏆 ТУРНИР (50 ⭐)</button>
-            <button class="btn" onclick="preStart('practice')">🕹 ТРЕНИРОВКА</button>
+        <div class="card">
+            <h2 style="margin:0">Выберите игру</h2>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn" onclick="setGame('snake')">Змейка 🐍</button>
+                <button class="btn" onclick="setGame('tetris')">Тетрис 🧱</button>
+            </div>
         </div>
 
-        <div id="game-box">
-            <div id="countdown"></div>
-            <div style="color: var(--accent); margin-bottom: 5px;">SCORE: <span id="score">0</span></div>
-            <canvas id="canvas" width="280" height="280"></canvas>
+        <div id="mode-selection" class="card">
+            <p id="selected-game-txt">Игра: Змейка</p>
+            <button class="btn btn-sec" onclick="startFree()">🎯 Тренировка (Бесплатно)</button>
+            <button class="btn" onclick="openLobby()">⚔️ Игра с другом</button>
+            <button class="btn" onclick="tg.showAlert('Рандомный поиск скоро!')">🎲 Рандомный поиск</button>
+        </div>
+
+        <div id="game-ui" style="display:none; width:100%; flex-direction:column; align-items:center;">
+            <div id="game-info">Счет: 0</div>
+            <canvas id="gameCanvas" width="300" height="300"></canvas>
             
-            <div class="controls">
-                <div></div><button class="ctrl-btn" onclick="setDir(0,-1)">↑</button><div></div>
-                <button class="ctrl-btn" onclick="setDir(-1,0)">←</button>
-                <button class="ctrl-btn" onclick="setDir(0,1)">↓</button>
-                <button class="ctrl-btn" onclick="setDir(1,0)">→</button>
+            <div id="snake-ctrls" class="game-controls">
+                <div></div><button class="ctrl-btn" onclick="snakeDir={x:0,y:-1}">↑</button><div></div>
+                <button class="ctrl-btn" onclick="snakeDir={x:-1,y:0}">←</button>
+                <button class="ctrl-btn" onclick="snakeDir={x:0,y:1}">↓</button>
+                <button class="ctrl-btn" onclick="snakeDir={x:1,y:0}">→</button>
             </div>
-            <button class="btn" style="margin-top: 20px; border-color: #ff3b30; color: #ff3b30; box-shadow: none;" onclick="location.reload()">ВЫЙТИ</button>
+            <button class="btn" style="background:red; width:120px" onclick="location.reload()">Выход</button>
         </div>
     </div>
 
     <div id="profile" class="screen">
-        <h1 style="color: var(--accent); text-shadow: 0 0 10px var(--accent);">PROFILE</h1>
         <div class="card">
-            <h2 id="p-name" style="margin: 0; color: #fff;">ЗАГРУЗКА...</h2>
-            <div style="font-size: 36px; color: var(--accent); margin-top: 10px; font-weight: bold;">⭐ <span id="p-balance">0</span></div>
+            <h2 id="u-name">Игрок</h2>
+            <div style="font-size: 32px; font-weight: bold;">⭐ <span id="u-balance">0</span></div>
         </div>
-        
         <div class="card">
-            <p style="margin-bottom: 10px; color: #888; font-size: 12px;">ПОПОЛНЕНИЕ ОТ 10 ⭐</p>
-            <input type="number" id="pay-amount" value="10" min="10">
-            <button class="btn" onclick="pay()">КУПИТЬ STARS</button>
+            <input type="number" id="pay-amt" value="50" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:10px">
+            <button class="btn" onclick="pay()">Пополнить Stars</button>
         </div>
     </div>
 
     <nav id="nav">
-        <div class="nav-item active" onclick="tab('arena', this)"><span>🎮</span>АРЕНА</div>
-        <div class="nav-item" onclick="tab('profile', this)"><span>👤</span>ПРОФИЛЬ</div>
+        <div class="nav-item active" onclick="tab('arena', this)"><span>🎮</span>Арена</div>
+        <div class="nav-item" onclick="tab('profile', this)"><span>👤</span>Профиль</div>
     </nav>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     const API = 'https://tg-game-arena.onrender.com';
-    let balance = 0, currentDir = {x: 0, y: -1}, gameInterval, score = 0;
+    let balance = 0, currentGame = 'snake', snakeDir = {x:1, y:0};
 
     tg.expand();
-    tg.ready();
 
-    async function loadUser() {
-        try {
-            const r = await fetch(`${API}/api/user-data`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ initData: tg.initData })
-            });
-            const d = await r.json();
-            balance = d.balance;
-            document.getElementById('p-balance').innerText = balance;
-            document.getElementById('p-name').innerText = d.name.toUpperCase();
-        } catch(e) { console.error("API Error"); }
+    async function load() {
+        const r = await fetch(`${API}/api/user-data`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData })
+        });
+        const d = await r.json();
+        balance = d.balance;
+        document.getElementById('u-balance').innerText = balance;
+        document.getElementById('u-name').innerText = d.name;
     }
 
     function tab(id, el) {
@@ -130,94 +108,54 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         el.classList.add('active');
-        if(id === 'profile') loadUser();
+    }
+
+    function setGame(g) {
+        currentGame = g;
+        document.getElementById('selected-game-txt').innerText = "Игра: " + (g === 'snake' ? 'Змейка' : 'Тетрис');
+    }
+
+    function startFree() {
+        document.getElementById('mode-selection').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'flex';
+        document.getElementById('gameCanvas').style.display = 'block';
+        if(currentGame === 'snake') {
+            document.getElementById('snake-ctrls').style.display = 'grid';
+            initSnake();
+        } else {
+            tg.showAlert("Тетрис в разработке, пока только Змейка!");
+        }
+    }
+
+    function initSnake() {
+        const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
+        let snake = [{x:10, y:10}], food = {x:5, y:5}, score = 0;
+        setInterval(() => {
+            let head = {x: snake[0].x + snakeDir.x, y: snake[0].y + snakeDir.y};
+            if(head.x<0||head.x>=20||head.y<0||head.y>=20) return location.reload();
+            snake.unshift(head);
+            if(head.x===food.x && head.y===food.y) {
+                score++;
+                food = {x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)};
+            } else { snake.pop(); }
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,300);
+            ctx.fillStyle = "#2481cc"; snake.forEach(s=>ctx.fillRect(s.x*15, s.y*15, 14, 14));
+            ctx.fillStyle = "red"; ctx.fillRect(food.x*15, food.y*15, 14, 14);
+        }, 150);
     }
 
     async function pay() {
-        const amt = document.getElementById('pay-amount').value;
-        if (amt < 10) return tg.showAlert("Минимум 10 Stars!");
-        
+        const amt = document.getElementById('pay-amt').value;
         const r = await fetch(`${API}/api/create-invoice`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ initData: tg.initData, amount: parseInt(amt) })
         });
-        const d = await r.json();
-        if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (s) => { if(s==='paid') loadUser(); });
+        const { invoiceLink } = await r.json();
+        tg.openInvoice(invoiceLink, (s) => { if(s==='paid') load(); });
     }
 
-    function setDir(x, y) { 
-        // Запрет разворота на 180 градусов
-        if (x !== 0 && currentDir.x !== 0) return;
-        if (y !== 0 && currentDir.y !== 0) return;
-        currentDir = {x, y}; 
-    }
-
-    function preStart(mode) {
-        if(mode === 'tourney' && balance < 50) return tg.showAlert("Нужно 50 Stars!");
-        
-        document.getElementById('arena-menu').style.display = 'none';
-        document.getElementById('game-box').style.display = 'flex';
-        
-        const cd = document.getElementById('countdown');
-        let count = 3;
-        cd.innerText = count;
-
-        const timer = setInterval(() => {
-            count--;
-            if(count <= 0) {
-                clearInterval(timer);
-                cd.innerText = "";
-                runGame();
-            } else { cd.innerText = count; }
-        }, 1000);
-    }
-
-    function runGame() {
-        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
-        let snake = [{x: 10, y: 15}, {x: 10, y: 16}, {x: 10, y: 17}];
-        let food = {x: 5, y: 5};
-        currentDir = {x: 0, y: -1};
-        score = 0;
-        document.getElementById('score').innerText = score;
-
-        gameInterval = setInterval(() => {
-            let head = {x: snake[0].x + currentDir.x, y: snake[0].y + currentDir.y};
-            
-            // Проверка столкновений
-            if(head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20 || snake.some(s => s.x === head.x && s.y === head.y)) {
-                clearInterval(gameInterval);
-                tg.showAlert("GAME OVER! SCORE: " + score);
-                location.reload();
-                return;
-            }
-
-            snake.unshift(head);
-            if(head.x === food.x && head.y === food.y) {
-                score += 10;
-                document.getElementById('score').innerText = score;
-                food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
-            } else { snake.pop(); }
-
-            // Отрисовка
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,280,280);
-            
-            // Еда
-            ctx.shadowBlur = 10; ctx.shadowColor = "red";
-            ctx.fillStyle = "#ff0000"; ctx.fillRect(food.x*14, food.y*14, 13, 13);
-            
-            // Змейка
-            ctx.shadowBlur = 15; ctx.shadowColor = var(--accent);
-            ctx.fillStyle = var(--accent);
-            snake.forEach((s, i) => {
-                ctx.globalAlpha = i === 0 ? 1 : 0.6;
-                ctx.fillRect(s.x*14, s.y*14, 13, 13);
-            });
-            ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-        }, 120);
-    }
-
-    loadUser();
+    load();
 </script>
 </body>
 </html>
