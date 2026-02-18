@@ -25,14 +25,12 @@
         .card { background: var(--tg-theme-secondary-bg-color); border-radius: 12px; width: 100%; padding: 16px; margin-bottom: 12px; box-sizing: border-box; text-align: center; }
         .btn { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; border-radius: 10px; padding: 14px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; margin: 8px 0; }
         
-        /* Стили для игры */
         #game-box { display: none; width: 100%; flex-direction: column; align-items: center; position: relative; }
-        canvas { background: #000; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        #countdown { position: absolute; top: 100px; font-size: 80px; font-weight: bold; color: var(--tg-theme-button-color); text-shadow: 0 0 20px #fff; display: none; }
+        canvas { background: #000; border-radius: 8px; }
+        #countdown { position: absolute; top: 100px; font-size: 80px; font-weight: bold; color: var(--tg-theme-button-color); display: none; z-index: 10; }
         
         .controls { display: grid; grid-template-columns: repeat(3, 70px); gap: 12px; margin-top: 20px; }
-        .ctrl-btn { width: 70px; height: 70px; background: #e0e0e0; border: none; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-        .ctrl-btn:active { background: #ccc; }
+        .ctrl-btn { width: 70px; height: 70px; background: #e0e0e0; border: none; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; }
 
         #nav { display: flex; background: var(--tg-theme-bg-color); height: 65px; border-top: 1px solid rgba(0,0,0,0.1); padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; color: var(--tg-theme-hint-color); cursor: pointer; }
@@ -45,11 +43,11 @@
     <div id="arena" class="screen active">
         <div class="card">
             <h2 id="status">Retro Arena</h2>
-            <p id="p-sub" style="color: var(--tg-theme-hint-color)">Выберите режим сражения</p>
+            <p style="color: var(--tg-theme-hint-color)">Пригласи друга на битву!</p>
         </div>
         
         <div id="menu" style="width:100%">
-            <button class="btn" onclick="preStart('tourney')">🏆 ТУРНИР (50 ⭐)</button>
+            <button class="btn" onclick="createTourney()">🏆 ПРИГЛАСИТЬ НА ТУРНИР (50 ⭐)</button>
             <button class="btn" style="background:#8e8e93" onclick="preStart('practice')">🕹 ТРЕНИРОВКА</button>
         </div>
 
@@ -94,6 +92,7 @@
     tg.expand();
     tg.ready();
 
+    // Загрузка пользователя
     async function loadUser() {
         try {
             const r = await fetch(`${API}/api/user-data`, {
@@ -105,18 +104,52 @@
             balance = d.balance;
             document.getElementById('p-balance').innerText = balance;
             document.getElementById('p-name').innerText = d.name;
-        } catch(e) { console.error("Server down"); }
+        } catch(e) { console.error("Error loading user"); }
     }
 
+    // Пополнение Stars
+    async function buyStars() {
+        const r = await fetch(`${API}/api/create-invoice`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData, amount: 50 })
+        });
+        const { invoiceLink } = await r.json();
+        tg.openInvoice(invoiceLink, (status) => {
+            if(status === 'paid') {
+                tg.showAlert("Оплата успешно завершена!");
+                loadUser();
+            }
+        });
+    }
+
+    // Приглашение друга
+    async function createTourney() {
+        if(balance < 50) return tg.showAlert("Недостаточно Stars для ставки!");
+        
+        const res = await fetch(`${API}/api/create-tournament`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ initData: tg.initData, bet: 50 })
+        });
+        const data = await res.json();
+        
+        // Открываем нативное окно приглашения друга
+        tg.switchInlineQuery(`tourney_${data.tourneyId}`, ["users", "chats"]);
+        tg.showAlert("Вызови друга на дуэль!");
+    }
+
+    // Логика переключения вкладок
     function tab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         el.classList.add('active');
-        if(id === 'top') loadTop();
+        if(id === 'top') loadLeaderboard();
+        if(id === 'profile') loadUser();
     }
 
-    async function loadTop() {
+    async function loadLeaderboard() {
         const r = await fetch(`${API}/api/leaderboard`);
         const d = await r.json();
         document.getElementById('leaderboard').innerHTML = d.map((u, i) => `
@@ -125,34 +158,29 @@
             </div>`).join('');
     }
 
+    // Управление и Игра
     function setDir(x, y) { currentDir = {x, y}; }
 
     function preStart(mode) {
-        if(mode === 'tourney' && balance < 50) return tg.showAlert("Не хватает Stars!");
-        
         document.getElementById('menu').style.display = 'none';
         document.getElementById('game-box').style.display = 'flex';
-        
         const cd = document.getElementById('countdown');
         cd.style.display = 'block';
         let count = 3;
         cd.innerText = count;
-
         const timer = setInterval(() => {
             count--;
             if(count <= 0) {
                 clearInterval(timer);
                 cd.style.display = 'none';
-                runGame();
+                runSnake();
             } else { cd.innerText = count; }
         }, 1000);
     }
 
-    function runGame() {
+    function runSnake() {
         const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
         let snake = [{x: 10, y: 10}], food = {x: 5, y: 5};
-        currentDir = {x: 1, y: 0};
-
         snakeInterval = setInterval(() => {
             let head = {x: snake[0].x + currentDir.x, y: snake[0].y + currentDir.y};
             if(head.x<0||head.x>=20||head.y<0||head.y>=20) {
@@ -160,26 +188,14 @@
                 tg.showAlert("ИГРА ОКОНЧЕНА!");
                 location.reload();
             }
-
             snake.unshift(head);
             if(head.x === food.x && head.y === food.y) {
                 food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
             } else { snake.pop(); }
-
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,300);
             ctx.fillStyle = "#2481cc"; snake.forEach(s => ctx.fillRect(s.x*15, s.y*15, 14, 14));
             ctx.fillStyle = "#ff3b30"; ctx.fillRect(food.x*15, food.y*15, 14, 14);
         }, 150);
-    }
-
-    async function buyStars() {
-        const r = await fetch(`${API}/api/create-invoice`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ initData: tg.initData, amount: 50 })
-        });
-        const { invoiceLink } = await r.json();
-        tg.openInvoice(invoiceLink, (s) => { if(s==='paid') loadUser(); });
     }
 
     loadUser();
