@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="ru"><head>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Retro Arena</title>
@@ -17,7 +19,10 @@
         .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 14px; }
         .nav-item.active { color: var(--btn); font-weight: bold; }
         #result-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); color: #fff; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-    </style></head><body><div id="app">
+    </style>
+</head>
+<body>
+<div id="app">
     
     <div id="result-overlay">
         <h2>Матч окончен</h2>
@@ -111,9 +116,12 @@
     function shareLobby() {
         const lobbyId = Math.random().toString(36).substr(2, 9);
         currentLobbyId = lobbyId;
+        
         if (tg.isVersionAtLeast('6.7')) {
+            // Открывает выбор чата и вставляет туда инлайн-запрос лобби
             tg.switchInlineQuery(`lobby_${lobbyId}`, ['users', 'chats', 'groups']);
         } else {
+            tg.showAlert("Обновите Telegram или используйте ID: " + lobbyId);
             tg.switchInlineQuery(`lobby_${lobbyId}`);
         }
     }
@@ -155,6 +163,7 @@
         }, 1000);
     }
 
+    // [Змейка]
     function runSnake() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
@@ -173,6 +182,7 @@
         }, 150);
     }
 
+    // [Тетрис]
     let tBoard, tPiece;
     function runTetris() {
         const cvs = document.getElementById('gameCanvas'), ctx = cvs.getContext('2d');
@@ -233,7 +243,7 @@
     async function submitScore() {
         await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: currentScore }) });
         document.getElementById('result-overlay').style.display = 'flex';
-        document.getElementById('res-score').innerText = "Твой результат: " + currentScore;
+        document.getElementById('res-score').innerText = "Твой результат в дуэли: " + currentScore;
     }
 
     async function load() {
@@ -243,15 +253,31 @@
         document.getElementById('u-name').innerText = d.name;
     }
 
+    // --- ЛОГИКА ВХОДА ПО ПРИГЛАШЕНИЮ ---
     async function checkInvite() {
         const sp = tg.initDataUnsafe.start_param;
         if (sp && sp.startsWith('lobby_')) {
             currentLobbyId = sp.replace('lobby_', '');
             isPractice = false;
-            await fetch(`${API}/api/join-lobby`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) });
-            preStart(false);
+            
+            try {
+                const r = await fetch(`${API}/api/join-lobby`, { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId }) 
+                });
+                await r.json();
+                
+                // Визуальный индикатор дуэли
+                document.getElementById('mode-info').innerHTML = 
+                    `<b style="color:#d9534f">⚔️ ДУЭЛЬ АКТИВНА (Лобби: ${currentLobbyId})</b>`;
+                tg.showAlert("Вы вступили в дуэль! Результат будет сохранен в лобби.");
+            } catch(e) { console.error("Ошибка входа в лобби"); }
         }
     }
 
-    load(); checkInvite();
-</script></body></html>
+    load(); 
+    checkInvite();
+</script>
+</body>
+</html>
