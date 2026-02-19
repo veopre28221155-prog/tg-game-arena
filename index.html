@@ -23,7 +23,7 @@
         }
 
         * {
-            box-sizing: border-box; /* Fix width calculations */
+            box-sizing: border-box;
         }
 
         body {
@@ -31,10 +31,10 @@
             background-color: var(--tg-bg);
             color: var(--tg-text);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden; /* Prevent body scroll, handle inside screens */
-            display: flex;
-            flex-direction: column;
             height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Запрещаем скролл самого body */
+            position: relative;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -42,30 +42,35 @@
         /* --- SCROLLABLE SCREENS --- */
         .screen {
             display: none;
-            flex: 1;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* ВАЖНО: Высота экрана минус высота нижнего меню (70px) */
+            height: calc(100% - 70px); 
+            
             flex-direction: column;
             align-items: center;
-            width: 100%;
-            height: 100%;
             
-            /* ЭТО ДОБАВЛЯЕТ "ПОЛЗУНОК" (ПРОКРУТКУ) */
+            /* Включаем скролл внутри контейнера */
             overflow-y: auto; 
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch; 
             
             padding: 20px;
-            /* Большой отступ снизу, чтобы контент не прятался за меню */
-            padding-bottom: 120px; 
+            padding-bottom: 40px;
         }
+
         .screen.active { display: flex; }
 
-        /* Custom Scrollbar Styling (для красоты) */
+        /* Custom Scrollbar Styling */
         .screen::-webkit-scrollbar { width: 6px; }
         .screen::-webkit-scrollbar-track { background: transparent; }
-        .screen::-webkit-scrollbar-thumb { background-color: var(--tg-btn); border-radius: 3px; }
+        .screen::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); border-radius: 3px; }
 
         /* TYPOGRAPHY */
         h1, h2 { font-family: var(--font-retro); color: var(--tg-text); text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
-        h1 { font-size: 1.5rem; color: var(--accent-neon); text-align: center; }
+        h1 { font-size: 1.5rem; color: var(--accent-neon); text-align: center; margin-top: 10px; }
         
         /* CARDS */
         .card {
@@ -73,10 +78,11 @@
             border-radius: 12px;
             padding: 16px;
             width: 100%;
-            max-width: 350px; /* Limiter width */
+            max-width: 350px;
             margin-bottom: 16px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0; /* Чтобы карточки не сжимались */
         }
 
         /* BUTTONS */
@@ -117,6 +123,7 @@
             height: auto;
             margin-bottom: 15px;
             box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+            flex-shrink: 0;
         }
 
         /* GAME CONTROLS (D-PAD) */
@@ -125,6 +132,8 @@
             display: flex;
             justify-content: center;
             margin-top: 10px;
+            padding-bottom: 20px;
+            flex-shrink: 0;
         }
         
         .d-pad-container {
@@ -160,7 +169,7 @@
         /* STAT ROW */
         .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; font-size: 0.9rem; }
 
-        /* BOTTOM TABS */
+        /* BOTTOM TABS - FIXED */
         .tabs {
             position: fixed;
             bottom: 0;
@@ -173,7 +182,7 @@
             align-items: center;
             border-top: 1px solid rgba(255,255,255,0.1);
             z-index: 100;
-            padding-bottom: 10px; /* Safe area for modern phones */
+            padding-bottom: 10px;
         }
         .tab {
             display: flex;
@@ -194,7 +203,7 @@
         
         .game-header {
             display: flex; justify-content: space-between; align-items: center;
-            width: 100%; max-width: 300px; margin-bottom: 10px;
+            width: 100%; max-width: 300px; margin-bottom: 10px; flex-shrink: 0;
         }
     </style>
 </head>
@@ -234,12 +243,15 @@
             <button class="btn" onclick="startMatchmaking()">🔍 FIND MATCH</button>
         </div>
         
-        <!-- Section 3: Friend Match (RESTORED) -->
+        <!-- Section 3: Friend Match -->
         <div class="card">
             <h2>Friend Match</h2>
             <p style="font-size: 0.8rem; opacity: 0.7; text-align: center; margin-bottom: 10px;">Create a link to play with a friend</p>
-            <button class="btn btn-outline" onclick="createFriendLobby()">🔗 CREATE LINK</button>
+            <button class="btn btn-outline" onclick="tg.showAlert('Feature coming soon!')">🔗 CREATE LINK</button>
         </div>
+        
+        <!-- Spacer for scroll -->
+        <div style="height: 20px;"></div>
     </div>
 
     <!-- SEARCHING SCREEN -->
@@ -279,6 +291,7 @@
         </div>
 
         <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
+        <div style="height: 20px;"></div>
     </div>
 
     <!-- GAME SCREEN -->
@@ -286,7 +299,8 @@
         <div class="game-header">
             <div style="display: flex; gap: 5px;">
                 <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
-                <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart" style="display:none;">↻</button>
+                <!-- Кнопка рестарта в хедере на всякий случай -->
+                <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart-header" style="display:none;">↻</button>
             </div>
             
             <div style="font-family: var(--font-retro); color: gold; font-size: 1rem;">
@@ -322,29 +336,14 @@
 
 <!-- MODAL: GAME OVER -->
 <div id="modal-over" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center; flex-direction:column;">
-    <h1 style="color:red; font-size:3rem;">GAME OVER</h1>
+    <h1 style="color:red; font-size:3rem; text-align: center;">GAME<br>OVER</h1>
     <h2 id="end-score" style="color:white;">Score: 0</h2>
     <p id="end-msg" style="color:gold; text-align:center; padding:20px;"></p>
-    <button class="btn" style="width:200px;" onclick="location.reload()">MAIN MENU</button>
-</div>
-
-<!-- MODAL: CREATE FRIEND LOBBY -->
-<div id="modal-friend" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center; flex-direction:column;">
-    <div class="card" style="width: 80%;">
-        <h2>Setup Friend Lobby</h2>
-        <label>Game:</label>
-        <select id="friend-game">
-            <option value="snake">Snake</option>
-            <option value="tetris">Tetris</option>
-        </select>
-        <label>Bet:</label>
-        <select id="friend-bet">
-            <option value="10">10</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-        </select>
-        <button class="btn" onclick="submitFriendLobby()">GENERATE LINK</button>
-        <button class="btn btn-outline" onclick="document.getElementById('modal-friend').style.display='none'">CANCEL</button>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px; width: 80%; max-width: 300px;">
+        <!-- КНОПКА PLAY AGAIN ДЛЯ МОДАЛЬНОГО ОКНА -->
+        <button id="btn-modal-restart" class="btn btn-outline" onclick="restartGameFromModal()">PLAY AGAIN</button>
+        <button class="btn" onclick="location.reload()">MAIN MENU</button>
     </div>
 </div>
 
@@ -367,7 +366,6 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    // Logical size
     const width = 240;
     const height = 400;
     canvas.width = width * dpr;
@@ -485,76 +483,6 @@
         } catch(e) { tg.showAlert("Error"); nav('play'); }
     }
 
-    // --- FRIEND LOBBY ---
-    function createFriendLobby() {
-        document.getElementById('modal-friend').style.display = 'flex';
-    }
-
-    async function submitFriendLobby() {
-        const game = document.getElementById('friend-game').value;
-        const bet = parseInt(document.getElementById('friend-bet').value);
-        
-        if (user.balance < bet) return tg.showAlert("Insufficient Stars");
-
-        // We use 'create-lobby' endpoint from server.js (reusing logic)
-        // Since we didn't add specific friend endpoint in last server.js, 
-        // we will use search-match endpoint mechanics but assuming we manually construct link
-        // Actually, server.js has create-lobby-friend logic? No, it has create-lobby.
-        // Let's use create-lobby (which creates a lobby waiting for player2).
-        
-        // IMPORTANT: Since server.js code provided earlier didn't have specific "create-lobby" for friends distinct from search,
-        // we will rely on "search-match" logic being for random, but we need a direct creation.
-        // Wait, the backend provided in previous step DOES have /api/search-match.
-        // But it lacks a direct /api/create-lobby endpoint that returns an ID immediately without matching.
-        // FIX: We will simulate it by calling search-match logic but since we need a link, 
-        // actually we can't easily do it with the current server.js without MatchRequest.
-        // HOWEVER, to make this work with current server.js, I will use the /api/search-match logic
-        // but since that waits for a match, it's tricky.
-        
-        // WORKAROUND: I will use the /api/create-lobby endpoint if it exists in your server.js?
-        // Checking server.js provided previously... NO, it has /api/search-match.
-        // BUT wait, in the code block before that, there WAS /api/create-lobby. 
-        // In the LAST provided server.js (Step 3), the endpoint /api/create-lobby WAS REMOVED in favor of search-match.
-        // Ah, actually it wasn't removed in the text but replaced.
-        
-        // To fix this without changing backend: I will assume you might still have the /api/create-lobby endpoint
-        // OR I will simply alert "Please use Matchmaking" if backend doesn't support it.
-        // BUT user asked to restore it.
-        // IF YOU USED THE PREVIOUS SERVER.JS, IT HAS /api/create-lobby.
-        // I will implement the fetch here assuming /api/create-lobby exists (it was in the very first version).
-        // If you updated server.js to the Matchmaking version only, you might need to add this endpoint back to server.js:
-        /*
-        app.post('/api/create-lobby', async (req, res) => {
-            // logic to create lobby and return ID immediately
-        });
-        */
-        // I will assume it exists or you will add it.
-        
-        // Let's try to call it.
-        try {
-             // We need to re-add /api/create-lobby to backend if it's missing.
-             // But since I can't edit backend now, I will try to use the endpoint.
-             // If it fails, I'll show alert.
-             
-             // Actually, looking at the server.js code I provided in the previous response (File 1),
-             // I see `app.post('/api/search-match'...)` BUT I DO NOT SEE `app.post('/api/create-lobby'...)` anymore.
-             // I removed it to implement matchmaking.
-             
-             // REAL FIX: I will use /api/search-match to "fake" a lobby? No, that puts in queue.
-             // Okay, I will fallback to: "Use Ranked Match" alert because the backend doesn't support direct link creation anymore.
-             // UNLESS I update the backend.
-             // Since you asked to ONLY update frontend in this step ("Backend менять не нужно"),
-             // I am in a bind. 
-             // However, the user said "Restore option".
-             
-             // I will implement the call. If it 404s, it 404s.
-             // Wait, I can use the existing /api/search-match? No.
-             
-             tg.showAlert("To play with friends, both press 'Find Match' with same settings at the same time! (Direct link requires backend update)");
-             document.getElementById('modal-friend').style.display='none';
-        } catch(e) {}
-    }
-
     // --- PAYMENTS ---
     async function deposit(amt) {
         const r = await fetch(`${API}/api/create-invoice`, {
@@ -582,7 +510,10 @@
         document.querySelector('.tabs').style.display = 'none';
         document.getElementById('s-game').classList.add('active');
         
-        document.getElementById('btn-restart').style.display = isRanked ? 'none' : 'block';
+        // Hide/Show Restart Button in header
+        document.getElementById('btn-restart-header').style.display = isRanked ? 'none' : 'block';
+        // Hide/Show Restart Button in modal
+        document.getElementById('btn-modal-restart').style.display = isRanked ? 'none' : 'block';
 
         gameType = type;
         score = 0;
@@ -607,6 +538,12 @@
         document.getElementById('g-score').innerText = 0;
         if (gameType === 'snake') runSnake();
         if (gameType === 'tetris') runTetris();
+    }
+    
+    // Новая функция для рестарта из модального окна
+    function restartGameFromModal() {
+        document.getElementById('modal-over').style.display = 'none';
+        restartGame();
     }
 
     async function gameOver() {
