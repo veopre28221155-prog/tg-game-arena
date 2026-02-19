@@ -1,7 +1,6 @@
 {
-  "name": "tg-game-arena",
+  "name": "retro-arena-api",
   "version": "1.0.0",
-  "description": "Retro Battle Arena Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,8 +8,7 @@
   "dependencies": {
     "express": "^4.18.2",
     "mongoose": "^7.0.0",
-    "axios": "^1.3.4",
     "cors": "^2.8.5",
-    "crypto": "^1.0.1"
+    "axios": "^1.3.0"
   }
 }
