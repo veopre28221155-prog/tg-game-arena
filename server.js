@@ -8,6 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ваши ключи
 const BOT_TOKEN = '7593728405:AAEcp0It8ovT3P_dyugpaIujGXr6s5AQqH8';
 const MONGO_URI = 'mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.net/retro_arena?retryWrites=true&w=majority';
 
@@ -90,4 +91,4 @@ app.post('/api/create-invoice', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
