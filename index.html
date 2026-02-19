@@ -5,18 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Pixel Font -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Telegram Theme Integration */
             --tg-bg: var(--tg-theme-bg-color, #1c1c1e);
             --tg-text: var(--tg-theme-text-color, #ffffff);
             --tg-btn: var(--tg-theme-button-color, #2481cc);
             --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
             --tg-sec-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
-            
-            /* Retro Accents */
             --accent-neon: #00f0ff;
             --accent-pink: #ff0055;
             --font-retro: 'Press Start 2P', cursive;
@@ -27,30 +23,31 @@
             background-color: var(--tg-bg);
             color: var(--tg-text);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
+            overflow: hidden; /* Main body doesn't scroll, inner screens do */
             display: flex;
             flex-direction: column;
             height: 100vh;
             user-select: none;
+            -webkit-user-select: none;
         }
 
-        /* LAYOUT */
+        /* SCREEN & SCROLLING */
         .screen {
             display: none;
             flex: 1;
             flex-direction: column;
             align-items: center;
-            overflow-y: auto;
+            overflow-y: auto; /* Enable vertical scroll */
             padding: 20px;
-            padding-bottom: 80px; /* Space for tabs */
+            padding-bottom: 100px; /* Space for tabs/controls */
+            -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
         }
         .screen.active { display: flex; }
 
-        /* TYPOGRAPHY */
-        h1, h2 { font-family: var(--font-retro); color: var(--tg-text); text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
+        /* TYPOGRAPHY & CARDS */
+        h1, h2 { font-family: var(--font-retro); color: var(--tg-text); text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); text-align: center; }
         h1 { font-size: 1.5rem; color: var(--accent-neon); }
         
-        /* COMPONENTS */
         .card {
             background-color: var(--tg-sec-bg);
             border-radius: 12px;
@@ -69,29 +66,22 @@
             border-radius: 8px;
             padding: 14px;
             width: 100%;
-            font-size: 1rem;
+            font-size: 0.8rem;
             font-weight: bold;
             cursor: pointer;
             margin-bottom: 10px;
             text-transform: uppercase;
             font-family: var(--font-retro);
-            font-size: 0.8rem;
             transition: transform 0.1s;
         }
-        .btn:active { transform: scale(0.98); opacity: 0.9; }
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-outline { background: transparent; border: 2px solid var(--tg-btn); color: var(--tg-btn); }
         .btn-danger { background: var(--accent-pink); color: white; }
+        .btn-sm { width: auto; padding: 5px 10px; font-size: 0.7rem; }
 
-        /* INPUTS */
         select, input {
-            background: var(--tg-bg);
-            color: var(--tg-text);
-            border: 1px solid var(--tg-btn);
-            padding: 10px;
-            border-radius: 8px;
-            width: 100%;
-            margin-bottom: 10px;
-            font-family: inherit;
+            background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn);
+            padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px;
         }
 
         /* GAME CANVAS */
@@ -100,62 +90,71 @@
             border-radius: 4px;
             background: #000;
             image-rendering: pixelated;
-            max-height: 55vh;
-            width: auto;
+            max-width: 90%;
+            height: auto;
+            max-height: 50vh;
+            margin-bottom: 10px;
         }
 
-        /* CONTROLS */
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-            width: 200px;
+        /* --- CONTROLS (D-PAD) --- */
+        .game-ui-bottom {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: auto; /* Push to bottom of content flow */
         }
-        .d-pad {
+        
+        .d-pad-container {
+            display: grid;
+            grid-template-areas:
+                ".    up    ."
+                "left down right";
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
             background: rgba(255,255,255,0.1);
             border: 2px solid var(--tg-text);
-            border-radius: 12px;
-            height: 50px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 24px;
+            color: white;
+            user-select: none;
+            touch-action: manipulation; /* Prevent browser zoom */
         }
-        .d-pad:active { background: var(--accent-neon); color: #000; }
+        .ctrl-btn:active { background: var(--accent-neon); color: black; border-color: var(--accent-neon); }
+        
+        /* Grid Areas */
+        .btn-up { grid-area: up; }
+        .btn-left { grid-area: left; }
+        .btn-down { grid-area: down; }
+        .btn-right { grid-area: right; }
 
-        /* STATS ROW */
         .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 8px 0; font-size: 0.9rem; }
 
         /* TABS */
         .tabs {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            background: var(--tg-sec-bg);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid rgba(0,0,0,0.2);
-            z-index: 100;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+            background: var(--tg-sec-bg); display: flex; justify-content: space-around;
+            align-items: center; border-top: 1px solid rgba(0,0,0,0.2); z-index: 100;
         }
-        .tab {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: var(--tg-text);
-            opacity: 0.5;
-            font-size: 0.7rem;
-            cursor: pointer;
-        }
+        .tab { display: flex; flex-direction: column; align-items: center; color: var(--tg-text); opacity: 0.5; font-size: 0.7rem; cursor: pointer; }
         .tab.active { opacity: 1; color: var(--accent-neon); }
         .tab-icon { font-size: 1.2rem; margin-bottom: 4px; }
 
-        /* ANIMATION */
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-        .searching-anim { animation: pulse 1.5s infinite; color: var(--accent-neon); margin: 20px 0; font-family: var(--font-retro); }
+        .searching-anim { animation: pulse 1.5s infinite; color: var(--accent-neon); margin: 20px 0; font-family: var(--font-retro); text-align: center; }
+        
+        /* Header in Game */
+        .game-header {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; max-width: 400px; margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -194,7 +193,7 @@
         
         <div class="card">
             <h2>Friend Match</h2>
-            <button class="btn btn-outline" onclick="createFriendLobby()">Create Link</button>
+            <button class="btn btn-outline" onclick="tg.showAlert('Feature coming soon!')">Create Link</button>
         </div>
     </div>
 
@@ -202,8 +201,8 @@
     <div id="s-search" class="screen" style="justify-content: center;">
         <h1>SEARCHING...</h1>
         <div class="searching-anim">LOOKING FOR OPPONENT</div>
-        <p style="text-align: center; font-size: 0.9rem; opacity: 0.8;">Please wait while we match you with a player betting same amount.</p>
-        <button class="btn btn-danger" onclick="cancelMatchmaking()" style="margin-top: 30px;">CANCEL SEARCH</button>
+        <p style="text-align: center; font-size: 0.9rem; opacity: 0.8;">Please wait...</p>
+        <button class="btn btn-danger" onclick="cancelMatchmaking()" style="margin-top: 30px;">CANCEL</button>
     </div>
 
     <!-- TAB 2: PROFILE -->
@@ -239,20 +238,28 @@
 
     <!-- GAME SCREEN -->
     <div id="s-game" class="screen" style="justify-content: start; padding-top: 10px;">
-        <div style="display: flex; justify-content: space-between; width: 100%; max-width: 400px; margin-bottom: 10px;">
-            <button class="btn btn-danger" style="width: auto; padding: 5px 15px;" onclick="quitGame()">EXIT</button>
-            <div style="font-family: var(--font-retro); color: gold; font-size: 1.2rem;">
+        <div class="game-header">
+            <!-- RESTART & EXIT Buttons -->
+            <div style="display: flex; gap: 5px;">
+                <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
+                <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart" style="display:none;">↻</button>
+            </div>
+            
+            <div style="font-family: var(--font-retro); color: gold; font-size: 1rem;">
                 SCORE: <span id="g-score">0</span>
             </div>
         </div>
         
         <canvas id="gameCanvas"></canvas>
         
-        <div class="controls">
-            <div class="d-pad" ontouchstart="input('left')" onmousedown="input('left')">←</div>
-            <div class="d-pad" ontouchstart="input('up')" onmousedown="input('up')">↻</div>
-            <div class="d-pad" ontouchstart="input('right')" onmousedown="input('right')">→</div>
-            <div class="d-pad" style="grid-column: 2;" ontouchstart="input('down')" onmousedown="input('down')">↓</div>
+        <!-- NEW SENSOR CONTROLS (D-PAD) -->
+        <div class="game-ui-bottom">
+            <div class="d-pad-container">
+                <div class="ctrl-btn btn-up" ontouchstart="input('up', event)" onmousedown="input('up', event)">▲</div>
+                <div class="ctrl-btn btn-left" ontouchstart="input('left', event)" onmousedown="input('left', event)">◀</div>
+                <div class="ctrl-btn btn-down" ontouchstart="input('down', event)" onmousedown="input('down', event)">▼</div>
+                <div class="ctrl-btn btn-right" ontouchstart="input('right', event)" onmousedown="input('right', event)">▶</div>
+            </div>
         </div>
     </div>
 </div>
@@ -295,14 +302,24 @@
     // Game Vars
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 240; canvas.height = 400;
+    // Adjust canvas for high DPI
+    const dpr = window.devicePixelRatio || 1;
+    // Logical size
+    const width = 240;
+    const height = 400;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+    // Canvas style size
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
     const BLK = 20; 
     let loop = null, gameType = '', score = 0;
 
     // --- INIT ---
     async function init() {
         try {
-            // Login
             const r = await fetch(`${API}/api/user-data`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ initData: tg.initData })
@@ -310,7 +327,6 @@
             user = await r.json();
             updateUI();
 
-            // Check Start Param
             const startParam = tg.initDataUnsafe.start_param;
             if (startParam) {
                 const j = await fetch(`${API}/api/join-lobby`, {
@@ -351,7 +367,6 @@
     async function startMatchmaking() {
         const game = document.getElementById('search-game').value;
         const bet = parseInt(document.getElementById('search-bet').value);
-        
         if (user.balance < bet) return tg.showAlert("Insufficient Stars!");
 
         nav('search');
@@ -364,19 +379,16 @@
             const d = await r.json();
             
             if (d.error) {
-                tg.showAlert(d.error);
-                nav('play');
+                tg.showAlert(d.error); nav('play');
             } else if (d.status === 'match_found') {
-                // Instant match
-                lobby = { lobbyId: d.lobbyId, betAmount: bet }; // Minimal info needed
+                lobby = { lobbyId: d.lobbyId, betAmount: bet };
                 user.balance = d.newBalance;
                 launchGame(game, true);
             } else if (d.status === 'waiting') {
-                user.balance = d.newBalance; // Balance deducted
-                // Start Polling
+                user.balance = d.newBalance;
                 pollInterval = setInterval(checkMatchStatus, 2000);
             }
-        } catch(e) { tg.showAlert("Error connecting"); nav('play'); }
+        } catch(e) { tg.showAlert("Error"); nav('play'); }
     }
 
     async function checkMatchStatus() {
@@ -405,21 +417,10 @@
             const d = await r.json();
             if(d.success) {
                 user.balance = d.newBalance;
-                tg.showAlert("Search cancelled. Stars refunded.");
+                tg.showAlert("Refunded");
                 nav('play');
             }
         } catch(e) { tg.showAlert("Error"); nav('play'); }
-    }
-
-    async function createFriendLobby() {
-        const bet = prompt("Enter bet amount (min 10):", "10");
-        if(!bet || bet < 10) return;
-        const game = prompt("Enter game (snake/tetris):", "tetris");
-        
-        // Use backend to create specific link (Reusing create-lobby-friend logic implies adding that endpoint or using generic create-lobby logic adapted)
-        // For simplicity, showing alert logic, need backend endpoint for this or reuse search-match logic creatively.
-        // Let's assume standard friend flow exists or use search logic.
-        tg.showAlert("Use matchmaking for now, friend links coming in v2!");
     }
 
     // --- PAYMENTS ---
@@ -449,6 +450,9 @@
         document.querySelector('.tabs').style.display = 'none';
         document.getElementById('s-game').classList.add('active');
         
+        // Show restart button ONLY in training mode (not ranked)
+        document.getElementById('btn-restart').style.display = isRanked ? 'none' : 'block';
+
         gameType = type;
         score = 0;
         document.getElementById('g-score').innerText = 0;
@@ -463,6 +467,15 @@
             clearTimeout(loop);
             location.reload();
         }
+    }
+
+    function restartGame() {
+        if(loop) cancelAnimationFrame(loop);
+        clearTimeout(loop);
+        score = 0;
+        document.getElementById('g-score').innerText = 0;
+        if (gameType === 'snake') runSnake();
+        if (gameType === 'tetris') runTetris();
     }
 
     async function gameOver() {
@@ -481,9 +494,10 @@
         if(lobby) document.getElementById('end-msg').innerText = "Result saved! Winner gets prize.";
     }
 
-    function input(k) {
-        const e = new KeyboardEvent('keydown', { key: k==='left'?'ArrowLeft': k==='right'?'ArrowRight': k==='up'?'ArrowUp':'ArrowDown' });
-        document.dispatchEvent(e);
+    function input(k, e) {
+        if(e) e.preventDefault(); // Prevent touch scroll/zoom
+        const ev = new KeyboardEvent('keydown', { key: k==='left'?'ArrowLeft': k==='right'?'ArrowRight': k==='up'?'ArrowUp':'ArrowDown' });
+        document.dispatchEvent(ev);
     }
 
     // --- SNAKE ENGINE ---
@@ -493,13 +507,10 @@
         
         function update() {
             let h={x:s[0].x+d.x, y:s[0].y+d.y};
-            
-            // Wall
             if(h.x<0||h.x>=cols||h.y<0||h.y>=rows||(d.x|d.y && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
             
             if(d.x|d.y) s.unshift(h);
             
-            // Food
             if(h.x===f.x && h.y===f.y) {
                 score+=10; document.getElementById('g-score').innerText=score;
                 f={x:Math.floor(Math.random()*cols), y:Math.floor(Math.random()*rows)};
@@ -507,9 +518,8 @@
                 s.pop();
             }
 
-            // Draw
             ctx.fillStyle='#000'; ctx.fillRect(0,0,240,400);
-            // Grid (Optional retro feel)
+            // Optional Grid
             ctx.strokeStyle='#111'; ctx.beginPath();
             for(let i=0;i<cols;i++) { ctx.moveTo(i*BLK,0); ctx.lineTo(i*BLK,400); }
             ctx.stroke();
@@ -526,12 +536,12 @@
             if(e.key==='ArrowRight'&&d.x!==-1) d={x:1,y:0};
             if(e.key==='ArrowUp'&&d.y!==1) d={x:0,y:-1};
             if(e.key==='ArrowDown'&&d.y!==-1) d={x:0,y:1};
-            if(!d.x && !d.y) d={x:0,y:1}; // Start on any key
+            if(!d.x && !d.y) d={x:0,y:1};
         };
         update();
     }
 
-    // --- TETRIS ENGINE (FIXED) ---
+    // --- TETRIS ENGINE ---
     function runTetris() {
         const R=20, C=12;
         let board = Array.from({length:R}, () => Array(C).fill(0));
@@ -548,7 +558,7 @@
 
         let p = randomPiece();
         let dropCounter = 0;
-        let dropInterval = 1000; // 1 sec drop
+        let dropInterval = 1000;
         let lastTime = 0;
 
         function randomPiece() {
@@ -558,8 +568,6 @@
 
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            
-            // Draw Board
             for(let y=0; y<R; y++) {
                 for(let x=0; x<C; x++) {
                     if(board[y][x]) {
@@ -568,7 +576,6 @@
                     }
                 }
             }
-            // Draw Piece
             p.m.forEach((row, y) => {
                 row.forEach((val, x) => {
                     if(val) {
@@ -606,7 +613,7 @@
                 p.x += offset;
                 offset = -(offset + (offset > 0 ? 1 : -1));
                 if(offset > p.m[0].length) {
-                    rotate(p.m); rotate(p.m); rotate(p.m); // Rotate back
+                    rotate(p.m); rotate(p.m); rotate(p.m); 
                     p.x = pos;
                     return;
                 }
@@ -627,7 +634,7 @@
             if(rowCount > 0) {
                 score += rowCount * 100;
                 document.getElementById('g-score').innerText = score;
-                dropInterval = Math.max(100, 1000 - (score/5)); // Speed up
+                dropInterval = Math.max(100, 1000 - (score/5));
             }
         }
 
@@ -640,7 +647,6 @@
                 p.y++;
                 if(collide(board, p)) {
                     p.y--;
-                    // Merge
                     p.m.forEach((row, y) => {
                         row.forEach((val, x) => {
                             if(val) board[y+p.y][x+p.x] = p.c;
@@ -649,8 +655,7 @@
                     arenaSweep();
                     p = randomPiece();
                     if(collide(board, p)) {
-                        gameOver(); // Game Over
-                        return;
+                        gameOver(); return;
                     }
                 }
                 dropCounter = 0;
