@@ -24,7 +24,7 @@
             user-select: none; -webkit-user-select: none;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* --- UI --- */
         .screen {
             display: none; flex: 1; flex-direction: column;
             align-items: center; justify-content: center;
@@ -36,6 +36,7 @@
         .neon-text {
             text-shadow: 0 0 10px var(--primary-blue);
             color: #fff; font-size: 2rem; margin-bottom: 20px; font-weight: bold;
+            text-align: center;
         }
 
         .btn {
@@ -46,27 +47,28 @@
             cursor: pointer; width: 80%; max-width: 300px;
             text-transform: uppercase; font-weight: bold;
             box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
-            transition: transform 0.1s;
         }
         .btn:active { transform: scale(0.95); background: var(--primary-blue); color: #000; }
-        
-        .btn-bet { width: auto; display: inline-block; padding: 10px; margin: 5px; min-width: 60px; }
-        .btn-bet.selected { background: var(--primary-blue); color: #000; }
+
+        .btn-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 90%; max-width: 320px;
+        }
+        .btn-small {
+            font-size: 0.9rem; padding: 8px; margin: 0; width: 100%;
+        }
 
         .profile-card {
             background: var(--panel-bg); border: 1px solid var(--secondary-purple);
-            padding: 20px; border-radius: 10px; width: 85%; margin-bottom: 10px;
+            padding: 20px; border-radius: 10px; width: 85%; margin-bottom: 20px;
         }
         .stat-row { display: flex; justify-content: space-between; margin: 8px 0; border-bottom: 1px dashed #444; }
 
-        /* --- GAME CANVAS --- */
+        /* --- CANVAS --- */
         canvas {
             border: 2px solid var(--primary-blue); background-color: #000;
             box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
-            image-rendering: pixelated; /* Retro look */
-            display: block; margin: 0 auto;
+            image-rendering: pixelated;
         }
-
         .game-header { width: 90%; display: flex; justify-content: space-between; margin-bottom: 10px; }
 
         /* --- CONTROLS --- */
@@ -78,10 +80,11 @@
             background: rgba(255, 255, 255, 0.1); border: 1px solid var(--primary-blue);
             height: 60px; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; font-size: 24px; color: white;
+            touch-action: manipulation;
         }
         .ctrl-btn:active { background: var(--primary-blue); }
 
-        /* --- MODALS --- */
+        /* --- MODAL --- */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 100;
@@ -98,25 +101,24 @@
             display: flex; background: var(--panel-bg); border-top: 2px solid var(--secondary-purple);
             z-index: 50;
         }
-        .tab { flex: 1; display: flex; align-items: center; justify-content: center; color: #888; font-size: 1.2rem; }
-        .tab.active { color: var(--primary-blue); text-shadow: 0 0 5px var(--primary-blue); }
+        .tab { flex: 1; display: flex; align-items: center; justify-content: center; color: #888; }
+        .tab.active { color: var(--primary-blue); }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- MENU SCREEN -->
+    <!-- MENU -->
     <div id="screen-menu" class="screen active">
         <h1 class="neon-text">RETRO ARENA</h1>
         <div id="duel-info" style="color: #ff0055; margin-bottom: 15px; font-weight: bold;"></div>
         
-        <button class="btn" onclick="launchGame('snake', false)">🐍 SNAKE (Тренировка)</button>
-        <button class="btn" onclick="launchGame('tetris', false)">🧱 TETRIS (Тренировка)</button>
-        <hr style="width: 80%; border-color: #333;">
+        <button class="btn" onclick="launchGame('snake', false)">🐍 SNAKE</button>
+        <button class="btn" onclick="launchGame('tetris', false)">🧱 TETRIS</button>
         <button class="btn" style="border-color: var(--secondary-purple); color: var(--secondary-purple);" onclick="openBetModal()">⚔️ ДУЭЛЬ (PvP)</button>
     </div>
 
-    <!-- PROFILE SCREEN -->
+    <!-- PROFILE -->
     <div id="screen-profile" class="screen">
         <h2 class="neon-text">ПРОФИЛЬ</h2>
         <div class="profile-card">
@@ -126,34 +128,30 @@
             <div class="stat-row"><span>Tetris Record:</span> <span id="p-tetris">0</span></div>
         </div>
         
-        <div class="profile-card" style="text-align: center;">
-            <p style="margin: 0 0 10px 0;">Пополнить Stars:</p>
-            <div>
-                <button class="btn btn-bet" onclick="buyStars(10)">10</button>
-                <button class="btn btn-bet" onclick="buyStars(50)">50</button>
-                <button class="btn btn-bet" onclick="buyStars(100)">100</button>
-                <button class="btn btn-bet" onclick="buyStars(500)">500</button>
-                <button class="btn btn-bet" onclick="buyStars(1000)">1K</button>
-            </div>
+        <p style="text-align: center; margin-bottom: 5px;">Пополнить Stars:</p>
+        <div class="btn-grid">
+            <button class="btn btn-small" onclick="buyStars(10)">10</button>
+            <button class="btn btn-small" onclick="buyStars(50)">50</button>
+            <button class="btn btn-small" onclick="buyStars(100)">100</button>
+            <button class="btn btn-small" onclick="buyStars(500)">500</button>
+            <button class="btn btn-small" onclick="buyStars(1000)">1000</button>
         </div>
 
-        <button class="btn" style="border-color: red; color: red;" onclick="withdrawStars()">ВЫВЕСТИ ВСЕ STARS</button>
+        <button class="btn" style="border-color: red; color: red; margin-top: 20px;" onclick="withdrawStars()">ВЫВЕСТИ ВСЕ</button>
     </div>
 
-    <!-- GAME SCREEN -->
+    <!-- GAME -->
     <div id="screen-game" class="screen" style="justify-content: flex-start; padding-top: 20px;">
         <div class="game-header">
             <span id="game-title">GAME</span>
             <span id="score-display" style="color: gold;">SCORE: 0</span>
         </div>
-        
         <canvas id="gameCanvas"></canvas>
-        
         <div class="controls">
-            <div class="ctrl-btn" style="grid-column: 1;" ontouchstart="handleInput('left', event)" onmousedown="handleInput('left', event)">←</div>
-            <div class="ctrl-btn" style="grid-column: 2;" ontouchstart="handleInput('up', event)" onmousedown="handleInput('up', event)">↻</div>
-            <div class="ctrl-btn" style="grid-column: 3;" ontouchstart="handleInput('right', event)" onmousedown="handleInput('right', event)">→</div>
-            <div class="ctrl-btn" style="grid-column: 2;" ontouchstart="handleInput('down', event)" onmousedown="handleInput('down', event)">↓</div>
+            <div class="ctrl-btn" style="grid-column: 1;" onmousedown="handleInput('left')" ontouchstart="handleInput('left', event)">←</div>
+            <div class="ctrl-btn" style="grid-column: 2;" onmousedown="handleInput('up')" ontouchstart="handleInput('up', event)">↻</div>
+            <div class="ctrl-btn" style="grid-column: 3;" onmousedown="handleInput('right')" ontouchstart="handleInput('right', event)">→</div>
+            <div class="ctrl-btn" style="grid-column: 2;" onmousedown="handleInput('down')" ontouchstart="handleInput('down', event)">↓</div>
         </div>
     </div>
 </div>
@@ -161,55 +159,51 @@
 <!-- BET MODAL -->
 <div id="bet-modal" class="modal">
     <div class="modal-content">
-        <h3 style="color: var(--primary-blue);">ВЫБЕРИ СТАВКУ</h3>
-        <div id="bet-options-container">
-            <button class="btn btn-bet selected" onclick="selectBet(10, this)">10</button>
-            <button class="btn btn-bet" onclick="selectBet(50, this)">50</button>
-            <button class="btn btn-bet" onclick="selectBet(100, this)">100</button>
-            <button class="btn btn-bet" onclick="selectBet(500, this)">500</button>
-            <button class="btn btn-bet" onclick="selectBet(1000, this)">1000</button>
+        <h3>СТАВКА</h3>
+        <div class="btn-grid">
+            <button class="btn btn-small" onclick="createDuel(10)">10</button>
+            <button class="btn btn-small" onclick="createDuel(50)">50</button>
+            <button class="btn btn-small" onclick="createDuel(100)">100</button>
+            <button class="btn btn-small" onclick="createDuel(500)">500</button>
+            <button class="btn btn-small" onclick="createDuel(1000)">1000</button>
         </div>
-        <p style="font-size: 0.8rem; color: #888;">Комиссия 10% от банка.</p>
-        <button class="btn" onclick="createDuel()">СОЗДАТЬ ССЫЛКУ</button>
-        <button class="btn" style="border-color: red; color: red;" onclick="document.getElementById('bet-modal').style.display='none'">ОТМЕНА</button>
+        <button class="btn" onclick="document.getElementById('bet-modal').style.display='none'" style="margin-top: 20px; border-color: red;">ОТМЕНА</button>
     </div>
 </div>
 
-<!-- GAME OVER MODAL -->
+<!-- GAME OVER -->
 <div id="game-over-modal" class="modal">
     <div class="modal-content">
         <h2 style="color: red;">GAME OVER</h2>
         <h3 id="final-score">Score: 0</h3>
-        <p id="pvp-message" style="color: gold;"></p>
+        <p id="pvp-message" style="color: gold; font-size: 0.8rem;"></p>
         <button class="btn" onclick="location.reload()">В МЕНЮ</button>
     </div>
 </div>
 
-<!-- NAV TABS -->
 <div class="nav-tabs">
     <div class="tab active" onclick="showScreen('menu'); updateTab(this)">АРЕНА</div>
     <div class="tab" onclick="showScreen('profile'); updateTab(this)">ПРОФИЛЬ</div>
 </div>
 
 <script>
-    // --- КОНФИГУРАЦИЯ ---
+    // --- КОНФИГ ---
     const API_URL = "https://tg-game-arena.onrender.com";
     const tg = window.Telegram.WebApp;
     tg.ready(); tg.expand();
     tg.setHeaderColor('#0d0d15'); tg.setBackgroundColor('#0d0d15');
 
-    // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
+    // --- ПЕРЕМЕННЫЕ ---
     let currentUser = null;
     let currentLobby = null;
-    let selectedBetAmount = 10;
     let gameLoop = null;
-    let currentGameName = '';
+    let currentGame = '';
     let score = 0;
 
-    // --- ИНИЦИАЛИЗАЦИЯ ---
+    // --- INIT ---
     async function init() {
         try {
-            // 1. Авторизация
+            // 1. Auth
             const res = await fetch(`${API_URL}/api/user-data`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ initData: tg.initData })
@@ -217,7 +211,7 @@
             currentUser = await res.json();
             updateProfile();
 
-            // 2. Проверка deep link (вход в дуэль)
+            // 2. Deep Link (Duel)
             const startParam = tg.initDataUnsafe.start_param;
             if (startParam) {
                 const joinRes = await fetch(`${API_URL}/api/join-lobby`, {
@@ -231,73 +225,73 @@
                 } else if (joinData.mode === 'duel') {
                     currentLobby = joinData.lobby;
                     document.getElementById('duel-info').innerText = `🔥 ДУЭЛЬ: ${currentLobby.betAmount} STARS`;
-                    // Сразу предлагаем играть в Тетрис для дуэли (можно усложнить выбор)
                     launchGame('tetris', true);
                 }
             }
-        } catch (e) { console.error("Init Error:", e); }
+        } catch (e) { console.error("Init failed", e); }
     }
     init();
 
-    // --- ИНТЕРФЕЙС ---
+    // --- UI ---
     function showScreen(name) {
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
         document.getElementById(`screen-${name}`).classList.add('active');
         document.querySelector('.nav-tabs').style.display = (name === 'game') ? 'none' : 'flex';
         if (name !== 'game') stopGame();
     }
-
     function updateTab(el) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
     }
-
     function updateProfile() {
         if (!currentUser) return;
         document.getElementById('p-id').innerText = currentUser.telegramId;
-        document.getElementById('p-balance').innerText = `${currentUser.balance} ★`;
+        document.getElementById('p-balance').innerText = currentUser.balance;
         document.getElementById('p-snake').innerText = currentUser.highScores.snake;
         document.getElementById('p-tetris').innerText = currentUser.highScores.tetris;
     }
-
-    // --- ПЛАТЕЖИ И СТАВКИ ---
     function openBetModal() { document.getElementById('bet-modal').style.display = 'flex'; }
-    
-    function selectBet(amt, btn) {
-        selectedBetAmount = amt;
-        document.querySelectorAll('.btn-bet').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
+
+    // --- PAYMENTS ---
+    async function buyStars(amount) {
+        try {
+            // Оптимизация: сразу вызываем платеж
+            const res = await fetch(`${API_URL}/api/create-invoice`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ telegramId: currentUser.telegramId, amount })
+            });
+            const data = await res.json();
+            if (data.invoiceLink) {
+                tg.openInvoice(data.invoiceLink, (status) => {
+                    if (status === 'paid') {
+                        tg.showAlert('Оплата прошла!');
+                        currentUser.balance += amount; // Визуально обновляем
+                        updateProfile();
+                    }
+                });
+            } else {
+                tg.showAlert('Ошибка создания ссылки');
+            }
+        } catch (e) { tg.showAlert('Ошибка соединения с сервером'); }
     }
 
-    async function createDuel() {
-        if (currentUser.balance < selectedBetAmount) return tg.showAlert("Недостаточно Stars!");
-        
+    async function createDuel(amount) {
+        if (currentUser.balance < amount) return tg.showAlert("Недостаточно средств!");
         try {
             const res = await fetch(`${API_URL}/api/create-lobby`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telegramId: currentUser.telegramId, betAmount: selectedBetAmount })
+                body: JSON.stringify({ telegramId: currentUser.telegramId, betAmount: amount })
             });
             const data = await res.json();
             if (data.success) {
-                const link = `https://t.me/share/url?url=https://t.me/RetroBattleBot/app?startapp=${data.lobbyId}&text=Сразись со мной в Тетрис на ${selectedBetAmount} Stars!`;
+                const link = `https://t.me/share/url?url=https://t.me/RetroBattleBot/app?startapp=${data.lobbyId}&text=Играем на ${amount} Stars!`;
                 tg.openTelegramLink(link);
             }
         } catch (e) { tg.showAlert("Ошибка сети"); }
     }
 
-    async function buyStars(amount) {
-        try {
-            const res = await fetch(`${API_URL}/api/create-invoice`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ amount })
-            });
-            const data = await res.json();
-            if (data.invoiceLink) tg.openInvoice(data.invoiceLink);
-        } catch (e) { tg.showAlert("Ошибка платежа"); }
-    }
-
     async function withdrawStars() {
-        if (!confirm("Вывести все средства?")) return;
+        if (!confirm("Вывести все?")) return;
         try {
             const res = await fetch(`${API_URL}/api/withdraw`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -305,34 +299,29 @@
             });
             const data = await res.json();
             if (data.success) {
-                tg.showAlert(`Заявка на вывод ${data.amount} Stars создана!`);
+                tg.showAlert("Заявка создана!");
                 currentUser.balance = 0;
                 updateProfile();
-            } else { tg.showAlert(data.error); }
-        } catch (e) { tg.showAlert("Ошибка сети"); }
+            }
+        } catch (e) {}
     }
 
-    // --- ИГРОВАЯ ЛОГИКА ---
+    // --- GAMES ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    
-    // Настройки масштабирования для ретро-вида
-    const COLS = 10;
-    const ROWS = 20;
-    const BLOCK_SIZE = 24; // Пикселей на блок
-    canvas.width = COLS * BLOCK_SIZE;
-    canvas.height = ROWS * BLOCK_SIZE;
+    const BLOCK = 20; 
+    canvas.width = 200; canvas.height = 400; // 10x20 blocks
 
-    function launchGame(gameName, isPvP) {
-        currentGameName = gameName;
+    function launchGame(game, isPvP) {
+        currentGame = game;
         showScreen('game');
-        document.getElementById('game-title').innerText = isPvP ? "PVP DUEL" : gameName.toUpperCase();
+        document.getElementById('game-title').innerText = isPvP ? "PVP DUEL" : game.toUpperCase();
         document.getElementById('game-over-modal').style.display = 'none';
         score = 0;
         document.getElementById('score-display').innerText = `SCORE: 0`;
 
-        if (gameName === 'snake') startSnake();
-        if (gameName === 'tetris') startTetris();
+        if (game === 'snake') startSnake();
+        if (game === 'tetris') startTetris();
     }
 
     function stopGame() {
@@ -342,301 +331,223 @@
 
     async function gameOver() {
         stopGame();
-        document.getElementById('final-score').innerText = `Score: ${score}`;
-        const msgEl = document.getElementById('pvp-message');
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('game-over-modal').style.display = 'flex';
         
         if (currentLobby) {
-            msgEl.innerText = "Результат отправляется...";
+            document.getElementById('pvp-message').innerText = "Результат отправляется...";
             await fetch(`${API_URL}/api/submit-score`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    telegramId: currentUser.telegramId,
-                    game: currentGameName,
-                    score: score,
-                    lobbyId: currentLobby.lobbyId
-                })
+                body: JSON.stringify({ telegramId: currentUser.telegramId, game: currentGame, score, lobbyId: currentLobby.lobbyId })
             });
-            msgEl.innerText = "Результат записан! Если победил - награда придет автоматически.";
+            document.getElementById('pvp-message').innerText = "Результат записан!";
         } else {
-            msgEl.innerText = "Тренировка окончена.";
-            // Сохранить рекорд тренировки
-            await fetch(`${API_URL}/api/submit-score`, {
+            document.getElementById('pvp-message').innerText = "Тренировка окончена";
+            fetch(`${API_URL}/api/submit-score`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telegramId: currentUser.telegramId, game: currentGameName, score: score })
+                body: JSON.stringify({ telegramId: currentUser.telegramId, game: currentGame, score })
             });
         }
-        
-        document.getElementById('game-over-modal').style.display = 'flex';
     }
 
     function handleInput(action, e) {
-        if(e) e.preventDefault();
-        const event = new KeyboardEvent('keydown', {
-            'key': action === 'up' ? 'ArrowUp' : 
-                   action === 'down' ? 'ArrowDown' :
-                   action === 'left' ? 'ArrowLeft' : 'ArrowRight'
-        });
-        document.dispatchEvent(event);
+        if (e) e.preventDefault();
+        const keyMap = { 'left': 'ArrowLeft', 'right': 'ArrowRight', 'up': 'ArrowUp', 'down': 'ArrowDown' };
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: keyMap[action] }));
     }
 
-    // ==========================================
-    // ДВИЖОК TETRIS (ПОЛНОСТЬЮ РАБОЧИЙ)
-    // ==========================================
-    function startTetris() {
-        let board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
-        
-        const SHAPES = [
-            [],
-            [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I (Cyan)
-            [[1,0,0],[1,1,1],[0,0,0]], // J (Blue)
-            [[0,0,1],[1,1,1],[0,0,0]], // L (Orange)
-            [[0,1,1],[0,1,1]],         // O (Yellow)
-            [[0,1,1],[1,1,0],[0,0,0]], // S (Green)
-            [[0,1,0],[1,1,1],[0,0,0]], // T (Purple)
-            [[1,1,0],[0,1,1],[0,0,0]]  // Z (Red)
-        ];
-        
-        const COLORS = [null, '#00f0ff', '#0000ff', '#ff8800', '#ffff00', '#00ff00', '#bc13fe', '#ff0000'];
+    // --- SNAKE ENGINE (FIXED) ---
+    function startSnake() {
+        let snake = [{x: 5, y: 10}];
+        let food = {x: 2, y: 2};
+        let dx = 0, dy = 0;
+        let gridSize = 20;
+        let tileX = 10, tileY = 20;
 
-        let piece = newPiece();
-        let dropCounter = 0;
-        let dropInterval = 1000;
-        let lastTime = 0;
-
-        function newPiece() {
-            const id = Math.ceil(Math.random() * 7);
-            const matrix = SHAPES[id];
-            return {
-                matrix: matrix,
-                x: Math.floor(COLS / 2) - Math.floor(matrix[0].length / 2),
-                y: 0,
-                color: COLORS[id]
+        function spawnFood() {
+            food = {
+                x: Math.floor(Math.random() * tileX),
+                y: Math.floor(Math.random() * tileY)
             };
         }
 
-        function drawMatrix(matrix, offset, color) {
-            ctx.fillStyle = color;
-            matrix.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        ctx.fillRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-                        ctx.strokeStyle = '#000';
-                        ctx.strokeRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-                    }
-                });
-            });
-        }
-
-        function draw() {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw Board
-            board.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        ctx.fillStyle = COLORS[value];
-                        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-                    }
-                });
-            });
-
-            // Draw Piece
-            drawMatrix(piece.matrix, {x: piece.x, y: piece.y}, piece.color);
-        }
-
-        function collide(arena, player) {
-            const m = player.matrix;
-            const o = {x: player.x, y: player.y};
-            for (let y = 0; y < m.length; ++y) {
-                for (let x = 0; x < m[y].length; ++x) {
-                    if (m[y][x] !== 0 &&
-                       (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        function merge(arena, player) {
-            player.matrix.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        arena[y + player.y][x + player.x] = SHAPES.findIndex(s => s === player.matrix) || 1; // Simplification for color saving
-                        // Hacky way to save color index properly, better use id in piece object
-                         // Let's rely on non-zero check in board draw
-                         if (player.color === '#00f0ff') arena[y + player.y][x + player.x] = 1;
-                         else if (player.color === '#0000ff') arena[y + player.y][x + player.x] = 2;
-                         else if (player.color === '#ff8800') arena[y + player.y][x + player.x] = 3;
-                         else if (player.color === '#ffff00') arena[y + player.y][x + player.x] = 4;
-                         else if (player.color === '#00ff00') arena[y + player.y][x + player.x] = 5;
-                         else if (player.color === '#bc13fe') arena[y + player.y][x + player.x] = 6;
-                         else arena[y + player.y][x + player.x] = 7;
-                    }
-                });
-            });
-        }
-
-        function rotate(matrix) {
-            for (let y = 0; y < matrix.length; ++y) {
-                for (let x = 0; x < y; ++x) {
-                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-                }
-            }
-            matrix.forEach(row => row.reverse());
-        }
-
-        function playerDrop() {
-            piece.y++;
-            if (collide(board, piece)) {
-                piece.y--;
-                merge(board, piece);
-                arenaSweep();
-                piece = newPiece();
-                if (collide(board, piece)) {
-                    gameOver();
-                }
-            }
-            dropCounter = 0;
-        }
-
-        function playerMove(dir) {
-            piece.x += dir;
-            if (collide(board, piece)) {
-                piece.x -= dir;
-            }
-        }
-
-        function playerRotate() {
-            const pos = piece.x;
-            rotate(piece.matrix);
-            if (collide(board, piece)) {
-                piece.x = pos;
-                rotate(piece.matrix); // Rotate back
-                rotate(piece.matrix);
-                rotate(piece.matrix);
-            }
-        }
-
-        function arenaSweep() {
-            outer: for (let y = board.length - 1; y > 0; --y) {
-                for (let x = 0; x < board[y].length; ++x) {
-                    if (board[y][x] === 0) {
-                        continue outer;
-                    }
-                }
-                const row = board.splice(y, 1)[0].fill(0);
-                board.unshift(row);
-                ++y;
-                score += 100;
-                document.getElementById('score-display').innerText = `SCORE: ${score}`;
-            }
-        }
-
-        function update(time = 0) {
-            const deltaTime = time - lastTime;
-            lastTime = time;
-            dropCounter += deltaTime;
-            if (dropCounter > dropInterval) {
-                playerDrop();
-            }
-            draw();
-            gameLoop = requestAnimationFrame(update);
-        }
-
-        // Input handler wrapper
-        function keyHandler(e) {
-            if (currentGameName !== 'tetris') return;
-            if (e.key === 'ArrowLeft') playerMove(-1);
-            else if (e.key === 'ArrowRight') playerMove(1);
-            else if (e.key === 'ArrowDown') playerDrop();
-            else if (e.key === 'ArrowUp') playerRotate();
-        }
-
-        document.addEventListener('keydown', keyHandler);
-        update();
-    }
-
-    // ==========================================
-    // ДВИЖОК SNAKE (ИСПРАВЛЕННЫЙ)
-    // ==========================================
-    function startSnake() {
-        const gridSize = BLOCK_SIZE; // 24px
-        const tileCountX = COLS;     // 10
-        const tileCountY = ROWS;     // 20
-        
-        let snake = [{x: 5, y: 10}];
-        let food = {x: 2, y: 5};
-        let dx = 0;
-        let dy = 0;
-        
-        // Очистка предыдущих обработчиков (грубый метод, но работает для SPA)
-        let oldNode = document.body;
-        // Переназначаем слушатель для змейки
-        document.onkeydown = function(e) {
-            if (currentGameName !== 'snake') return;
+        document.onkeydown = (e) => {
+            if (currentGame !== 'snake') return;
             switch(e.key) {
-                case 'ArrowLeft': if (dx !== 1) { dx = -1; dy = 0; } break;
-                case 'ArrowUp': if (dy !== 1) { dx = 0; dy = -1; } break;
-                case 'ArrowRight': if (dx !== -1) { dx = 1; dy = 0; } break;
-                case 'ArrowDown': if (dy !== -1) { dx = 0; dy = 1; } break;
+                case 'ArrowLeft': if(dx !== 1) { dx = -1; dy = 0; } break;
+                case 'ArrowRight': if(dx !== -1) { dx = 1; dy = 0; } break;
+                case 'ArrowUp': if(dy !== 1) { dx = 0; dy = -1; } break;
+                case 'ArrowDown': if(dy !== -1) { dx = 0; dy = 1; } break;
             }
-            // Start game on first keypress
-            if (dx === 0 && dy === 0 && (e.key === 'ArrowRight')) { dx = 1; dy = 0; }
+            // Start on press
+            if (dx === 0 && dy === 0 && e.key) { dx = 0; dy = 1; }
         };
 
-        function gameLoopSnake() {
-            // Logic
+        function loop() {
             const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
             // Wall Collision
-            if (head.x < 0 || head.x >= tileCountX || head.y < 0 || head.y >= tileCountY) {
-                // Если мы не двигались (старт), не убиваем
+            if (head.x < 0 || head.x >= tileX || head.y < 0 || head.y >= tileY) {
                 if (dx !== 0 || dy !== 0) { gameOver(); return; }
-                else head.x = snake[0].x; // Hack to stay put
             }
-            
             // Self Collision
-            for (let i = 0; i < snake.length; i++) {
-                if (head.x === snake[i].x && head.y === snake[i].y && (dx!==0 || dy!==0)) {
-                    gameOver(); return;
-                }
+            if (snake.some(s => s.x === head.x && s.y === head.y) && (dx!==0 || dy!==0)) {
+                gameOver(); return;
             }
 
-            if (dx !== 0 || dy !== 0) {
-                snake.unshift(head);
-                // Food
-                if (head.x === food.x && head.y === food.y) {
-                    score += 10;
-                    document.getElementById('score-display').innerText = `SCORE: ${score}`;
-                    food = {
-                        x: Math.floor(Math.random() * tileCountX),
-                        y: Math.floor(Math.random() * tileCountY)
-                    };
-                } else {
-                    snake.pop();
-                }
+            if (dx!==0 || dy!==0) snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                document.getElementById('score-display').innerText = `SCORE: ${score}`;
+                spawnFood();
+            } else if (dx!==0 || dy!==0) {
+                snake.pop();
             }
 
             // Draw
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Food (Red Apple)
-            ctx.fillStyle = '#ff0000';
+            
+            // Draw Food (RED)
+            ctx.fillStyle = 'red';
             ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
 
-            // Draw Snake (Neon Green)
+            // Draw Snake (BLUE)
             ctx.fillStyle = '#00f0ff';
-            for (let i = 0; i < snake.length; i++) {
-                ctx.fillRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize - 2, gridSize - 2);
-            }
+            snake.forEach(s => ctx.fillRect(s.x * gridSize, s.y * gridSize, gridSize - 2, gridSize - 2));
         }
 
-        // 15 FPS for Snake
         if (gameLoop) clearInterval(gameLoop);
-        gameLoop = setInterval(gameLoopSnake, 1000 / 10);
+        gameLoop = setInterval(loop, 150);
+    }
+
+    // --- TETRIS ENGINE (MATRIX BASED) ---
+    function startTetris() {
+        const ROW = 20, COL = 10, SQ = 20;
+        const VACANT = "#000";
+        let board = [];
+        for(let r=0; r<ROW; r++){
+            board[r] = [];
+            for(let c=0; c<COL; c++) board[r][c] = VACANT;
+        }
+
+        const PIECES = [
+            [[1,1,1,1]], // I
+            [[1,1,1],[0,1,0]], // T
+            [[1,1],[1,1]], // O
+            [[1,1,0],[0,1,1]], // Z
+            [[0,1,1],[1,1,0]], // S
+            [[1,1,1],[1,0,0]], // L
+            [[1,1,1],[0,0,1]]  // J
+        ];
+        const COLORS = ["cyan", "purple", "yellow", "red", "green", "orange", "blue"];
+
+        let p = randomPiece();
+        let dropStart = Date.now();
+
+        function drawSquare(x,y,color){
+            ctx.fillStyle = color; ctx.fillRect(x*SQ,y*SQ,SQ,SQ);
+            ctx.strokeStyle = "#111"; ctx.strokeRect(x*SQ,y*SQ,SQ,SQ);
+        }
+        function drawBoard(){
+            for(let r=0; r<ROW; r++)
+                for(let c=0; c<COL; c++) drawSquare(c,r,board[r][c]);
+        }
+        function drawPiece(piece){
+            for(let r=0; r<piece.matrix.length; r++){
+                for(let c=0; c<piece.matrix[r].length; c++){
+                    if(piece.matrix[r][c]) drawSquare(piece.x+c, piece.y+r, piece.color);
+                }
+            }
+        }
+        function randomPiece(){
+            let r = Math.floor(Math.random() * PIECES.length);
+            return { matrix: PIECES[r], color: COLORS[r], x: 3, y: 0 };
+        }
+
+        function move(dir) {
+            if (!collision(dir, 0, p.matrix)) p.x += dir;
+        }
+        function rotate() {
+            let N = p.matrix.length;
+            let rotated = [];
+            for(let i=0; i<N; i++) { // Transpose & Reverse
+                rotated[i] = [];
+                for(let j=0; j<p.matrix[0].length; j++) rotated[i][j] = p.matrix[N-1-j][i] || 0; // Simplified rotation
+            }
+            // Better rotation logic for non-square matrices
+            if (p.matrix.length === 2 && p.matrix[0].length === 2) return; // O piece
+            
+            // Standard rotation algorithm
+            let temp = p.matrix[0].map((val, index) => p.matrix.map(row => row[index]).reverse());
+            
+            if (!collision(0, 0, temp)) p.matrix = temp;
+            else if (!collision(1, 0, temp)) { p.x += 1; p.matrix = temp; }
+            else if (!collision(-1, 0, temp)) { p.x -= 1; p.matrix = temp; }
+        }
+
+        function collision(x,y,matrix){
+            for(let r=0; r<matrix.length; r++){
+                for(let c=0; c<matrix[r].length; c++){
+                    if(!matrix[r][c]) continue;
+                    let newX = p.x + c + x;
+                    let newY = p.y + r + y;
+                    if(newX < 0 || newX >= COL || newY >= ROW) return true;
+                    if(newY < 0) continue;
+                    if(board[newY][newX] !== VACANT) return true;
+                }
+            }
+            return false;
+        }
+
+        function lock(){
+            for(let r=0; r<p.matrix.length; r++){
+                for(let c=0; c<p.matrix[r].length; c++){
+                    if(!p.matrix[r][c]) continue;
+                    if(p.y+r < 0) { gameOver(); return; }
+                    board[p.y+r][p.x+c] = p.color;
+                }
+            }
+            // Remove lines
+            for(let r=0; r<ROW; r++){
+                let isFull = true;
+                for(let c=0; c<COL; c++) isFull = isFull && (board[r][c] !== VACANT);
+                if(isFull){
+                    for(let y=r; y>1; y--) for(let c=0; c<COL; c++) board[y][c] = board[y-1][c];
+                    for(let c=0; c<COL; c++) board[0][c] = VACANT;
+                    score += 100;
+                    document.getElementById('score-display').innerText = `SCORE: ${score}`;
+                }
+            }
+            p = randomPiece();
+            if(collision(0,0,p.matrix)) gameOver();
+        }
+
+        function update(){
+            let now = Date.now();
+            if(now - dropStart > 600){
+                if(!collision(0,1,p.matrix)) p.y++;
+                else lock();
+                dropStart = Date.now();
+            }
+            drawBoard();
+            drawPiece(p);
+            gameLoop = requestAnimationFrame(update);
+        }
+
+        document.onkeydown = (e) => {
+            if(currentGame !== 'tetris') return;
+            if(e.key === 'ArrowLeft') move(-1);
+            else if(e.key === 'ArrowRight') move(1);
+            else if(e.key === 'ArrowUp') rotate();
+            else if(e.key === 'ArrowDown') {
+                 if(!collision(0,1,p.matrix)) p.y++;
+            }
+        };
+        
+        if (gameLoop) cancelAnimationFrame(gameLoop);
+        update();
     }
 </script>
 </body>
