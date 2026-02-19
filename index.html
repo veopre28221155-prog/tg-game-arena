@@ -13,7 +13,7 @@
         .active { display: flex; }
         .card { background: var(--card); border-radius: 15px; width: 100%; padding: 20px; margin-bottom: 10px; text-align: center; box-sizing: border-box; }
         .btn { background: var(--btn); color: #fff; border: none; border-radius: 10px; padding: 15px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin: 5px 0; }
-        input { width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; }
+        input { width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; color: #000; }
         canvas { background: #000; border: 2px solid #444; border-radius: 8px; display: none; margin: 0 auto; }
         #nav { display: flex; background: #111; height: 70px; border-top: 1px solid #333; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #666; font-size: 14px; }
@@ -45,7 +45,6 @@
         <div id="game-box" style="display:none; text-align:center;">
             <div id="score-val" style="font-size:20px; margin-bottom:10px; color:var(--accent);">СЧЕТ: 0</div>
             <canvas id="canvas" width="240" height="400"></canvas>
-            <p style="font-size:12px; color:#666; margin-top:10px;">УПРАВЛЕНИЕ: СТРЕЛКИ НА КЛАВИАТУРЕ</p>
         </div>
     </div>
 
@@ -63,7 +62,7 @@
 
     <nav id="nav">
         <div class="nav-item active" onclick="showTab('arena', this)">АРЕНА</div>
-        <div class="nav-item" onclick="showTab('profile', this)">ПРОФИЛЬ</div>
+        <div class="nav-item" onclick="tab('profile', this)">ПРОФИЛЬ</div>
     </nav>
 </div>
 
@@ -75,7 +74,6 @@
     let balance = 0, currentGame = 'snake', move = {x:1, y:0}, score = 0, loop = null;
     let isPractice = true, currentLobbyId = null;
     
-    // Тетрис переменные
     let tBoard, tPiece;
     const COLS = 10, ROWS = 20, BLOCK = 24;
 
@@ -88,33 +86,29 @@
         } catch(e) { console.error("API Error"); }
     }
 
-    // ПРОВЕРКА ПРИГЛАШЕНИЯ
     async function checkInvite() {
         const startParam = tg.initDataUnsafe.start_param;
         if (startParam && startParam.startsWith('lobby_')) {
             currentLobbyId = startParam.replace('lobby_', '');
             isPractice = false;
             try {
-                const r = await fetch(`${API}/api/join-lobby`, {
+                await fetch(`${API}/api/join-lobby`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId })
                 });
-                if (r.ok) {
-                    document.getElementById('mode-info').innerHTML = `<b style="color:#ff4141">⚔️ РЕЖИМ: ДУЭЛЬ</b>`;
-                    tg.MainButton.setText('В БОЙ!').show().onClick(() => startGame());
-                }
-            } catch(e) { console.error("Ошибка входа в лобби", e); }
+                document.getElementById('mode-info').innerHTML = `<b style="color:#ff4141">⚔️ РЕЖИМ: ДУЭЛЬ</b>`;
+                tg.MainButton.setText('В БОЙ!').show().onClick(() => startGame());
+            } catch(e) { console.error("Lobby Error"); }
         }
     }
 
-    // ОТПРАВКА ССЫЛКИ ДРУГУ
     document.getElementById('friend-btn').onclick = () => {
         const id = Math.random().toString(36).substr(2, 7);
         tg.switchInlineQuery(`lobby_${id}`, ['users', 'chats']);
     };
 
-    function showTab(id, el) {
+    function tab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -148,7 +142,7 @@
         document.getElementById('game-box').style.display = 'block';
         const cvs = document.getElementById('canvas');
         cvs.style.display = 'block';
-        score = 0; document.getElementById('score-val').innerText = "СЧЕТ: 0";
+        score = 0;
         if(currentGame == 'snake') { cvs.width = 300; cvs.height = 300; startSnake(); }
         else { cvs.width = 240; cvs.height = 480; startTetris(); }
     }
@@ -179,8 +173,8 @@
     }
 
     function spawnPiece() {
-        const pieces = [[[1,1,1,1]], [[1,1],[1,1]], [[0,1,0],[1,1,1]], [[1,1,0],[0,1,1]]];
-        tPiece = pieces[Math.floor(Math.random()*pieces.length)];
+        const p = [[[1,1,1,1]], [[1,1],[1,1]], [[0,1,0],[1,1,1]], [[1,1,0],[0,1,1]]];
+        tPiece = p[Math.floor(Math.random()*p.length)];
         tPos = {x: 3, y: 0};
         if(collide()) return end();
     }
@@ -215,9 +209,7 @@
         }));
     }
 
-    function merge() {
-        tPiece.forEach((row, y) => row.forEach((v, x) => { if(v) tBoard[tPos.y + y][tPos.x + x] = 1; }));
-    }
+    function merge() { tPiece.forEach((row, y) => row.forEach((v, x) => { if(v) tBoard[tPos.y + y][tPos.x + x] = 1; })); }
 
     function clearLines() {
         tBoard = tBoard.filter(row => row.some(v => v == 0));
@@ -231,19 +223,13 @@
         clearInterval(loop);
         document.getElementById('overlay').style.display = 'flex';
         document.getElementById('res-score').innerText = score;
-        if (!isPractice && currentLobbyId) sendScoreToServer();
+        if (!isPractice && currentLobbyId) sendScore();
     }
 
-    async function sendScoreToServer() {
-        document.getElementById('res-title').innerText = "ОТПРАВКА...";
+    async function sendScore() {
         try {
-            await fetch(`${API}/api/submit-score`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: score })
-            });
-            document.getElementById('res-title').innerText = "СЧЕТ СОХРАНЕН!";
-        } catch(e) { document.getElementById('res-title').innerText = "ОШИБКА СЕТИ"; }
+            await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: score }) });
+        } catch(e) { console.error("Score Error"); }
     }
 
     async function buyStars() {
@@ -253,8 +239,7 @@
         if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (s) => { if(s=='paid') loadUser(); });
     }
 
-    loadUser();
-    checkInvite();
+    loadUser(); checkInvite();
 </script>
 </body>
 </html>
