@@ -13,14 +13,20 @@
             --tg-btn: var(--tg-theme-button-color, #2481cc);
             --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
             --tg-sec-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
-            --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive;
+            --accent-neon: #00f0ff;
+            --accent-pink: #ff0055;
+            --font-retro: 'Press Start 2P', cursive;
         }
+
         * { box-sizing: border-box; }
-        body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: -apple-system, sans-serif; height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; }
+        body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: -apple-system, sans-serif; height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; -webkit-user-select: none; }
         
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 40px; }
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; -webkit-overflow-scrolling: touch; }
         .screen.active { display: flex; }
         
+        .screen::-webkit-scrollbar { width: 5px; }
+        .screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
         h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); text-align: center; }
         h1 { font-size: 1.5rem; color: var(--accent-neon); margin-top: 10px; }
         
@@ -48,11 +54,15 @@
         .tab-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center; flex-direction:column; }
+        
+        /* Grid for deposit buttons */
+        .deposit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     </style>
 </head>
 <body>
 
 <div id="app">
+    <!-- PLAY SCREEN -->
     <div id="s-play" class="screen active">
         <h1>RETRO ARENA</h1>
         <div class="card">
@@ -63,7 +73,7 @@
         <div class="card" style="border: 2px solid var(--accent-neon);">
             <h2>Ranked Match</h2>
             <select id="search-game"><option value="snake">Snake</option><option value="tetris">Tetris</option></select>
-            <select id="search-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option><option value="100">100 ⭐️</option></select>
+            <select id="search-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option><option value="100">100 ⭐️</option><option value="500">500 ⭐️</option></select>
             <button class="btn" onclick="startMatchmaking()">🔍 FIND MATCH</button>
         </div>
         <div class="card">
@@ -72,14 +82,21 @@
         </div>
     </div>
 
+    <!-- SEARCH SCREEN -->
     <div id="s-search" class="screen" style="justify-content: center;">
         <h1>SEARCHING...</h1>
         <button class="btn btn-danger" onclick="cancelMatchmaking()">CANCEL</button>
     </div>
 
+    <!-- PROFILE SCREEN -->
     <div id="s-profile" class="screen">
         <h1>PROFILE</h1>
-        <div class="card" style="text-align: center;"><div style="font-size: 3rem; font-family: var(--font-retro); color: gold;"><span id="p-bal">0</span></div><div>STARS</div></div>
+        <div class="card" style="text-align: center;">
+            <div style="font-size: 3rem; font-family: var(--font-retro); color: gold;">
+                <span id="p-bal">0</span>
+            </div>
+            <div style="opacity: 0.7;">STARS BALANCE</div>
+        </div>
         <div class="card">
             <h2>Stats</h2>
             <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>ID:</span> <span id="p-id">...</span></div>
@@ -88,17 +105,25 @@
         </div>
         <div class="card">
             <h2>Deposit</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                <button class="btn btn-outline" onclick="deposit(10)">+10</button>
-                <button class="btn btn-outline" onclick="deposit(50)">+50</button>
+            <div class="deposit-grid">
+                <button class="btn btn-outline" onclick="deposit(10)">10</button>
+                <button class="btn btn-outline" onclick="deposit(50)">50</button>
+                <button class="btn btn-outline" onclick="deposit(100)">100</button>
+                <button class="btn btn-outline" onclick="deposit(500)">500</button>
+                <button class="btn btn-outline" onclick="deposit(1000)">1000</button>
             </div>
         </div>
-        <button class="btn btn-danger" onclick="withdraw()">WITHDRAW</button>
+        <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
+        <div style="height: 20px;"></div>
     </div>
 
+    <!-- GAME SCREEN -->
     <div id="s-game" class="screen" style="padding-top: 10px;">
-        <div style="display:flex; justify-content:space-between; width:100%; max-width:300px; margin-bottom:10px;">
-            <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
+        <div class="game-header">
+            <div style="display: flex; gap: 5px;">
+                <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
+                <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart-header" style="display:none;">↻</button>
+            </div>
             <div style="font-family: var(--font-retro); color: gold;">SCORE: <span id="g-score">0</span></div>
         </div>
         <canvas id="gameCanvas"></canvas>
@@ -118,8 +143,9 @@
     <div class="tab" onclick="nav('profile', this)"><div class="tab-icon">👤</div><div>PROFILE</div></div>
 </div>
 
+<!-- MODALS -->
 <div id="modal-over" class="modal">
-    <h1 style="color:red; font-size:3rem;">GAME OVER</h1>
+    <h1 style="color:red; font-size:3rem; text-align: center;">GAME<br>OVER</h1>
     <h2 id="end-score" style="color:white;">0</h2>
     <p id="end-msg" style="color:gold;"></p>
     <button class="btn" style="width:240px;" onclick="restartGameFromModal()">PLAY AGAIN</button>
@@ -130,7 +156,7 @@
     <div class="card" style="width: 85%;">
         <h2>Invite Friend</h2>
         <select id="f-game"><option value="snake">Snake</option><option value="tetris">Tetris</option></select>
-        <select id="f-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option></select>
+        <select id="f-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option><option value="100">100 ⭐️</option><option value="500">500 ⭐️</option></select>
         <button class="btn" onclick="submitFriendLobby()">GENERATE LINK</button>
         <button class="btn btn-outline" onclick="document.getElementById('modal-friend').style.display='none'">CANCEL</button>
     </div>
@@ -177,6 +203,21 @@
         const d = await r.json(); if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (s)=>{ if(s==='paid') location.reload(); });
     }
 
+    async function withdraw() {
+        if(user.balance <= 0) return tg.showAlert("Empty balance");
+        if(!confirm(`Withdraw ${user.balance} Stars? This will create a request.`)) return;
+        
+        const r = await fetch(`${API}/api/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
+        const d = await r.json();
+        
+        if (d.success) {
+            user.balance = d.newBalance; updateUI();
+            tg.showAlert("Withdrawal request sent! Funds deducted.");
+        } else {
+            tg.showAlert(d.error || "Error");
+        }
+    }
+
     function openFriendModal() { document.getElementById('modal-friend').style.display='flex'; }
 
     async function submitFriendLobby() {
@@ -214,12 +255,14 @@
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('s-game').classList.add('active');
         document.querySelector('.tabs').style.display = 'none';
+        document.getElementById('btn-restart-header').style.display = pvp ? 'none' : 'block';
         gameType = t; score = 0; document.getElementById('g-score').innerText = 0;
         if (t === 'snake') runSnake(); else runTetris();
     }
 
     function quitGame() { if(confirm("Quit?")) location.reload(); }
-    function restartGameFromModal() { document.getElementById('modal-over').style.display='none'; score=0; document.getElementById('g-score').innerText=0; if(gameType==='snake') runSnake(); else runTetris(); }
+    function restartGame() { if(loop) cancelAnimationFrame(loop); clearTimeout(loop); score=0; document.getElementById('g-score').innerText=0; if(gameType==='snake') runSnake(); else runTetris(); }
+    function restartGameFromModal() { document.getElementById('modal-over').style.display='none'; restartGame(); }
 
     async function gameOver() {
         if(loop) cancelAnimationFrame(loop); clearTimeout(loop);
