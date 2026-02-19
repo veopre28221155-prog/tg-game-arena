@@ -5,703 +5,287 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Pixel Font -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Telegram Theme Integration */
             --tg-bg: var(--tg-theme-bg-color, #1c1c1e);
             --tg-text: var(--tg-theme-text-color, #ffffff);
             --tg-btn: var(--tg-theme-button-color, #2481cc);
             --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
             --tg-sec-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
-            
-            /* Retro Accents */
-            --accent-neon: #00f0ff;
-            --accent-pink: #ff0055;
-            --font-retro: 'Press Start 2P', cursive;
+            --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive;
         }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background-color: var(--tg-bg);
-            color: var(--tg-text);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden; /* Запрещаем скролл самого body */
-            position: relative;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        /* --- SCROLLABLE SCREENS --- */
-        .screen {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: calc(100% - 70px); 
-            
-            flex-direction: column;
-            align-items: center;
-            
-            overflow-y: auto; 
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch; 
-            
-            padding: 20px;
-            padding-bottom: 40px;
-        }
-
-        .screen.active { display: flex; }
-
-        /* Custom Scrollbar Styling */
-        .screen::-webkit-scrollbar { width: 6px; }
-        .screen::-webkit-scrollbar-track { background: transparent; }
-        .screen::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); border-radius: 3px; }
-
-        /* TYPOGRAPHY */
-        h1, h2 { font-family: var(--font-retro); color: var(--tg-text); text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
-        h1 { font-size: 1.5rem; color: var(--accent-neon); text-align: center; margin-top: 10px; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: -apple-system, sans-serif; height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; }
         
-        /* CARDS */
-        .card {
-            background-color: var(--tg-sec-bg);
-            border-radius: 12px;
-            padding: 16px;
-            width: 100%;
-            max-width: 350px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.05);
-            flex-shrink: 0; 
-        }
-
-        /* BUTTONS */
-        .btn {
-            background-color: var(--tg-btn);
-            color: var(--tg-btn-text);
-            border: none;
-            border-radius: 8px;
-            padding: 14px;
-            width: 100%;
-            font-size: 0.8rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            font-family: var(--font-retro);
-            transition: transform 0.1s;
-        }
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 40px; }
+        .screen.active { display: flex; }
+        
+        h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); text-align: center; }
+        h1 { font-size: 1.5rem; color: var(--accent-neon); margin-top: 10px; }
+        
+        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
+        
+        .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-outline { background: transparent; border: 2px solid var(--tg-btn); color: var(--tg-btn); }
-        .btn-danger { background: var(--accent-pink); color: white; border: none; }
+        .btn-danger { background: var(--accent-pink); color: white; }
         .btn-sm { width: auto; padding: 6px 12px; font-size: 0.7rem; margin-bottom: 0; }
 
-        /* INPUTS */
-        select, input {
-            background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn);
-            padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem;
-        }
+        select { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; }
 
-        /* GAME CANVAS */
-        canvas {
-            border: 4px solid var(--tg-text);
-            border-radius: 4px;
-            background: #000;
-            image-rendering: pixelated;
-            width: 100%;
-            max-width: 300px;
-            height: auto;
-            margin-bottom: 15px;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
-            flex-shrink: 0;
-        }
+        canvas { border: 4px solid var(--tg-text); border-radius: 4px; background: #000; image-rendering: pixelated; width: 100%; max-width: 300px; height: auto; margin-bottom: 15px; flex-shrink: 0; }
 
-        /* GAME CONTROLS (D-PAD) */
-        .game-ui-bottom {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
-            padding-bottom: 20px;
-            flex-shrink: 0;
-        }
-        
-        .d-pad-container {
-            display: grid;
-            grid-template-areas:
-                ".    up    ."
-                "left down right";
-            gap: 10px;
-        }
-
-        .ctrl-btn {
-            width: 65px;
-            height: 65px;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid var(--tg-text);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            color: white;
-            user-select: none;
-            touch-action: manipulation;
-            cursor: pointer;
-        }
+        .game-ui-bottom { width: 100%; display: flex; justify-content: center; margin-top: 10px; padding-bottom: 20px; flex-shrink: 0; }
+        .d-pad-container { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; }
+        .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; touch-action: manipulation; }
         .ctrl-btn:active { background: var(--accent-neon); color: black; border-color: var(--accent-neon); }
-        
-        .btn-up { grid-area: up; }
-        .btn-left { grid-area: left; }
-        .btn-down { grid-area: down; }
-        .btn-right { grid-area: right; }
+        .btn-up { grid-area: up; } .btn-left { grid-area: left; } .btn-down { grid-area: down; } .btn-right { grid-area: right; }
 
-        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; font-size: 0.9rem; }
-
-        /* BOTTOM TABS */
-        .tabs {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 70px;
-            background: var(--tg-sec-bg);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            z-index: 100;
-            padding-bottom: 10px;
-        }
-        .tab {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: var(--tg-text);
-            opacity: 0.5;
-            font-size: 0.7rem;
-            cursor: pointer;
-            width: 100%;
-        }
+        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--tg-sec-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: 10px; }
+        .tab { display: flex; flex-direction: column; align-items: center; color: var(--tg-text); opacity: 0.5; font-size: 0.7rem; cursor: pointer; width: 100%; }
         .tab.active { opacity: 1; color: var(--accent-neon); }
         .tab-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-        .searching-anim { animation: pulse 1.5s infinite; color: var(--accent-neon); margin: 20px 0; font-family: var(--font-retro); text-align: center; }
-        
-        .game-header {
-            display: flex; justify-content: space-between; align-items: center;
-            width: 100%; max-width: 300px; margin-bottom: 10px; flex-shrink: 0;
-        }
-        
-        /* MODAL STYLES */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; align-items: center; justify-content: center; flex-direction: column;
-        }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center; flex-direction:column; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- TAB 1: PLAY MENU -->
     <div id="s-play" class="screen active">
         <h1>RETRO ARENA</h1>
-        
         <div class="card">
             <h2>Solo Training</h2>
             <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Snake</button>
             <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Tetris</button>
         </div>
-
         <div class="card" style="border: 2px solid var(--accent-neon);">
             <h2>Ranked Match</h2>
-            <p style="font-size: 0.8rem; opacity: 0.7; text-align: center; margin-bottom: 10px;">Find random opponent</p>
-            
-            <label>Game:</label>
-            <select id="search-game">
-                <option value="snake">Snake</option>
-                <option value="tetris">Tetris</option>
-            </select>
-
-            <label>Bet (Stars):</label>
-            <select id="search-bet">
-                <option value="10">10 ⭐️</option>
-                <option value="50">50 ⭐️</option>
-                <option value="100">100 ⭐️</option>
-                <option value="500">500 ⭐️</option>
-            </select>
-
+            <select id="search-game"><option value="snake">Snake</option><option value="tetris">Tetris</option></select>
+            <select id="search-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option><option value="100">100 ⭐️</option></select>
             <button class="btn" onclick="startMatchmaking()">🔍 FIND MATCH</button>
         </div>
-        
-        <!-- Friend Match (ИСПРАВЛЕНО) -->
         <div class="card">
             <h2>Friend Match</h2>
-            <p style="font-size: 0.8rem; opacity: 0.7; text-align: center; margin-bottom: 10px;">Create a link to play with a friend</p>
-            <button class="btn btn-outline" onclick="openFriendLobby()">🔗 CREATE LINK</button>
+            <button class="btn btn-outline" onclick="openFriendModal()">🔗 CREATE LINK</button>
         </div>
-        
-        <div style="height: 20px;"></div>
     </div>
 
-    <!-- SEARCHING SCREEN -->
     <div id="s-search" class="screen" style="justify-content: center;">
         <h1>SEARCHING...</h1>
-        <div class="searching-anim">LOOKING FOR OPPONENT</div>
-        <p style="text-align: center; font-size: 0.9rem; opacity: 0.8;">Please wait...</p>
-        <button class="btn btn-danger" onclick="cancelMatchmaking()" style="margin-top: 30px;">CANCEL</button>
+        <button class="btn btn-danger" onclick="cancelMatchmaking()">CANCEL</button>
     </div>
 
-    <!-- TAB 2: PROFILE -->
     <div id="s-profile" class="screen">
         <h1>PROFILE</h1>
-        
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 3rem; font-family: var(--font-retro); color: gold;">
-                <span id="p-bal">0</span>
-            </div>
-            <div style="opacity: 0.7;">STARS BALANCE</div>
-        </div>
-
+        <div class="card" style="text-align: center;"><div style="font-size: 3rem; font-family: var(--font-retro); color: gold;"><span id="p-bal">0</span></div><div>STARS</div></div>
         <div class="card">
             <h2>Stats</h2>
-            <div class="stat-row"><span>ID:</span> <span id="p-id">...</span></div>
-            <div class="stat-row"><span>Best Snake:</span> <span id="p-snake">0</span></div>
-            <div class="stat-row"><span>Best Tetris:</span> <span id="p-tetris">0</span></div>
+            <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>ID:</span> <span id="p-id">...</span></div>
+            <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>Best Snake:</span> <span id="p-snake">0</span></div>
+            <div style="display:flex; justify-content:space-between; margin:10px 0;"><span>Best Tetris:</span> <span id="p-tetris">0</span></div>
         </div>
-
         <div class="card">
             <h2>Deposit</h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
                 <button class="btn btn-outline" onclick="deposit(10)">+10</button>
                 <button class="btn btn-outline" onclick="deposit(50)">+50</button>
-                <button class="btn btn-outline" onclick="deposit(100)">+100</button>
-                <button class="btn btn-outline" onclick="deposit(500)">+500</button>
             </div>
         </div>
-
-        <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
-        <div style="height: 20px;"></div>
+        <button class="btn btn-danger" onclick="withdraw()">WITHDRAW</button>
     </div>
 
-    <!-- GAME SCREEN -->
     <div id="s-game" class="screen" style="padding-top: 10px;">
-        <div class="game-header">
-            <div style="display: flex; gap: 5px;">
-                <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
-                <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart-header" style="display:none;">↻</button>
-            </div>
-            
-            <div style="font-family: var(--font-retro); color: gold; font-size: 1rem;">
-                SCORE: <span id="g-score">0</span>
-            </div>
+        <div style="display:flex; justify-content:space-between; width:100%; max-width:300px; margin-bottom:10px;">
+            <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
+            <div style="font-family: var(--font-retro); color: gold;">SCORE: <span id="g-score">0</span></div>
         </div>
-        
         <canvas id="gameCanvas"></canvas>
-        
         <div class="game-ui-bottom">
             <div class="d-pad-container">
-                <div class="ctrl-btn btn-up" ontouchstart="input('up', event)" onmousedown="input('up', event)">▲</div>
-                <div class="ctrl-btn btn-left" ontouchstart="input('left', event)" onmousedown="input('left', event)">◀</div>
-                <div class="ctrl-btn btn-down" ontouchstart="input('down', event)" onmousedown="input('down', event)">▼</div>
-                <div class="ctrl-btn btn-right" ontouchstart="input('right', event)" onmousedown="input('right', event)">▶</div>
+                <div class="ctrl-btn btn-up" ontouchstart="input('up', event)">▲</div>
+                <div class="ctrl-btn btn-left" ontouchstart="input('left', event)">◀</div>
+                <div class="ctrl-btn btn-down" ontouchstart="input('down', event)">▼</div>
+                <div class="ctrl-btn btn-right" ontouchstart="input('right', event)">▶</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- BOTTOM TABS -->
 <div class="tabs">
-    <div class="tab active" onclick="nav('play', this)">
-        <div class="tab-icon">🎮</div>
-        <div>PLAY</div>
-    </div>
-    <div class="tab" onclick="nav('profile', this)">
-        <div class="tab-icon">👤</div>
-        <div>PROFILE</div>
-    </div>
+    <div class="tab active" onclick="nav('play', this)"><div class="tab-icon">🎮</div><div>PLAY</div></div>
+    <div class="tab" onclick="nav('profile', this)"><div class="tab-icon">👤</div><div>PROFILE</div></div>
 </div>
 
-<!-- MODAL: CREATE FRIEND LOBBY (НОВОЕ ОКНО) -->
-<div id="modal-friend" class="modal">
-    <div class="card" style="width: 85%; max-width: 300px;">
-        <h2 style="text-align: center; color: var(--accent-neon); font-size: 1.2rem;">FRIEND LOBBY</h2>
-        
-        <label>Select Game:</label>
-        <select id="friend-game">
-            <option value="snake">Snake</option>
-            <option value="tetris">Tetris</option>
-        </select>
-        
-        <label>Bet (Stars):</label>
-        <select id="friend-bet">
-            <option value="10">10 ⭐️</option>
-            <option value="50">50 ⭐️</option>
-            <option value="100">100 ⭐️</option>
-            <option value="500">500 ⭐️</option>
-        </select>
+<div id="modal-over" class="modal">
+    <h1 style="color:red; font-size:3rem;">GAME OVER</h1>
+    <h2 id="end-score" style="color:white;">0</h2>
+    <p id="end-msg" style="color:gold;"></p>
+    <button class="btn" style="width:240px;" onclick="restartGameFromModal()">PLAY AGAIN</button>
+    <button class="btn btn-outline" style="width:240px;" onclick="location.reload()">MENU</button>
+</div>
 
-        <button class="btn" onclick="generateFriendLink()" style="margin-top: 10px;">GENERATE LINK</button>
+<div id="modal-friend" class="modal">
+    <div class="card" style="width: 85%;">
+        <h2>Invite Friend</h2>
+        <select id="f-game"><option value="snake">Snake</option><option value="tetris">Tetris</option></select>
+        <select id="f-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option></select>
+        <button class="btn" onclick="submitFriendLobby()">GENERATE LINK</button>
         <button class="btn btn-outline" onclick="document.getElementById('modal-friend').style.display='none'">CANCEL</button>
     </div>
 </div>
 
-<!-- MODAL: GAME OVER -->
-<div id="modal-over" class="modal">
-    <h1 style="color:red; font-size:3rem; text-align: center;">GAME<br>OVER</h1>
-    <h2 id="end-score" style="color:white;">Score: 0</h2>
-    <p id="end-msg" style="color:gold; text-align:center; padding:20px;"></p>
-    
-    <div style="display: flex; flex-direction: column; gap: 10px; width: 80%; max-width: 300px;">
-        <button id="btn-modal-restart" class="btn btn-outline" onclick="restartGameFromModal()">PLAY AGAIN</button>
-        <button class="btn" onclick="location.reload()">MAIN MENU</button>
-    </div>
-</div>
-
 <script>
-    // Имя вашего бота в Telegram (из скриншота)
-    const BOT_USERNAME = "RetroBattleArena_bot";
     const API = "https://tg-game-arena.onrender.com";
-    const tg = window.Telegram.WebApp;
-    tg.ready(); tg.expand();
+    const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     
-    // Theme setup
-    document.documentElement.style.setProperty('--tg-bg', tg.themeParams.bg_color || '#1c1c1e');
-    document.documentElement.style.setProperty('--tg-text', tg.themeParams.text_color || '#ffffff');
-    document.documentElement.style.setProperty('--tg-btn', tg.themeParams.button_color || '#2481cc');
-    document.documentElement.style.setProperty('--tg-btn-text', tg.themeParams.button_text_color || '#ffffff');
-
-    let user = null;
-    let lobby = null;
-    let pollInterval = null;
-    
-    // Game Vars
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
+    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    const width = 240;
-    const height = 400;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    canvas.width = 240 * dpr; canvas.height = 400 * dpr; ctx.scale(dpr, dpr);
+    canvas.style.width = '240px'; canvas.style.height = '400px';
 
-    const BLK = 20; 
-    let loop = null, gameType = '', score = 0;
-
-    // --- INIT ---
     async function init() {
-        try {
-            const r = await fetch(`${API}/api/user-data`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ initData: tg.initData })
-            });
-            user = await r.json();
-            updateUI();
-
-            const startParam = tg.initDataUnsafe.start_param;
-            if (startParam) {
-                const j = await fetch(`${API}/api/join-lobby`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ telegramId: user.telegramId, startParam })
-                });
-                const d = await j.json();
-                if (d.mode === 'duel') {
-                    lobby = d.lobby;
-                    launchGame(lobby.gameType, true);
-                } else if(d.error) {
-                    tg.showAlert(d.error);
-                }
-            }
-        } catch (e) { console.error(e); }
+        const r = await fetch(`${API}/api/user-data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
+        user = await r.json(); updateUI();
+        if (tg.initDataUnsafe.start_param) {
+            const j = await fetch(`${API}/api/join-lobby`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, startParam: tg.initDataUnsafe.start_param }) });
+            const d = await j.json();
+            if (d.mode === 'duel') { lobby = d.lobby; launchGame(lobby.gameType, true); }
+            else if (d.error) tg.showAlert(d.error);
+        }
     }
     init();
 
-    // --- NAVIGATION ---
-    function nav(id, el) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    function nav(id, el) { 
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
         document.getElementById(`s-${id}`).classList.add('active');
-        if(el) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); 
+        el.classList.add('active');
+    }
+
+    function updateUI() { 
+        document.getElementById('p-bal').innerText = user.balance; 
+        document.getElementById('p-id').innerText = user.telegramId;
+        document.getElementById('p-snake').innerText = user.highScores.snake; 
+        document.getElementById('p-tetris').innerText = user.highScores.tetris; 
+    }
+
+    async function deposit(amt) {
+        const r = await fetch(`${API}/api/create-invoice`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ amount: amt }) });
+        const d = await r.json(); if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (s)=>{ if(s==='paid') location.reload(); });
+    }
+
+    function openFriendModal() { document.getElementById('modal-friend').style.display='flex'; }
+
+    async function submitFriendLobby() {
+        const g = document.getElementById('f-game').value, b = parseInt(document.getElementById('f-bet').value);
+        if (user.balance < b) return tg.showAlert("Insufficient Stars");
+        const r = await fetch(`${API}/api/create-lobby-friend`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
+        const d = await r.json();
+        if (d.success) {
+            const link = `https://t.me/share/url?url=https://t.me/RetroBattleArena_bot/app?startapp=${d.lobbyId}&text=Duel me in ${g}!`;
+            tg.openTelegramLink(link);
+            document.getElementById('modal-friend').style.display='none';
         }
     }
 
-    function updateUI() {
-        if(!user) return;
-        document.getElementById('p-bal').innerText = user.balance;
-        document.getElementById('p-id').innerText = user.telegramId;
-        document.getElementById('p-snake').innerText = user.highScores.snake;
-        document.getElementById('p-tetris').innerText = user.highScores.tetris;
-    }
-
-    // --- RANDOM MATCHMAKING ---
     async function startMatchmaking() {
-        const game = document.getElementById('search-game').value;
-        const bet = parseInt(document.getElementById('search-bet').value);
-        if (user.balance < bet) return tg.showAlert("Insufficient Stars!");
-
-        nav('search');
-
-        try {
-            const r = await fetch(`${API}/api/search-match`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telegramId: user.telegramId, gameType: game, betAmount: bet })
-            });
-            const d = await r.json();
-            
-            if (d.error) {
-                tg.showAlert(d.error); nav('play');
-            } else if (d.status === 'match_found') {
-                lobby = { lobbyId: d.lobbyId, betAmount: bet };
-                user.balance = d.newBalance;
-                launchGame(game, true);
-            } else if (d.status === 'waiting') {
-                user.balance = d.newBalance;
-                pollInterval = setInterval(checkMatchStatus, 2000);
-            }
-        } catch(e) { tg.showAlert("Error"); nav('play'); }
-    }
-
-    async function checkMatchStatus() {
-        try {
-            const r = await fetch(`${API}/api/check-match-status`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telegramId: user.telegramId })
-            });
-            const d = await r.json();
-            
-            if (d.status === 'match_found') {
-                clearInterval(pollInterval);
-                lobby = d.lobby;
-                launchGame(lobby.gameType, true);
-            }
-        } catch(e) { console.error(e); }
+        const g = document.getElementById('search-game').value, b = parseInt(document.getElementById('search-bet').value);
+        if (user.balance < b) return tg.showAlert("Insufficient Stars");
+        nav('search', document.querySelectorAll('.tab')[0]);
+        const r = await fetch(`${API}/api/search-match`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
+        const d = await r.json();
+        if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame(g, true); }
+        else { poll = setInterval(async () => {
+            const cr = await fetch(`${API}/api/check-match-status`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
+            const cd = await cr.json(); if (cd.status === 'match_found') { clearInterval(poll); lobby = cd.lobby; launchGame(lobby.gameType, true); }
+        }, 3000); }
     }
 
     async function cancelMatchmaking() {
-        clearInterval(pollInterval);
-        try {
-            const r = await fetch(`${API}/api/cancel-match`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telegramId: user.telegramId })
-            });
-            const d = await r.json();
-            if(d.success) {
-                user.balance = d.newBalance;
-                tg.showAlert("Refunded");
-                nav('play');
-            }
-        } catch(e) { tg.showAlert("Error"); nav('play'); }
+        clearInterval(poll);
+        await fetch(`${API}/api/cancel-match`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
+        location.reload();
     }
 
-    // --- FRIEND LOBBY (ПРИГЛАШЕНИЕ ДРУГА) ---
-    function openFriendLobby() {
-        document.getElementById('modal-friend').style.display = 'flex';
-    }
-
-    async function generateFriendLink() {
-        const game = document.getElementById('friend-game').value;
-        const bet = parseInt(document.getElementById('friend-bet').value);
-
-        if (user.balance < bet) {
-            tg.showAlert("Insufficient Stars!");
-            return;
-        }
-
-        try {
-            const r = await fetch(`${API}/api/create-lobby`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ telegramId: user.telegramId, gameType: game, betAmount: bet })
-            });
-            const d = await r.json();
-            
-            if (d.success) {
-                document.getElementById('modal-friend').style.display = 'none';
-                user.balance = d.newBalance;
-                updateUI();
-                
-                // Генерируем ссылку для Telegram
-                const link = `https://t.me/share/url?url=https://t.me/${BOT_USERNAME}/app?startapp=${d.lobbyId}&text=Play ${game} for ${bet} Stars!`;
-                tg.openTelegramLink(link);
-            } else {
-                tg.showAlert(d.error);
-            }
-        } catch(e) {
-            tg.showAlert("Network error");
-        }
-    }
-
-    // --- PAYMENTS ---
-    async function deposit(amt) {
-        const r = await fetch(`${API}/api/create-invoice`, {
-             method: 'POST', headers: {'Content-Type': 'application/json'},
-             body: JSON.stringify({ amount: amt })
-        });
-        const d = await r.json();
-        if(d.invoiceLink) tg.openInvoice(d.invoiceLink, (s)=>{ if(s==='paid'){ user.balance+=amt; updateUI(); }});
-    }
-
-    async function withdraw() {
-        if(user.balance <= 0) return tg.showAlert("Empty balance");
-        if(!confirm("Withdraw all to source?")) return;
-        await fetch(`${API}/api/withdraw`, {
-             method: 'POST', headers: {'Content-Type': 'application/json'},
-             body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance })
-        });
-        user.balance=0; updateUI(); tg.showAlert("Request sent!");
-    }
-
-    // --- GAMES ---
-    function launchGame(type, isRanked) {
-        clearInterval(pollInterval);
+    function launchGame(t, pvp) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.querySelector('.tabs').style.display = 'none';
         document.getElementById('s-game').classList.add('active');
-        
-        document.getElementById('btn-restart-header').style.display = isRanked ? 'none' : 'block';
-        document.getElementById('btn-modal-restart').style.display = isRanked ? 'none' : 'block';
-
-        gameType = type;
-        score = 0;
-        document.getElementById('g-score').innerText = 0;
-        
-        if (type === 'snake') runSnake();
-        if (type === 'tetris') runTetris();
+        document.querySelector('.tabs').style.display = 'none';
+        gameType = t; score = 0; document.getElementById('g-score').innerText = 0;
+        if (t === 'snake') runSnake(); else runTetris();
     }
 
-    function quitGame() {
-        if(confirm("Quit game?")) {
-            if(loop) cancelAnimationFrame(loop);
-            clearTimeout(loop);
-            location.reload();
-        }
-    }
-
-    function restartGame() {
-        if(loop) cancelAnimationFrame(loop);
-        clearTimeout(loop);
-        score = 0;
-        document.getElementById('g-score').innerText = 0;
-        if (gameType === 'snake') runSnake();
-        if (gameType === 'tetris') runTetris();
-    }
-    
-    function restartGameFromModal() {
-        document.getElementById('modal-over').style.display = 'none';
-        restartGame();
-    }
+    function quitGame() { if(confirm("Quit?")) location.reload(); }
+    function restartGameFromModal() { document.getElementById('modal-over').style.display='none'; score=0; document.getElementById('g-score').innerText=0; if(gameType==='snake') runSnake(); else runTetris(); }
 
     async function gameOver() {
-        if(loop) cancelAnimationFrame(loop);
-        clearTimeout(loop);
-        
-        document.getElementById('modal-over').style.display = 'flex';
-        document.getElementById('end-score').innerText = "Score: " + score;
-        document.getElementById('end-msg').innerText = lobby ? "Sending Result..." : "Practice Finished";
-
-        await fetch(`${API}/api/submit-score`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score, lobbyId: lobby?.lobbyId })
-        });
-        
-        if(lobby) document.getElementById('end-msg').innerText = "Result saved! Winner gets prize.";
+        if(loop) cancelAnimationFrame(loop); clearTimeout(loop);
+        document.getElementById('modal-over').style.display='flex';
+        document.getElementById('end-score').innerText = score;
+        await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score, lobbyId: lobby ? lobby.lobbyId : null }) });
     }
 
-    function input(k, e) {
-        if(e) e.preventDefault(); 
-        const ev = new KeyboardEvent('keydown', { key: k==='left'?'ArrowLeft': k==='right'?'ArrowRight': k==='up'?'ArrowUp':'ArrowDown' });
-        document.dispatchEvent(ev);
-    }
+    function input(k, e) { e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' })); }
 
-    // --- SNAKE ENGINE ---
     function runSnake() {
-        let s=, f={x:2,y:2}, d={x:0,y:0};
-        const cols=12, rows=20;
-        
-        function update() {
-            let h={x:s.x+d.x, y:s.y+d.y};
-            if(h.x<0||h.x>=cols||h.y<0||h.y>=rows||(d.x|d.y && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
-            if(d.x|d.y) s.unshift(h);
-            if(h.x===f.x && h.y===f.y) {
-                score+=10; document.getElementById('g-score').innerText=score;
-                f={x:Math.floor(Math.random()*cols), y:Math.floor(Math.random()*rows)};
-            } else if(d.x|d.y) s.pop();
-
+        let s=[{x:5,y:10}], f={x:2,y:2}, d={x:0,y:0};
+        function upd() {
+            let h={x:s[0].x+d.x, y:s[0].y+d.y};
+            if(h.x<0||h.x>=12||h.y<0||h.y>=20||( (d.x||d.y) && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
+            if(d.x||d.y) s.unshift(h);
+            if(h.x===f.x && h.y===f.y) { score+=10; document.getElementById('g-score').innerText=score; f={x:Math.floor(Math.random()*12), y:Math.floor(Math.random()*20)}; }
+            else if(d.x||d.y) s.pop();
             ctx.fillStyle='#000'; ctx.fillRect(0,0,240,400);
-            ctx.fillStyle='#ff0055'; ctx.fillRect(f.x*BLK, f.y*BLK, BLK-2, BLK-2);
-            ctx.fillStyle='#00f0ff'; s.forEach(p => ctx.fillRect(p.x*BLK, p.y*BLK, BLK-2, BLK-2));
-            loop = setTimeout(() => requestAnimationFrame(update), 150);
+            ctx.fillStyle='#ff0055'; ctx.fillRect(f.x*20, f.y*20, 18, 18);
+            ctx.fillStyle='#00f0ff'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
+            loop = setTimeout(() => requestAnimationFrame(upd), 150);
         }
-
-        document.onkeydown = e => {
-            if(gameType!=='snake') return;
-            if(e.key==='ArrowLeft'&&d.x!==1) d={x:-1,y:0};
-            if(e.key==='ArrowRight'&&d.x!==-1) d={x:1,y:0};
-            if(e.key==='ArrowUp'&&d.y!==1) d={x:0,y:-1};
-            if(e.key==='ArrowDown'&&d.y!==-1) d={x:0,y:1};
+        document.onkeydown = e => { 
+            if(e.key==='ArrowLeft'&&d.x!==1) d={x:-1,y:0}; 
+            if(e.key==='ArrowRight'&&d.x!==-1) d={x:1,y:0}; 
+            if(e.key==='ArrowUp'&&d.y!==1) d={x:0,y:-1}; 
+            if(e.key==='ArrowDown'&&d.y!==-1) d={x:0,y:1}; 
             if(!d.x && !d.y) d={x:0,y:1};
         };
-        update();
+        upd();
     }
 
-    // --- TETRIS ENGINE ---
     function runTetris() {
-        const R=20, C=12;
-        let board = Array.from({length:R}, () => Array(C).fill(0));
-        const SHAPES =], [,],,],,],,], [,],,]];
-        const COLORS =;
-        let p = randomPiece(), dropCounter=0, lastTime=0;
-
-        function randomPiece() { let id = Math.floor(Math.random() * SHAPES.length); return { m: SHAPES, c: id+1, x: 4, y: 0 }; }
+        const R=20, C=12; let bd = Array.from({length:R}, () => Array(C).fill(0));
+        const SH = [[[1,1,1,1]], [[1,1,1],[0,1,0]], [[1,1],[1,1]], [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]]];
+        const CL = [null, '#00f0ff', '#bc13fe', '#ffff00', '#ff0055', '#00ff00', '#ff8800', '#0000ff'];
+        let p = { m: SH[Math.floor(Math.random()*7)], c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            for(let y=0; y<R; y++) for(let x=0; x<C; x++) if(board) { ctx.fillStyle = COLORS]; ctx.fillRect(x*BLK, y*BLK, BLK-1, BLK-1); }
-            p.m.forEach((row, y) => { row.forEach((val, x) => { if(val) { ctx.fillStyle = COLORS; ctx.fillRect((p.x+x)*BLK, (p.y+y)*BLK, BLK-1, BLK-1); } }); });
+            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL[v]; ctx.fillRect(x*20,y*20,19,19); }}));
+            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL[p.c]; ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
         }
-        function collide(arena, player) {
-            const m = player.m; const o = {x:player.x, y:player.y};
-            for(let y=0; y<m.length; ++y) for(let x=0; x<m.length; ++x) if(m !== 0 && (arena && arena) !== 0) return true;
-            return false;
-        }
-        function rotate(matrix) { for(let y=0; y<matrix.length; ++y) for(let x=0; x<y; ++x), matrix] = [matrix, matrix]; matrix.forEach(row => row.reverse()); }
-        function playerRotate() {
-            const pos = p.x; let offset = 1; rotate(p.m);
-            while(collide(board, p)) { p.x += offset; offset = -(offset + (offset > 0 ? 1 : -1)); if(offset > p.m.length) { rotate(p.m); rotate(p.m); rotate(p.m); p.x = pos; return; } }
-        }
-        function update(time = 0) {
-            const deltaTime = time - lastTime; lastTime = time; dropCounter += deltaTime;
-            if(dropCounter > 1000) {
-                p.y++;
-                if(collide(board, p)) {
-                    p.y--; p.m.forEach((row, y) => row.forEach((val, x) => { if(val) board = p.c; }));
-                    let rowCount = 0;
-                    for(let y=R-1; y>0; --y) { if(board.every(value => value !== 0)) { board.splice(y, 1); board.unshift(Array(C).fill(0)); ++y; rowCount++; } }
-                    if(rowCount>0) { score+=rowCount*100; document.getElementById('g-score').innerText=score; }
-                    p = randomPiece(); if(collide(board, p)) { gameOver(); return; }
+        function coll(ax, ay, m) { return m.some((r,y)=>r.some((v,x)=> v && (bd[y+p.y+ay] === undefined || bd[y+p.y+ay][x+p.x+ax] === undefined || bd[y+p.y+ay][x+p.x+ax] !== 0))); }
+        function rotate(m) { let nm=m[0].map((_,i)=>m.map(r=>r[i]).reverse()); if(!coll(0,0,nm)) p.m=nm; }
+        function upd(t=0) {
+            dc += t - lt; lt = t;
+            if(dc > 1000) {
+                if(!coll(0,1,p.m)) p.y++;
+                else {
+                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) bd[y+p.y][x+p.x]=p.c; }));
+                    bd.forEach((r,y)=>{ if(r.every(v=>v!==0)){ bd.splice(y,1); bd.unshift(Array(C).fill(0)); score+=100; document.getElementById('g-score').innerText=score; }});
+                    p = { m: SH[Math.floor(Math.random()*7)], c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
+                    if(coll(0,0,p.m)) return gameOver();
                 }
-                dropCounter = 0;
+                dc=0;
             }
-            draw(); loop = requestAnimationFrame(update);
+            draw(); loop = requestAnimationFrame(upd);
         }
         document.onkeydown = e => {
-            if(gameType!=='tetris') return;
-            if(e.key==='ArrowLeft') { p.x--; if(collide(board, p)) p.x++; }
-            if(e.key==='ArrowRight') { p.x++; if(collide(board, p)) p.x--; }
-            if(e.key==='ArrowDown') { p.y++; if(collide(board, p)) p.y--; }
-            if(e.key==='ArrowUp') playerRotate();
+            if(e.key==='ArrowLeft' && !coll(-1,0,p.m)) p.x--;
+            if(e.key==='ArrowRight' && !coll(1,0,p.m)) p.x++;
+            if(e.key==='ArrowDown' && !coll(0,1,p.m)) p.y++;
+            if(e.key==='ArrowUp') rotate(p.m);
         };
-        update();
+        upd();
     }
 </script>
 </body>
