@@ -46,13 +46,11 @@
             top: 0;
             left: 0;
             width: 100%;
-            /* ВАЖНО: Высота экрана минус высота нижнего меню (70px) */
             height: calc(100% - 70px); 
             
             flex-direction: column;
             align-items: center;
             
-            /* Включаем скролл внутри контейнера */
             overflow-y: auto; 
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch; 
@@ -82,7 +80,7 @@
             margin-bottom: 16px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid rgba(255,255,255,0.05);
-            flex-shrink: 0; /* Чтобы карточки не сжимались */
+            flex-shrink: 0; 
         }
 
         /* BUTTONS */
@@ -166,10 +164,9 @@
         .btn-down { grid-area: down; }
         .btn-right { grid-area: right; }
 
-        /* STAT ROW */
         .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; font-size: 0.9rem; }
 
-        /* BOTTOM TABS - FIXED */
+        /* BOTTOM TABS */
         .tabs {
             position: fixed;
             bottom: 0;
@@ -197,13 +194,17 @@
         .tab.active { opacity: 1; color: var(--accent-neon); }
         .tab-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
-        /* ANIMATIONS */
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         .searching-anim { animation: pulse 1.5s infinite; color: var(--accent-neon); margin: 20px 0; font-family: var(--font-retro); text-align: center; }
         
         .game-header {
             display: flex; justify-content: space-between; align-items: center;
             width: 100%; max-width: 300px; margin-bottom: 10px; flex-shrink: 0;
+        }
+        
+        /* MODAL STYLES */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; align-items: center; justify-content: center; flex-direction: column;
         }
     </style>
 </head>
@@ -214,14 +215,12 @@
     <div id="s-play" class="screen active">
         <h1>RETRO ARENA</h1>
         
-        <!-- Section 1: Solo -->
         <div class="card">
             <h2>Solo Training</h2>
             <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Snake</button>
             <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Tetris</button>
         </div>
 
-        <!-- Section 2: Ranked Search -->
         <div class="card" style="border: 2px solid var(--accent-neon);">
             <h2>Ranked Match</h2>
             <p style="font-size: 0.8rem; opacity: 0.7; text-align: center; margin-bottom: 10px;">Find random opponent</p>
@@ -243,14 +242,13 @@
             <button class="btn" onclick="startMatchmaking()">🔍 FIND MATCH</button>
         </div>
         
-        <!-- Section 3: Friend Match -->
+        <!-- Friend Match (ИСПРАВЛЕНО) -->
         <div class="card">
             <h2>Friend Match</h2>
             <p style="font-size: 0.8rem; opacity: 0.7; text-align: center; margin-bottom: 10px;">Create a link to play with a friend</p>
-            <button class="btn btn-outline" onclick="tg.showAlert('Feature coming soon!')">🔗 CREATE LINK</button>
+            <button class="btn btn-outline" onclick="openFriendLobby()">🔗 CREATE LINK</button>
         </div>
         
-        <!-- Spacer for scroll -->
         <div style="height: 20px;"></div>
     </div>
 
@@ -299,7 +297,6 @@
         <div class="game-header">
             <div style="display: flex; gap: 5px;">
                 <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
-                <!-- Кнопка рестарта в хедере на всякий случай -->
                 <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart-header" style="display:none;">↻</button>
             </div>
             
@@ -310,7 +307,6 @@
         
         <canvas id="gameCanvas"></canvas>
         
-        <!-- CONTROLS -->
         <div class="game-ui-bottom">
             <div class="d-pad-container">
                 <div class="ctrl-btn btn-up" ontouchstart="input('up', event)" onmousedown="input('up', event)">▲</div>
@@ -334,20 +330,45 @@
     </div>
 </div>
 
+<!-- MODAL: CREATE FRIEND LOBBY (НОВОЕ ОКНО) -->
+<div id="modal-friend" class="modal">
+    <div class="card" style="width: 85%; max-width: 300px;">
+        <h2 style="text-align: center; color: var(--accent-neon); font-size: 1.2rem;">FRIEND LOBBY</h2>
+        
+        <label>Select Game:</label>
+        <select id="friend-game">
+            <option value="snake">Snake</option>
+            <option value="tetris">Tetris</option>
+        </select>
+        
+        <label>Bet (Stars):</label>
+        <select id="friend-bet">
+            <option value="10">10 ⭐️</option>
+            <option value="50">50 ⭐️</option>
+            <option value="100">100 ⭐️</option>
+            <option value="500">500 ⭐️</option>
+        </select>
+
+        <button class="btn" onclick="generateFriendLink()" style="margin-top: 10px;">GENERATE LINK</button>
+        <button class="btn btn-outline" onclick="document.getElementById('modal-friend').style.display='none'">CANCEL</button>
+    </div>
+</div>
+
 <!-- MODAL: GAME OVER -->
-<div id="modal-over" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center; flex-direction:column;">
+<div id="modal-over" class="modal">
     <h1 style="color:red; font-size:3rem; text-align: center;">GAME<br>OVER</h1>
     <h2 id="end-score" style="color:white;">Score: 0</h2>
     <p id="end-msg" style="color:gold; text-align:center; padding:20px;"></p>
     
     <div style="display: flex; flex-direction: column; gap: 10px; width: 80%; max-width: 300px;">
-        <!-- КНОПКА PLAY AGAIN ДЛЯ МОДАЛЬНОГО ОКНА -->
         <button id="btn-modal-restart" class="btn btn-outline" onclick="restartGameFromModal()">PLAY AGAIN</button>
         <button class="btn" onclick="location.reload()">MAIN MENU</button>
     </div>
 </div>
 
 <script>
+    // Имя вашего бота в Telegram (из скриншота)
+    const BOT_USERNAME = "RetroBattleArena_bot";
     const API = "https://tg-game-arena.onrender.com";
     const tg = window.Telegram.WebApp;
     tg.ready(); tg.expand();
@@ -423,7 +444,7 @@
         document.getElementById('p-tetris').innerText = user.highScores.tetris;
     }
 
-    // --- MATCHMAKING ---
+    // --- RANDOM MATCHMAKING ---
     async function startMatchmaking() {
         const game = document.getElementById('search-game').value;
         const bet = parseInt(document.getElementById('search-bet').value);
@@ -483,6 +504,44 @@
         } catch(e) { tg.showAlert("Error"); nav('play'); }
     }
 
+    // --- FRIEND LOBBY (ПРИГЛАШЕНИЕ ДРУГА) ---
+    function openFriendLobby() {
+        document.getElementById('modal-friend').style.display = 'flex';
+    }
+
+    async function generateFriendLink() {
+        const game = document.getElementById('friend-game').value;
+        const bet = parseInt(document.getElementById('friend-bet').value);
+
+        if (user.balance < bet) {
+            tg.showAlert("Insufficient Stars!");
+            return;
+        }
+
+        try {
+            const r = await fetch(`${API}/api/create-lobby`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ telegramId: user.telegramId, gameType: game, betAmount: bet })
+            });
+            const d = await r.json();
+            
+            if (d.success) {
+                document.getElementById('modal-friend').style.display = 'none';
+                user.balance = d.newBalance;
+                updateUI();
+                
+                // Генерируем ссылку для Telegram
+                const link = `https://t.me/share/url?url=https://t.me/${BOT_USERNAME}/app?startapp=${d.lobbyId}&text=Play ${game} for ${bet} Stars!`;
+                tg.openTelegramLink(link);
+            } else {
+                tg.showAlert(d.error);
+            }
+        } catch(e) {
+            tg.showAlert("Network error");
+        }
+    }
+
     // --- PAYMENTS ---
     async function deposit(amt) {
         const r = await fetch(`${API}/api/create-invoice`, {
@@ -510,9 +569,7 @@
         document.querySelector('.tabs').style.display = 'none';
         document.getElementById('s-game').classList.add('active');
         
-        // Hide/Show Restart Button in header
         document.getElementById('btn-restart-header').style.display = isRanked ? 'none' : 'block';
-        // Hide/Show Restart Button in modal
         document.getElementById('btn-modal-restart').style.display = isRanked ? 'none' : 'block';
 
         gameType = type;
@@ -540,7 +597,6 @@
         if (gameType === 'tetris') runTetris();
     }
     
-    // Новая функция для рестарта из модального окна
     function restartGameFromModal() {
         document.getElementById('modal-over').style.display = 'none';
         restartGame();
@@ -570,11 +626,11 @@
 
     // --- SNAKE ENGINE ---
     function runSnake() {
-        let s=[{x:5,y:10}], f={x:2,y:2}, d={x:0,y:0};
+        let s=, f={x:2,y:2}, d={x:0,y:0};
         const cols=12, rows=20;
         
         function update() {
-            let h={x:s[0].x+d.x, y:s[0].y+d.y};
+            let h={x:s.x+d.x, y:s.y+d.y};
             if(h.x<0||h.x>=cols||h.y<0||h.y>=rows||(d.x|d.y && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
             if(d.x|d.y) s.unshift(h);
             if(h.x===f.x && h.y===f.y) {
@@ -603,34 +659,34 @@
     function runTetris() {
         const R=20, C=12;
         let board = Array.from({length:R}, () => Array(C).fill(0));
-        const SHAPES = [[[1,1,1,1]], [[1,1,1],[0,1,0]], [[1,1],[1,1]], [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]]];
-        const COLORS = [null, '#00f0ff', '#bc13fe', '#ffff00', '#ff0055', '#00ff00', '#ff8800', '#0000ff'];
+        const SHAPES =], [,],,],,],,], [,],,]];
+        const COLORS =;
         let p = randomPiece(), dropCounter=0, lastTime=0;
 
-        function randomPiece() { let id = Math.floor(Math.random() * SHAPES.length); return { m: SHAPES[id], c: id+1, x: 4, y: 0 }; }
+        function randomPiece() { let id = Math.floor(Math.random() * SHAPES.length); return { m: SHAPES, c: id+1, x: 4, y: 0 }; }
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            for(let y=0; y<R; y++) for(let x=0; x<C; x++) if(board[y][x]) { ctx.fillStyle = COLORS[board[y][x]]; ctx.fillRect(x*BLK, y*BLK, BLK-1, BLK-1); }
-            p.m.forEach((row, y) => { row.forEach((val, x) => { if(val) { ctx.fillStyle = COLORS[p.c]; ctx.fillRect((p.x+x)*BLK, (p.y+y)*BLK, BLK-1, BLK-1); } }); });
+            for(let y=0; y<R; y++) for(let x=0; x<C; x++) if(board) { ctx.fillStyle = COLORS]; ctx.fillRect(x*BLK, y*BLK, BLK-1, BLK-1); }
+            p.m.forEach((row, y) => { row.forEach((val, x) => { if(val) { ctx.fillStyle = COLORS; ctx.fillRect((p.x+x)*BLK, (p.y+y)*BLK, BLK-1, BLK-1); } }); });
         }
         function collide(arena, player) {
             const m = player.m; const o = {x:player.x, y:player.y};
-            for(let y=0; y<m.length; ++y) for(let x=0; x<m[y].length; ++x) if(m[y][x] !== 0 && (arena[y+o.y] && arena[y+o.y][x+o.x]) !== 0) return true;
+            for(let y=0; y<m.length; ++y) for(let x=0; x<m.length; ++x) if(m !== 0 && (arena && arena) !== 0) return true;
             return false;
         }
-        function rotate(matrix) { for(let y=0; y<matrix.length; ++y) for(let x=0; x<y; ++x) [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]]; matrix.forEach(row => row.reverse()); }
+        function rotate(matrix) { for(let y=0; y<matrix.length; ++y) for(let x=0; x<y; ++x), matrix] = [matrix, matrix]; matrix.forEach(row => row.reverse()); }
         function playerRotate() {
             const pos = p.x; let offset = 1; rotate(p.m);
-            while(collide(board, p)) { p.x += offset; offset = -(offset + (offset > 0 ? 1 : -1)); if(offset > p.m[0].length) { rotate(p.m); rotate(p.m); rotate(p.m); p.x = pos; return; } }
+            while(collide(board, p)) { p.x += offset; offset = -(offset + (offset > 0 ? 1 : -1)); if(offset > p.m.length) { rotate(p.m); rotate(p.m); rotate(p.m); p.x = pos; return; } }
         }
         function update(time = 0) {
             const deltaTime = time - lastTime; lastTime = time; dropCounter += deltaTime;
             if(dropCounter > 1000) {
                 p.y++;
                 if(collide(board, p)) {
-                    p.y--; p.m.forEach((row, y) => row.forEach((val, x) => { if(val) board[y+p.y][x+p.x] = p.c; }));
+                    p.y--; p.m.forEach((row, y) => row.forEach((val, x) => { if(val) board = p.c; }));
                     let rowCount = 0;
-                    for(let y=R-1; y>0; --y) { if(board[y].every(value => value !== 0)) { board.splice(y, 1); board.unshift(Array(C).fill(0)); ++y; rowCount++; } }
+                    for(let y=R-1; y>0; --y) { if(board.every(value => value !== 0)) { board.splice(y, 1); board.unshift(Array(C).fill(0)); ++y; rowCount++; } }
                     if(rowCount>0) { score+=rowCount*100; document.getElementById('g-score').innerText=score; }
                     p = randomPiece(); if(collide(board, p)) { gameOver(); return; }
                 }
