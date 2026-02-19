@@ -20,17 +20,13 @@ mongoose.connect(CONFIG.MONGO_URI)
     .then(() => console.log('✅ MongoDB Connected'))
     .catch(err => console.error('❌ MongoDB Error:', err));
 
-// --- SCHEMAS ---
 const UserSchema = new mongoose.Schema({
     telegramId: { type: Number, required: true, unique: true },
     username: String,
     firstName: String,
     balance: { type: Number, default: 0 },
-    highScores: {
-        snake: { type: Number, default: 0 },
-        tetris: { type: Number, default: 0 }
-    },
-    friends: [{ type: Number }]
+    highScores: { snake: { type: Number, default: 0 }, tetris: { type: Number, default: 0 } },
+    friends:
 });
 
 const LobbySchema = new mongoose.Schema({
@@ -93,12 +89,7 @@ app.post('/api/user-data', async (req, res) => {
         const userData = JSON.parse(urlParams.get('user'));
         let user = await User.findOne({ telegramId: userData.id });
         if (!user) {
-            user = new User({
-                telegramId: userData.id,
-                username: userData.username,
-                firstName: userData.first_name,
-                balance: 0
-            });
+            user = new User({ telegramId: userData.id, username: userData.username, firstName: userData.first_name, balance: 0 });
             await user.save();
         }
         res.json(user);
@@ -113,15 +104,33 @@ app.post('/api/create-invoice', async (req, res) => {
             description: `${amount} Stars`,
             payload: JSON.stringify({ unique_id: Date.now() }),
             currency: "XTR",
-            prices: [{ label: "Stars", amount: parseInt(amount) }],
+            prices:,
             provider_token: ""
         });
         res.json({ invoiceLink: response.data.result });
     } catch (e) { res.status(500).json({ error: 'Invoice failed' }); }
 });
 
-// --- MATCHMAKING ---
+// --- ДОБАВЛЕНО: СОЗДАНИЕ ПРИВАТНОГО ЛОББИ ДЛЯ ДРУГА ---
+app.post('/api/create-lobby', async (req, res) => {
+    const { telegramId, gameType, betAmount } = req.body;
+    try {
+        const user = await User.findOne({ telegramId });
+        if (!user || user.balance < betAmount) return res.status(400).json({ error: 'Недостаточно средств' });
 
+        // Списываем ставку
+        user.balance -= betAmount;
+        await user.save();
+
+        const lobbyId = `L_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+        const lobby = new Lobby({ lobbyId, player1Id: telegramId, gameType, betAmount, status: 'waiting' });
+        await lobby.save();
+
+        res.json({ success: true, lobbyId, newBalance: user.balance });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- MATCHMAKING ---
 app.post('/api/search-match', async (req, res) => {
     const { telegramId, gameType, betAmount } = req.body;
     if (betAmount < 10) return res.status(400).json({ error: 'Min bet is 10 Stars' });
@@ -133,24 +142,12 @@ app.post('/api/search-match', async (req, res) => {
         user.balance -= betAmount;
         await user.save();
 
-        const opponentRequest = await MatchRequest.findOneAndDelete({
-            gameType,
-            betAmount,
-            telegramId: { $ne: telegramId } 
-        });
+        const opponentRequest = await MatchRequest.findOneAndDelete({ gameType, betAmount, telegramId: { $ne: telegramId } });
 
         if (opponentRequest) {
             const lobbyId = `L_${Date.now()}_${Math.floor(Math.random()*1000)}`;
-            const lobby = new Lobby({
-                lobbyId,
-                player1Id: opponentRequest.telegramId,
-                player2Id: telegramId,
-                gameType,
-                betAmount,
-                status: 'active'
-            });
+            const lobby = new Lobby({ lobbyId, player1Id: opponentRequest.telegramId, player2Id: telegramId, gameType, betAmount, status: 'active' });
             await lobby.save();
-
             return res.json({ status: 'match_found', lobbyId, newBalance: user.balance });
         } else {
             await MatchRequest.deleteMany({ telegramId });
@@ -165,14 +162,12 @@ app.post('/api/check-match-status', async (req, res) => {
     const { telegramId } = req.body;
     try {
         const recentLobby = await Lobby.findOne({
-            $or: [{ player1Id: telegramId }, { player2Id: telegramId }],
+            $or:,
             status: 'active',
             createdAt: { $gt: new Date(Date.now() - 30000) } 
         }).sort({ createdAt: -1 });
 
-        if (recentLobby) {
-            return res.json({ status: 'match_found', lobby: recentLobby });
-        }
+        if (recentLobby) return res.json({ status: 'match_found', lobby: recentLobby });
 
         const request = await MatchRequest.findOne({ telegramId });
         if (request) return res.json({ status: 'waiting' });
@@ -195,9 +190,7 @@ app.post('/api/cancel-match', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-
-// --- GAME LOGIC ---
-
+// --- ВХОД В ЛОББИ ---
 app.post('/api/join-lobby', async (req, res) => {
     const { telegramId, startParam } = req.body;
     if (!startParam) return res.json({ mode: 'training' });
@@ -205,15 +198,19 @@ app.post('/api/join-lobby', async (req, res) => {
     try {
         const lobby = await Lobby.findOne({ lobbyId: startParam });
         
+        // Переподключение создателя или второго игрока
         if (lobby && (lobby.player1Id === telegramId || lobby.player2Id === telegramId)) {
             return res.json({ mode: 'duel', lobby });
         }
-        // Join via link logic (Friend)
+        
+        // Вход второго игрока по ссылке
         if (lobby && !lobby.player2Id) {
             const user = await User.findOne({ telegramId });
             if (!user || user.balance < lobby.betAmount) return res.status(400).json({ error: 'Low balance' });
+            
             user.balance -= lobby.betAmount;
             await user.save();
+            
             lobby.player2Id = telegramId;
             lobby.status = 'active';
             await lobby.save();
@@ -226,7 +223,7 @@ app.post('/api/join-lobby', async (req, res) => {
 app.post('/api/submit-score', async (req, res) => {
     const { telegramId, game, score, lobbyId } = req.body;
     try {
-        await User.findOneAndUpdate({ telegramId }, { $max: { [`highScores.${game}`]: score } });
+        await User.findOneAndUpdate({ telegramId }, { $max: {: score } });
 
         if (!lobbyId) return res.json({ success: true });
 
