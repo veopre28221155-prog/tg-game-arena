@@ -73,9 +73,10 @@
 
     const API = 'https://tg-game-arena.onrender.com';
     let balance = 0, currentGame = 'snake', move = {x:1, y:0}, score = 0, loop = null;
+    let isPractice = true, currentLobbyId = null;
     
     // Тетрис переменные
-    let tBoard, tPiece, tColor;
+    let tBoard, tPiece;
     const COLS = 10, ROWS = 20, BLOCK = 24;
 
     async function loadUser() {
@@ -86,6 +87,32 @@
             document.getElementById('u-balance').innerText = d.balance;
         } catch(e) { console.error("API Error"); }
     }
+
+    // ПРОВЕРКА ПРИГЛАШЕНИЯ
+    async function checkInvite() {
+        const startParam = tg.initDataUnsafe.start_param;
+        if (startParam && startParam.startsWith('lobby_')) {
+            currentLobbyId = startParam.replace('lobby_', '');
+            isPractice = false;
+            try {
+                const r = await fetch(`${API}/api/join-lobby`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId })
+                });
+                if (r.ok) {
+                    document.getElementById('mode-info').innerHTML = `<b style="color:#ff4141">⚔️ РЕЖИМ: ДУЭЛЬ</b>`;
+                    tg.MainButton.setText('В БОЙ!').show().onClick(() => startGame());
+                }
+            } catch(e) { console.error("Ошибка входа в лобби", e); }
+        }
+    }
+
+    // ОТПРАВКА ССЫЛКИ ДРУГУ
+    document.getElementById('friend-btn').onclick = () => {
+        const id = Math.random().toString(36).substr(2, 7);
+        tg.switchInlineQuery(`lobby_${id}`, ['users', 'chats']);
+    };
 
     function showTab(id, el) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -101,7 +128,6 @@
         document.getElementById('btn-t').style.opacity = type == 'tetris' ? '1' : '0.5';
     }
 
-    // --- УПРАВЛЕНИЕ ПК ---
     window.addEventListener('keydown', e => {
         if(currentGame == 'snake') {
             if(e.key == 'ArrowUp' && move.y == 0) move = {x:0, y:-1};
@@ -117,22 +143,16 @@
     });
 
     function startGame() {
+        tg.MainButton.hide();
         document.getElementById('menu-box').style.display = 'none';
         document.getElementById('game-box').style.display = 'block';
         const cvs = document.getElementById('canvas');
         cvs.style.display = 'block';
         score = 0; document.getElementById('score-val').innerText = "СЧЕТ: 0";
-        
-        if(currentGame == 'snake') {
-            cvs.width = 300; cvs.height = 300;
-            startSnake();
-        } else {
-            cvs.width = 240; cvs.height = 480;
-            startTetris();
-        }
+        if(currentGame == 'snake') { cvs.width = 300; cvs.height = 300; startSnake(); }
+        else { cvs.width = 240; cvs.height = 480; startTetris(); }
     }
 
-    // --- ЗМЕЙКА ---
     function startSnake() {
         const cvs = document.getElementById('canvas'), ctx = cvs.getContext('2d');
         let s = [{x:10, y:10}], f = {x:5, y:5};
@@ -142,8 +162,7 @@
             if(h.x<0||h.x>=20||h.y<0||h.y>=20 || s.some(p=>p.x==h.x && p.y==h.y)) return end();
             s.unshift(h);
             if(h.x==f.x && h.y==f.y) {
-                score++; document.getElementById('score-text');
-                document.getElementById('score-val').innerText = "СЧЕТ: " + score;
+                score++; document.getElementById('score-val').innerText = "СЧЕТ: " + score;
                 f = {x:Math.floor(Math.random()*19), y:Math.floor(Math.random()*19)};
             } else s.pop();
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,300,300);
@@ -152,15 +171,11 @@
         }, 150);
     }
 
-    // --- ТЕТРИС ---
     function startTetris() {
         const cvs = document.getElementById('canvas'), ctx = cvs.getContext('2d');
         tBoard = Array(ROWS).fill().map(() => Array(COLS).fill(0));
         spawnPiece();
-        loop = setInterval(() => {
-            dropTetris();
-            drawTetris(ctx);
-        }, 500);
+        loop = setInterval(() => { dropTetris(); drawTetris(ctx); }, 500);
     }
 
     function spawnPiece() {
@@ -187,7 +202,6 @@
     }
 
     function moveTetris(d) { tPos.x += d; if(collide()) tPos.x -= d; }
-
     function rotateTetris() {
         const next = tPiece[0].map((_, i) => tPiece.map(row => row[i]).reverse());
         const old = tPiece; tPiece = next;
@@ -202,17 +216,14 @@
     }
 
     function merge() {
-        tPiece.forEach((row, y) => row.forEach((v, x) => {
-            if(v) tBoard[tPos.y + y][tPos.x + x] = 1;
-        }));
+        tPiece.forEach((row, y) => row.forEach((v, x) => { if(v) tBoard[tPos.y + y][tPos.x + x] = 1; }));
     }
 
     function clearLines() {
         tBoard = tBoard.filter(row => row.some(v => v == 0));
         while(tBoard.length < ROWS) {
             tBoard.unshift(Array(COLS).fill(0));
-            score += 10;
-            document.getElementById('score-val').innerText = "СЧЕТ: " + score;
+            score += 10; document.getElementById('score-val').innerText = "СЧЕТ: " + score;
         }
     }
 
@@ -220,6 +231,19 @@
         clearInterval(loop);
         document.getElementById('overlay').style.display = 'flex';
         document.getElementById('res-score').innerText = score;
+        if (!isPractice && currentLobbyId) sendScoreToServer();
+    }
+
+    async function sendScoreToServer() {
+        document.getElementById('res-title').innerText = "ОТПРАВКА...";
+        try {
+            await fetch(`${API}/api/submit-score`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ initData: tg.initData, lobbyId: currentLobbyId, score: score })
+            });
+            document.getElementById('res-title').innerText = "СЧЕТ СОХРАНЕН!";
+        } catch(e) { document.getElementById('res-title').innerText = "ОШИБКА СЕТИ"; }
     }
 
     async function buyStars() {
@@ -230,6 +254,7 @@
     }
 
     loadUser();
+    checkInvite();
 </script>
 </body>
 </html>
