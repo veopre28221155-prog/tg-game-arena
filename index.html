@@ -411,7 +411,6 @@
         document.getElementById('modal-over').style.display = 'flex';
         document.getElementById('end-score').innerText = score;
         
-        // ПРЯЧЕМ кнопку "Играть снова" если это дуэль
         if (lobby) {
             document.querySelector('#modal-over .btn-duel').style.display = 'none';
             document.getElementById('end-msg').innerText = "Ожидание результата\nсоперника...";
@@ -441,7 +440,7 @@
         if (gameType === 'sonic' && (e.key === ' ' || e.key === 'ArrowUp')) window.gameAction();
     };
 
-    // --- SONIC 16-BIT RUNNER (Full Parallax, No arcs, Pixel Art ONLY) ---
+    // --- SONIC 16-BIT RUNNER ---
     function runSonic() {
         let sonicY = 270;
         let sonicVy = 0;
@@ -471,7 +470,6 @@
             'R': '#E00000', 'S': '#FFCC99', 'G': '#FFD700', 'C': '#FF2600'
         };
 
-        // Custom string-to-pixels rendering function
         function drawSpriteStr(str, dx, dy, scale) {
             let rows = str.split('-');
             for (let r = 0; r < rows.length; r++) {
@@ -558,14 +556,10 @@
                 }
             }
             enemies = nextEnemies;
-
-            // --- ПАРАЛЛАКС ФОН (GREEN HILL PIXEL ART) ---
             
-            // 1. Небо
             ctx.fillStyle = '#2452FF'; 
             ctx.fillRect(0, 0, 240, 400);
             
-            // 2. Медленные облака (Parallax 1)
             let cloudOffset = (frames * 0.5) % 240;
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(30 - cloudOffset, 30, 50, 15);
@@ -573,18 +567,15 @@
             ctx.fillRect(140 - cloudOffset, 60, 40, 10);
             ctx.fillRect(380 - cloudOffset, 60, 40, 10);
 
-            // 3. Средние пальмы (Parallax 2)
             let palmOffset = (frames * 2) % 240;
             drawPalm(60 - palmOffset, 220);
             drawPalm(300 - palmOffset, 220);
             drawPalm(180 - palmOffset, 220);
             drawPalm(420 - palmOffset, 220);
 
-            // 4. Океан
             ctx.fillStyle = '#0028A8'; ctx.fillRect(0, 150, 240, 150);
             ctx.fillStyle = '#0060F8'; ctx.fillRect(0, 160, 240, 140);
             
-            // 5. Быстрый шахматный пол (Parallax 3)
             let floorOffset = (frames * scrollSpeed) % 40;
             for(let i = -1; i < 7; i++) {
                 let px = (i * 40) - floorOffset;
@@ -592,11 +583,9 @@
                 ctx.fillRect(px, 300, 40, 100);
             }
             
-            // Трава сверху
             ctx.fillStyle = '#21E700'; ctx.fillRect(0, 300, 240, 15);
             ctx.fillStyle = '#10A000'; ctx.fillRect(0, 315, 240, 5);
 
-            // --- СПРАЙТЫ ---
             let sonicSprite = jumpFrame;
             if (!isJumping) {
                 let animCycle = Math.floor(frames / 4) % 3;
@@ -645,8 +634,10 @@
     function runTetris() {
         const R=20, C=12; 
         let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
-        const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(str=>str.split('-').map(r=>r.split('').map(Number)));
-        const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
+        const SH =],,],,],,],,],,],
+            [,]
+        ];
+        const CL =;
         let p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
         window.gameAction = function() {};  
 
@@ -662,10 +653,8 @@
                 let nx = p.x + x + ax;
                 let ny = p.y + y + ay;
                 if (nx < 0 || nx >= C || ny >= R) return true;
-                let targetRow = bd;
-                if(!targetRow) return true;
-                let cell = targetRow;
-                return cell !== 0;
+                if(!bd) return true;
+                return bd !== 0;
             })); 
         }
         
