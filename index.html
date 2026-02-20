@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Arena</title>
+    <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            --tg-bg: var(--tg-theme-bg-color, #1c1c1e);
-            --tg-text: var(--tg-theme-text-color, #ffffff);
-            --tg-btn: var(--tg-theme-button-color, #2481cc);
-            --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
-            --tg-sec-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            --tg-bg: #111111;
+            --tg-text: #ffffff;
+            --tg-btn: #0044cc;
+            --tg-btn-text: #ffffff;
+            --tg-sec-bg: #222222;
             --accent-neon: #00f0ff; 
             --accent-pink: #ff0055; 
             --font-retro: 'Press Start 2P', cursive;
@@ -20,23 +20,20 @@
         * { box-sizing: border-box; }
         body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; -webkit-user-select: none; touch-action: none; }
         
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; -webkit-overflow-scrolling: touch; font-family: -apple-system, sans-serif; }
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; font-family: -apple-system, sans-serif; }
         .screen.active { display: flex; }
         
-        .screen::-webkit-scrollbar { width: 5px; }
-        .screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-
         h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
+        h1 { font-size: 1.4rem; color: var(--accent-neon); margin-top: 15px; line-height: 1.4; text-shadow: 0 0 5px var(--accent-neon); }
         
-        h1 { font-size: 1.6rem; color: var(--accent-neon); margin-top: 15px; line-height: 1.4; text-shadow: 0 0 5px var(--accent-neon), 0 0 10px #0088ff; }
+        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid var(--accent-neon); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+        .card-free { border-color: rgba(255, 255, 255, 0.2); box-shadow: none; }
         
-        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
-        
-        .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-outline { background: transparent; border: 2px solid var(--tg-btn); color: var(--tg-btn); }
-        .btn-danger { background: var(--accent-pink); color: white; }
-        .btn-duel { background: linear-gradient(45deg, #ff0055, #ff8800); color: white; font-size: 1rem; padding: 18px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(255,0,85,0.5); animation: pulse 2s infinite; }
+        .btn-danger { background: var(--accent-pink); color: white; border: none; }
+        .btn-duel { background: linear-gradient(45deg, #ff0055, #ff8800); color: white; font-size: 1rem; padding: 18px; border: 2px solid #fff; animation: pulse 2s infinite; }
         .btn-crypto { background: #2AABEE; color: white; border: none; }
         .btn-sm { width: auto; padding: 6px 12px; font-size: 0.7rem; margin-bottom: 0; }
 
@@ -46,110 +43,103 @@
 
         select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; font-family: -apple-system, sans-serif;}
 
-        canvas { border: 4px solid var(--tg-text); border-radius: 4px; background: #000; width: 100%; max-width: 300px; height: auto; margin-bottom: 15px; flex-shrink: 0; image-rendering: -moz-crisp-edges; image-rendering: -webkit-crisp-edges; image-rendering: pixelated; image-rendering: crisp-edges; }
+        canvas { 
+            border: 4px solid var(--tg-text); 
+            border-radius: 4px; 
+            background: #000; 
+            width: 100% !important; 
+            max-width: 300px; 
+            height: auto !important; 
+            margin-bottom: 15px; 
+            flex-shrink: 0;
+            image-rendering: pixelated;
+        }
 
-        .game-ui-bottom { width: 100%; display: flex; justify-content: center; margin-top: 10px; padding-bottom: 20px; flex-shrink: 0; }
+        .controls { display: flex; width: 100%; max-width: 320px; margin: 0 auto; justify-content: space-between; align-items: center; padding: 0 10px; }
         .d-pad-container { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; }
-        .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; touch-action: manipulation; font-family: -apple-system, sans-serif;}
+        .ctrl-btn { width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; touch-action: manipulation; font-family: -apple-system, sans-serif; }
         .ctrl-btn:active { background: var(--accent-neon); color: black; border-color: var(--accent-neon); }
         .btn-up { grid-area: up; } .btn-left { grid-area: left; } .btn-down { grid-area: down; } .btn-right { grid-area: right; }
+        
+        .action-btn-container { display: flex; justify-content: center; align-items: center; }
+        .btn-action { width: 70px; height: 70px; border-radius: 50%; background: rgba(255,0,85,0.2); border-color: var(--accent-pink); }
+        .btn-action:active { background: var(--accent-pink); }
 
-        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--tg-sec-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: 10px; font-family: -apple-system, sans-serif;}
+        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--tg-sec-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
         .tab { display: flex; flex-direction: column; align-items: center; color: var(--tg-text); opacity: 0.5; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; }
         .tab.active { opacity: 1; color: var(--accent-neon); }
-        .tab-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center; flex-direction:column; overflow-y:auto; padding: 20px; font-family: -apple-system, sans-serif;}
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center; flex-direction:column; padding: 20px; }
         .admin-row { font-size: 0.7rem; border-bottom: 1px solid #444; padding: 5px; display: flex; justify-content: space-between; }
-        #admin-panel { display: none; border: 2px solid gold; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-family: var(--font-retro); font-size: 0.7rem; }
+        #admin-panel { display: none; border: 2px solid gold; margin-top: 20px; }
+        .stat-row { display: flex; justify-content: space-between; font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 8px; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- PLAY MENU -->
+    <!-- MENU SCREEN -->
     <div id="s-play" class="screen active">
         <h1>RETRO BATTLE<br>ARENA</h1>
 
-        <div class="card" style="border: 2px solid var(--accent-neon); box-shadow: 0 0 15px rgba(0,240,255,0.2);">
+        <div class="card">
             <h2 style="color: var(--accent-neon); font-size: 1.1rem;">Ranked Match 1v1</h2>
+            <p style="font-size:0.7rem; text-align:center; opacity:0.8; font-family: var(--font-retro);">Higher score in 60s wins!</p>
             <select id="search-game">
-                <option value="sonic">🦔 Sonic Rush</option>
-                <option value="snake">🐍 Snake Retro</option>
-                <option value="tetris">🧱 Tetris Retro</option>
+                <option value="battleCity">🚜 Battle City</option>
+                <option value="roadFighter">🏎 Road Fighter</option>
+                <option value="spaceInvaders">👾 Space Invaders</option>
+                <option value="snake">🐍 Classic Snake</option>
+                <option value="tetris">🧱 Tetris Block</option>
             </select>
             <select id="search-bet">
-                <option value="10">Ставка: 10 ⭐️</option>
-                <option value="50">Ставка: 50 ⭐️</option>
-                <option value="100">Ставка: 100 ⭐️</option>
-                <option value="500">Ставка: 500 ⭐️</option>
+                <option value="10">Bet: 10 ⭐️</option>
+                <option value="50">Bet: 50 ⭐️</option>
+                <option value="100">Bet: 100 ⭐️</option>
+                <option value="500">Bet: 500 ⭐️</option>
             </select>
-            <button class="btn btn-duel" onclick="startMatchmaking()">⚔️ ДУЭЛЬ 1x1 ⚔️</button>
+            <button class="btn btn-duel" onclick="startMatchmaking()">⚔️ FIND DUEL ⚔️</button>
         </div>
 
-        <div class="card">
+        <div class="card card-free">
             <h2 style="font-size: 1rem;">Solo Training</h2>
-            <p style="font-size:0.7rem; text-align:center; opacity:0.7; font-family: var(--font-retro); margin-top: 0;">(FREE PLAY)</p>
-            <button class="btn btn-outline" onclick="launchGame('sonic', false)">🦔 Sonic Rush</button>
-            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Snake</button>
-            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Tetris</button>
-        </div>
-        
-        <div class="card">
-            <h2 style="font-size: 1rem;">Play with Friend</h2>
-            <button class="btn btn-outline" onclick="openFriendModal()">🔗 СОЗДАТЬ ССЫЛКУ</button>
+            <p style="font-size:0.7rem; text-align:center; opacity:0.7; font-family: var(--font-retro); margin-top: 0;">FREE PLAY (INFINITE)</p>
+            <button class="btn btn-outline" onclick="launchGame('battleCity', false)">🚜 Play Battle City</button>
+            <button class="btn btn-outline" onclick="launchGame('roadFighter', false)">🏎 Play Road Fighter</button>
+            <button class="btn btn-outline" onclick="launchGame('spaceInvaders', false)">👾 Play Space Invaders</button>
+            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Play Snake</button>
+            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Play Tetris</button>
         </div>
     </div>
 
-    <!-- SEARCH -->
+    <!-- SEARCH SCREEN -->
     <div id="s-search" class="screen" style="justify-content: center;">
-        <h1 class="blink" style="color: #ff8800;">ПОИСК ВРАГА...</h1>
-        <p style="text-align: center; opacity: 0.7; margin-bottom: 30px;">Ожидание соперника</p>
-        <button class="btn btn-danger" onclick="cancelMatchmaking()">ОТМЕНА</button>
+        <h1 class="blink" style="color: #ff8800;">SEARCHING ENEMY...</h1>
+        <p style="text-align: center; opacity: 0.7; margin-bottom: 30px;">Waiting for opponent</p>
+        <button class="btn btn-danger" onclick="cancelMatchmaking()">CANCEL</button>
     </div>
 
-    <!-- PROFILE / WALLET -->
+    <!-- PROFILE SCREEN -->
     <div id="s-profile" class="screen">
         <h1>PROFILE</h1>
-        
-        <div class="card" style="text-align: center;">
+        <div class="card card-free" style="text-align: center;">
             <div style="font-size: 2.5rem; font-family: var(--font-retro); color: gold; text-shadow: 2px 2px 0 #000;">
                 <span id="p-bal">0</span> ★
             </div>
             <div style="opacity: 0.7; font-size: 0.8rem; margin-top: 10px; font-weight: bold;">VIRTUAL STARS</div>
         </div>
 
-        <div class="card">
+        <div class="card card-free">
             <h2 style="font-size: 1rem;">High Scores</h2>
             <div class="stat-row"><span>ID:</span> <span id="p-id">...</span></div>
-            <div class="stat-row"><span>Sonic:</span> <span id="p-sonic" style="color:#00f0ff;">0</span></div>
+            <div class="stat-row"><span>Battle City:</span> <span id="p-battle" style="color:#ff8800;">0</span></div>
+            <div class="stat-row"><span>Road Fighter:</span> <span id="p-road" style="color:#00f0ff;">0</span></div>
+            <div class="stat-row"><span>Space Invaders:</span> <span id="p-space" style="color:#bc13fe;">0</span></div>
             <div class="stat-row"><span>Snake:</span> <span id="p-snake" style="color:#00ff00;">0</span></div>
             <div class="stat-row"><span>Tetris:</span> <span id="p-tetris" style="color:#ff0055;">0</span></div>
         </div>
 
-        <!-- ADMIN PANEL -->
-        <div id="admin-panel" class="card">
-            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
-            <div class="admin-row" style="margin-bottom: 10px; font-size: 0.9rem;">
-                <span style="font-weight: bold;">Total Commission:</span> 
-                <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
-            </div>
-            <button class="btn btn-sm" onclick="loadAdminData()">REFRESH DATA</button>
-            <br>
-            <div style="text-align: left;">
-                <h4 style="margin: 5px 0;">Withdrawals:</h4>
-                <div id="adm-withdrawals" style="max-height: 100px; overflow-y: auto; background: #000; padding: 5px;"></div>
-                <h4 style="margin: 10px 0 5px;">Matches:</h4>
-                <div id="adm-matches" style="max-height: 100px; overflow-y: auto; background: #000; padding: 5px;"></div>
-                <h4 style="margin: 10px 0 5px;">Manual Balance:</h4>
-                <input type="number" id="adm-target-id" placeholder="User ID">
-                <input type="number" id="adm-new-bal" placeholder="New Balance">
-                <button class="btn btn-danger btn-sm" onclick="adminSetBalance()">SET</button>
-            </div>
-        </div>
-
-        <div class="card">
+        <div class="card card-free">
             <h2 style="font-size: 1rem;">Deposit (Crypto)</h2>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button class="btn btn-crypto" onclick="depositCrypto('USDT', 1, 100)">1 USDT (+100★)</button>
@@ -158,33 +148,39 @@
             </div>
         </div>
         <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
+        
+        <div id="admin-panel" class="card">
+            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
+            <div class="admin-row" style="margin-bottom: 10px;">
+                <span style="font-weight: bold;">Commission:</span> 
+                <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
+            </div>
+            <button class="btn btn-sm" onclick="loadAdminData()">REFRESH</button>
+        </div>
         <div style="height: 20px;"></div>
     </div>
 
-    <!-- GAME -->
-    <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0; height: 100%;">
+    <!-- GAME SCREEN -->
+    <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0;">
         <div style="width: 100%; max-width: 300px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="display: flex; gap: 5px;">
-                <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
-                <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart-header" style="display:none;">↻</button>
-            </div>
-            <div style="font-family: var(--font-retro); color: gold; font-size: 0.8rem; text-shadow: 1px 1px 0 #000;">
-                SCORE: <span id="g-score">0</span> 
+            <button class="btn btn-danger btn-sm" style="margin:0;" onclick="quitGame()">GIVE UP</button>
+            <div style="font-family: var(--font-retro); color: gold; font-size: 0.8rem;">
+                SCORE: <span id="g-score">0</span>
                 <span id="g-time-box" style="display:none; color:white; margin-left: 10px;">🕒 <span id="g-time">60</span></span>
             </div>
         </div>
-        <canvas id="gameCanvas" ontouchstart="triggerGameAction(event)" onmousedown="triggerGameAction(event)"></canvas>
         
-        <div class="game-ui-bottom" id="sonic-ui" style="display:none;">
-            <button class="btn btn-duel" style="width: 200px; height: 80px; font-size: 1.5rem;" ontouchstart="triggerGameAction(event)" onmousedown="triggerGameAction(event)">JUMP</button>
-        </div>
-
-        <div class="game-ui-bottom" id="d-pad-ui">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="controls">
             <div class="d-pad-container">
-                <div class="ctrl-btn btn-up" ontouchstart="input('up', event)">▲</div>
-                <div class="ctrl-btn btn-left" ontouchstart="input('left', event)">◀</div>
-                <div class="ctrl-btn btn-down" ontouchstart="input('down', event)">▼</div>
-                <div class="ctrl-btn btn-right" ontouchstart="input('right', event)">▶</div>
+                <div class="ctrl-btn btn-up" ontouchstart="press('up',true)" ontouchend="press('up',false)" onmousedown="press('up',true)" onmouseup="press('up',false)">▲</div>
+                <div class="ctrl-btn btn-left" ontouchstart="press('left',true)" ontouchend="press('left',false)" onmousedown="press('left',true)" onmouseup="press('left',false)">◀</div>
+                <div class="ctrl-btn btn-down" ontouchstart="press('down',true)" ontouchend="press('down',false)" onmousedown="press('down',true)" onmouseup="press('down',false)">▼</div>
+                <div class="ctrl-btn btn-right" ontouchstart="press('right',true)" ontouchend="press('right',false)" onmousedown="press('right',true)" onmouseup="press('right',false)">▶</div>
+            </div>
+            <div class="action-btn-container">
+                <div class="ctrl-btn btn-action" ontouchstart="press('action',true)" ontouchend="press('action',false)" onmousedown="press('action',true)" onmouseup="press('action',false)">A</div>
             </div>
         </div>
     </div>
@@ -195,150 +191,109 @@
     <div class="tab" onclick="nav('profile', this)"><div class="tab-icon">👤</div><div>PROFILE</div></div>
 </div>
 
-<!-- MODALS -->
+<!-- GAME OVER MODAL -->
 <div id="modal-over" class="modal">
-    <h1 style="color:red; font-size:3rem; text-align: center; margin-bottom: 10px;">GAME<br>OVER</h1>
+    <h1 style="color:red; font-size:2.5rem; text-align: center; margin-bottom: 10px;">GAME OVER</h1>
     <h2 id="end-score" style="color:white; font-size: 2rem;">0</h2>
-    <p id="end-msg" style="color:gold; font-family: var(--font-retro); font-size: 0.8rem; text-align: center; line-height: 1.5; margin-bottom: 20px;"></p>
-    <button class="btn btn-duel" style="width:240px;" onclick="restartGameFromModal()">ИГРАТЬ СНОВА</button>
-    <button class="btn btn-outline" style="width:240px; margin-top: 10px;" onclick="location.reload()">В МЕНЮ</button>
-</div>
-
-<div id="modal-friend" class="modal">
-    <div class="card" style="width: 90%; max-width: 320px;">
-        <h2 style="font-size: 1rem;">Invite Friend</h2>
-        <select id="f-game">
-            <option value="sonic">Sonic Rush</option>
-            <option value="snake">Snake</option>
-            <option value="tetris">Tetris</option>
-        </select>
-        <select id="f-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option><option value="100">100 ⭐️</option><option value="500">500 ⭐️</option></select>
-        <button class="btn" onclick="submitFriendLobby()">GENERATE LINK</button>
-        <button class="btn btn-outline" onclick="document.getElementById('modal-friend').style.display='none'">CANCEL</button>
-    </div>
+    <p id="end-msg" style="color:gold; font-family: var(--font-retro); font-size: 0.8rem; text-align: center; line-height: 1.5; margin-bottom: 30px;"></p>
+    <button class="btn btn-outline" style="width:240px;" onclick="location.reload()">RETURN TO MENU</button>
 </div>
 
 <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 240; 
+    canvas.height = 400;
+
     const API = "https://tg-game-arena.onrender.com";
     const ADMIN_ID = 1463465416;
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
-    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
     
-    ctx.imageSmoothingEnabled = false;
-    
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = 240 * dpr; canvas.height = 400 * dpr; ctx.scale(dpr, dpr);
-    canvas.style.width = '240px'; canvas.style.height = '400px';
+    // Timer System
+    let isRanked = false;
+    let timeLeft = 0;
+    let matchTimer = 0;
 
-    window.gameAction = function() {};
+    const keys = { left: false, right: false, up: false, down: false, action: false };
 
+    window.press = function(k, state) { 
+        Reflect.set(keys, k, state); 
+        if(state && window.onInput) window.onInput(k);
+    };
+
+    document.onkeydown = e => {
+        if(e.key === 'ArrowLeft') press('left', true);
+        if(e.key === 'ArrowRight') press('right', true);
+        if(e.key === 'ArrowDown') press('down', true);
+        if(e.key === 'ArrowUp') press('up', true);
+        if(e.key === ' ') press('action', true);
+    };
+    document.onkeyup = e => {
+        if(e.key === 'ArrowLeft') press('left', false);
+        if(e.key === 'ArrowRight') press('right', false);
+        if(e.key === 'ArrowDown') press('down', false);
+        if(e.key === 'ArrowUp') press('up', false);
+        if(e.key === ' ') press('action', false);
+    };
+
+    function updateScore() {
+        document.getElementById('g-score').innerText = score;
+    }
+
+    function checkTime() {
+        if (!isRanked) return false;
+        let now = Date.now();
+        if (now - matchTimer >= 1000) {
+            timeLeft--;
+            matchTimer = now;
+            document.getElementById('g-time').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                gameOver();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // --- СЕТЕВАЯ ЧАСТЬ И ИНТЕРФЕЙС ---
     async function init() {
-        const r = await fetch(`${API}/api/user-data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
-        user = await r.json(); updateUI();
-        
-        if (user.telegramId === ADMIN_ID) {
-            document.getElementById('admin-panel').style.display = 'block';
-            loadAdminData();
-        }
-
-        if (tg.initDataUnsafe.start_param) {
-            const j = await fetch(`${API}/api/join-lobby`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, startParam: tg.initDataUnsafe.start_param }) });
-            const d = await j.json();
-            if (d.mode === 'duel') { lobby = d.lobby; launchGame(lobby.gameType, true); }
-            else if (d.error) tg.showAlert(d.error);
-        }
+        const r = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
+        user = await r.json(); 
+        updateUI();
+        if (user.telegramId === ADMIN_ID) document.getElementById('admin-panel').style.display = 'block';
     }
     init();
-
-    function nav(id, el) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(`s-${id}`).classList.add('active');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        if(el) el.classList.add('active');
-    }
 
     function updateUI() {
         document.getElementById('p-bal').innerText = user.balance;
         document.getElementById('p-id').innerText = user.telegramId;
-        document.getElementById('p-snake').innerText = user.highScores.snake || 0;
-        document.getElementById('p-tetris').innerText = user.highScores.tetris || 0;
-        document.getElementById('p-sonic').innerText = user.highScores.sonic || 0;
+        document.getElementById('p-snake').innerText = Reflect.get(user.highScores, 'snake') || 0;
+        document.getElementById('p-tetris').innerText = Reflect.get(user.highScores, 'tetris') || 0;
+        document.getElementById('p-battle').innerText = Reflect.get(user.highScores, 'battleCity') || 0;
+        document.getElementById('p-road').innerText = Reflect.get(user.highScores, 'roadFighter') || 0;
+        document.getElementById('p-space').innerText = Reflect.get(user.highScores, 'spaceInvaders') || 0;
     }
 
-    async function loadAdminData() {
-        const r = await fetch(`${API}/api/admin/data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId }) });
-        const d = await r.json();
-        document.getElementById('adm-commission').innerText = (d.adminCommission || 0) + '★';
-        const wDiv = document.getElementById('adm-withdrawals');
-        wDiv.innerHTML = d.withdrawals.map(w => `<div class="admin-row"><span>ID: ${w.telegramId}</span><span style="color:gold">${w.amount}★</span><span>${new Date(w.date).toLocaleDateString()}</span></div>`).join('');
-        const mDiv = document.getElementById('adm-matches');
-        mDiv.innerHTML = d.matches.map(m => `<div class="admin-row"><span>Win: ${m.winnerId}</span><span style="color:gold">+${m.prize}</span><span>${m.gameType}</span></div>`).join('');
-    }
-
-    async function adminSetBalance() {
-        const tid = document.getElementById('adm-target-id').value;
-        const bal = document.getElementById('adm-new-bal').value;
-        if(!tid || !bal) return;
-        const r = await fetch(`${API}/api/admin/set-balance`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId, targetId: tid, newBalance: bal }) });
-        const d = await r.json();
-        if(d.success) tg.showAlert("Updated!");
-    }
-
-    async function depositCrypto(asset, cryptoAmount, starsAmount) {
-        const r = await fetch(`${API}/api/deposit`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, asset, amount: cryptoAmount, stars: starsAmount }) });
-        const d = await r.json();
-        if (d.payUrl) {
-            tg.openTelegramLink(d.payUrl);
-            let checkingTimer = setInterval(async () => {
-                const cur = await fetch(`${API}/api/user-data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
-                const curUser = await cur.json();
-                if(curUser.balance > user.balance) {
-                    user.balance = curUser.balance;
-                    updateUI();
-                    clearInterval(checkingTimer);
-                    tg.showAlert("Успешное пополнение!");
-                }
-            }, 3000);
-            setTimeout(() => clearInterval(checkingTimer), 300000);
-        } else { tg.showAlert("Ошибка при создании счета"); }
-    }
-
-    function withdraw() {
-        if(user.balance <= 0) return tg.showAlert("Баланс пуст");
-        tg.showConfirm("Вывести " + user.balance + " Stars?", async function(confirmed) {
-            if(!confirmed) return;
-            const r = await fetch(`${API}/api/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
-            const d = await r.json();
-            if (d.success) { user.balance = d.newBalance; updateUI(); tg.showAlert("Заявка отправлена!"); }
-            else tg.showAlert(d.error);
-        });
-    }
-
-    function openFriendModal() { document.getElementById('modal-friend').style.display='flex'; }
-    
-    async function submitFriendLobby() {
-        const g = document.getElementById('f-game').value, b = parseInt(document.getElementById('f-bet').value);
-        if (user.balance < b) return tg.showAlert("Недостаточно средств");
-        const r = await fetch(`${API}/api/create-lobby-friend`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
-        const d = await r.json();
-        if (d.success) {
-            const link = `https://t.me/share/url?url=https://t.me/RetroBattleArena_bot/app?startapp=${d.lobbyId}&text=Duel me in ${g}!`;
-            tg.openTelegramLink(link); document.getElementById('modal-friend').style.display='none';
-        }
+    function nav(id, el) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('s-' + id).classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        if(el) el.classList.add('active');
     }
 
     async function startMatchmaking() {
-        const g = document.getElementById('search-game').value, b = parseInt(document.getElementById('search-bet').value);
-        if (user.balance < b) return tg.showAlert("Недостаточно средств");
+        const g = document.getElementById('search-game').value;
+        const b = parseInt(document.getElementById('search-bet').value);
+        if (user.balance < b) return tg.showAlert('Insufficient balance');
         nav('search');
-        const r = await fetch(`${API}/api/search-match`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
+        const r = await fetch(API + '/api/search-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
         const d = await r.json();
         if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame(g, true); }
         else { 
             poll = setInterval(async () => {
-                const cr = await fetch(`${API}/api/check-match-status`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
+                const cr = await fetch(API + '/api/check-match-status', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
                 const cd = await cr.json(); 
                 if (cd.status === 'match_found') { clearInterval(poll); lobby = cd.lobby; launchGame(lobby.gameType, true); }
             }, 3000); 
@@ -347,320 +302,583 @@
 
     async function cancelMatchmaking() {
         clearInterval(poll);
-        await fetch(`${API}/api/cancel-match`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
+        await fetch(API + '/api/cancel-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
         location.reload();
     }
 
-    function launchGame(t, pvp) {
+    function launchGame(type, ranked) {
+        gameType = type;
+        isRanked = ranked;
+        score = 0;
+        updateScore();
+        timeLeft = ranked ? 60 : 0;
+        
+        Reflect.set(keys, 'left', false);
+        Reflect.set(keys, 'right', false);
+        Reflect.set(keys, 'up', false);
+        Reflect.set(keys, 'down', false);
+        Reflect.set(keys, 'action', false);
+
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('s-game').classList.add('active');
         document.querySelector('.tabs').style.display = 'none';
-        document.getElementById('btn-restart-header').style.display = pvp ? 'none' : 'block';
-        gameType = t; score = 0; document.getElementById('g-score').innerText = 0;
         
-        document.getElementById('g-time-box').style.display = 'none';
+        document.getElementById('g-time-box').style.display = ranked ? 'inline' : 'none';
+        document.getElementById('g-time').innerText = timeLeft;
         
-        if (t === 'sonic') {
-            document.getElementById('d-pad-ui').style.display = 'none';
-            document.getElementById('sonic-ui').style.display = 'flex';
-            runSonic();
-        } else {
-            document.getElementById('sonic-ui').style.display = 'none';
-            document.getElementById('d-pad-ui').style.display = 'grid';
-            if (t === 'snake') runSnake(); 
-            else if (t === 'tetris') runTetris();
-        }
+        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); }
+        
+        if (type === 'snake') runSnake();
+        else if (type === 'tetris') runTetris();
+        else if (type === 'battleCity') runBattleCity();
+        else if (type === 'roadFighter') runRoadFighter();
+        else if (type === 'spaceInvaders') runSpaceInvaders();
     }
-
-    function quitGame() {
-        tg.showConfirm("Завершить игру и выйти в меню?", function(confirmed) {
-            if(confirmed) location.reload();
-        });
-    }
-
-    function restartGame() {
-        if(loop) cancelAnimationFrame(loop); clearTimeout(loop); score=0; document.getElementById('g-score').innerText=0;
-        if(gameType==='snake') runSnake(); else if(gameType==='tetris') runTetris(); else runSonic(); 
-    }
-    
-    function restartGameFromModal() { document.getElementById('modal-over').style.display='none'; restartGame(); }
 
     async function gameOver() {
-        if(loop) cancelAnimationFrame(loop); clearTimeout(loop);
+        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); }
+        loop = null;
+        
         document.getElementById('modal-over').style.display = 'flex';
         document.getElementById('end-score').innerText = score;
         
         if (lobby) {
-            document.querySelector('#modal-over .btn-duel').style.display = 'none';
-            document.getElementById('end-msg').innerText = "Ожидание результата\nсоперника...";
+            document.getElementById('end-msg').innerText = 'Waiting for opponent to finish...';
+            await fetch(API + '/api/submit-score', { 
+                method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: lobby.lobbyId }) 
+            });
         } else {
-            document.querySelector('#modal-over .btn-duel').style.display = 'block';
-            document.getElementById('end-msg').innerText = "";
+            document.getElementById('end-msg').innerText = '';
+            await fetch(API + '/api/submit-score', { 
+                method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: null }) 
+            });
         }
+    }
 
-        await fetch(`${API}/api/submit-score`, { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score, lobbyId: lobby ? lobby.lobbyId : null }) 
+    function quitGame() {
+        tg.showConfirm('Forfeit the game?', async function(confirmed) {
+            if(!confirmed) return;
+            if (lobby) await fetch(API + '/api/forfeit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, lobbyId: lobby.lobbyId }) });
+            location.reload();
         });
     }
 
-    function input(k, e) {
-        if(e) e.preventDefault();
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' }));
+    async function depositCrypto(asset, cryptoAmount, starsAmount) {
+        const r = await fetch(API + '/api/deposit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, asset: asset, amount: cryptoAmount, stars: starsAmount }) });
+        const d = await r.json();
+        if (d.payUrl) {
+            tg.openTelegramLink(d.payUrl);
+            let checkingTimer = setInterval(async () => {
+                const cur = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
+                const curUser = await cur.json();
+                if(curUser.balance > user.balance) {
+                    user.balance = curUser.balance;
+                    updateUI();
+                    clearInterval(checkingTimer);
+                    tg.showAlert('Balance updated!');
+                }
+            }, 3000);
+            setTimeout(() => clearInterval(checkingTimer), 300000);
+        } else { tg.showAlert('Invoice error'); }
     }
 
-    function triggerGameAction(e) {
-        if(e) e.preventDefault();
-        window.gameAction();
+    function withdraw() {
+        if(user.balance <= 0) return tg.showAlert('Empty balance');
+        tg.showConfirm('Withdraw ' + user.balance + ' Stars?', async function(confirmed) {
+            if(!confirmed) return;
+            const r = await fetch(API + '/api/withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
+            const d = await r.json();
+            if (d.success) { 
+                user.balance = d.newBalance; 
+                updateUI(); 
+                tg.showAlert('Request sent!'); 
+            } else tg.showAlert(d.error);
+        });
     }
 
-    document.onkeydown = e => {
-        if (gameType === 'sonic' && (e.key === ' ' || e.key === 'ArrowUp')) window.gameAction();
-    };
+    async function loadAdminData() {
+        const r = await fetch(API + '/api/admin/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId }) });
+        const d = await r.json();
+        document.getElementById('adm-commission').innerText = (d.adminCommission || 0) + '★';
+    }
 
-    function runSonic() {
-        let sonicY = 270;
-        let sonicVy = 0;
-        let isJumping = false;
+    // ==========================================
+    // GAMES ENGINES (GRID-BASED / HTML5 CANVAS)
+    // ==========================================
+
+    // --- GAME 1: SNAKE ---
+    function runSnake() {
+        let s = Array.of({x:5, y:10});
+        let f = {x:2, y:2};
+        let dx = 0, dy = -1;
         let frames = 0;
-        let scrollSpeed = 6;
-        let enemies = new Array();
-        let rings = new Array();
-        let timeLeft = 60;
-        let lastTime = Date.now();
-        let gameActive = true;
+        
+        window.onInput = function(k) {
+            if (k === 'left' && dx !== 1) { dx = -1; dy = 0; }
+            if (k === 'right' && dx !== -1) { dx = 1; dy = 0; }
+            if (k === 'up' && dy !== 1) { dx = 0; dy = -1; }
+            if (k === 'down' && dy !== -1) { dx = 0; dy = 1; }
+        };
 
-        if (lobby) {
-            document.getElementById('g-time-box').style.display = 'inline';
-            document.getElementById('g-time').innerText = timeLeft;
-        }
-
-        window.gameAction = function() {
-            if (!isJumping && gameActive) {
-                sonicVy = -13;
-                isJumping = true;
+        function tick() {
+            if (checkTime()) return;
+            frames++;
+            
+            if (frames % Math.max(5, 10 - Math.floor(score/50)) === 0) {
+                let h = {x: s.at(0).x + dx, y: s.at(0).y + dy};
+                let hitTail = s.some(p => p.x === h.x && p.y === h.y);
+                if(h.x < 0 || h.x >= 12 || h.y < 0 || h.y >= 20 || hitTail) return gameOver();
+                
+                s.unshift(h);
+                if(h.x === f.x && h.y === f.y) { 
+                    score += 10; updateScore();
+                    f = {x: Math.floor(Math.random()*12), y: Math.floor(Math.random()*20)}; 
+                } else { s.pop(); }
             }
+            
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 400);
+            ctx.fillStyle = '#ff0055'; ctx.fillRect(f.x*20, f.y*20, 19, 19);
+            ctx.fillStyle = '#00f0ff'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 19, 19));
+            
+            loop = requestAnimationFrame(tick);
+        }
+        matchTimer = Date.now();
+        loop = requestAnimationFrame(tick);
+    }
+
+    // --- GAME 2: TETRIS ---
+    function runTetris() {
+        const R = 20, C = 12; 
+        let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
+        
+        const SH_STR = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',');
+        const SH = new Array();
+        for(let i=0; i<SH_STR.length; i++) {
+            let rows = SH_STR.at(i).split('-');
+            let matrix = new Array();
+            for(let r=0; r<rows.length; r++) {
+                let chars = rows.at(r).split('');
+                let numRow = new Array();
+                for(let c=0; c<chars.length; c++) numRow.push(Number(chars.at(c)));
+                matrix.push(numRow);
+            }
+            SH.push(matrix);
+        }
+        const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
+        
+        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
+        let dropCounter = 0, lastTime = Date.now();
+
+        window.onInput = function(k) {
+            if(k === 'left' && !coll(-1,0,p.m)) p.x--;
+            if(k === 'right' && !coll(1,0,p.m)) p.x++;
+            if(k === 'down' && !coll(0,1,p.m)) p.y++;
+            if(k === 'up' || k === 'action') rotate(p.m);
         };
 
-        const colors = { 
-            '.': null, 'B': '#000000', 'U': '#2039FF', 'W': '#FFFFFF', 
-            'R': '#E00000', 'S': '#FFCC99', 'G': '#FFD700', 'C': '#FF2600'
-        };
-
-        function drawSpriteStr(str, dx, dy, scale) {
-            let rows = str.split('-');
-            for (let r = 0; r < rows.length; r++) {
-                let rowStr = rows.at(r);
-                for (let c = 0; c < rowStr.length; c++) {
-                    let char = rowStr.charAt(c);
-                    let color = Reflect.get(colors, char);
-                    if (color) {
-                        ctx.fillStyle = color;
-                        ctx.fillRect(dx + c * scale, dy + r * scale, scale, scale);
+        function draw() {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
+            for(let y=0; y<R; y++) {
+                for(let x=0; x<C; x++) {
+                    let v = bd.at(y).at(x);
+                    if(v !== 0) { ctx.fillStyle = CL.at(v); ctx.fillRect(x*20, y*20, 19, 19); }
+                }
+            }
+            for(let y=0; y<p.m.length; y++) {
+                for(let x=0; x<p.m.at(y).length; x++) {
+                    if(p.m.at(y).at(x) !== 0) {
+                        ctx.fillStyle = CL.at(p.c); 
+                        ctx.fillRect((p.x+x)*20, (p.y+y)*20, 19, 19);
                     }
                 }
             }
         }
-
-        function drawPalm(px, py) {
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(px + 12, py, 6, 80);
-            ctx.fillRect(px + 10, py + 10, 10, 5);
-            ctx.fillRect(px + 10, py + 30, 10, 5);
-            ctx.fillRect(px + 10, py + 50, 10, 5);
-            ctx.fillRect(px + 10, py + 70, 10, 5);
-            
-            ctx.fillStyle = '#228B22';
-            ctx.fillRect(px, py - 10, 30, 10);
-            ctx.fillRect(px - 10, py - 4, 50, 6);
-            ctx.fillRect(px + 5, py - 20, 20, 15);
-        }
-
-        const frame1 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-....W.WW.W......-...RR.RR.RR.....-...RR.RR.RR.....-...RR.RR.RR.....";
-        const frame2 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-......WW........-.....RRRR.......-......RR........-......RR........";
-        const frame3 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-....W....W......-...RR....RR.....-...RR....RR.....-...RR....RR.....";
-        const jumpFrame = "......UUUU......-....UUUUUUUU....-...UUUUUUUUU....-..UUUUUUUUUUU...-.UUUUUUUUUUUUU..-.UUUWUWWUWUUUU..-.UUWWWWWWWWUUU..-.UUWWWWWWWWUUU..-.UUUWUWWUWUUUU..-.UUUUUUUUUUUUU..-..UUUUUUUUUUU...-...UUUUUUUUU....-....UUUUUUUU....-......UUUU......-................-................";
-        const crabFrame = "................-................-................-....C......C....-...CC......CC...-..CCC......CCC..-.C.CCC....CCC.C.-C..CC.CCCC.CC..C-...CCCCCCCCCC...-...C.B.CC.B.C...-...C.W.CC.W.C...-..CCCCCCCCCCCC..-..CC.CCCCCC.CC..-..CC........CC..-..CC........CC..-..CC........CC..";
-        const ringFrame = "......GGGG......-....GG....GG....-...GG......GG...-..GG........GG..-..GG........GG..-.GG..........GG.-.GG..........GG.-.GG..........GG.-.GG..........GG.-..GG........GG..-..GG........GG..-...GG......GG...-....GG....GG....-......GGGG......-................-................";
-
-        function upd() {
-            if (!gameActive) return;
-
-            if (lobby) {
-                let now = Date.now();
-                if (now - lastTime >= 1000) {
-                    timeLeft--;
-                    lastTime = now;
-                    document.getElementById('g-time').innerText = timeLeft;
-                    if (timeLeft <= 0) { gameActive = false; return gameOver(); }
-                }
-            }
-
-            frames++;
-            sonicVy += 0.8; 
-            sonicY += sonicVy;
-            if (sonicY >= 270) { sonicY = 270; sonicVy = 0; isJumping = false; }
-
-            if (frames % 40 === 0) {
-                if (Math.random() > 0.6) {
-                    enemies.push({ x: 240, y: 286, type: 'crab' });
-                } else {
-                    rings.push({ x: 240, y: 180 + Math.random() * 60, type: 'ring' });
-                }
-            }
-
-            let nextRings = new Array();
-            for (let i = 0; i < rings.length; i++) {
-                let r = rings.at(i);
-                r.x -= scrollSpeed;
-                if (r.x < 50 && r.x > 0 && sonicY < r.y + 20 && sonicY + 32 > r.y) {
-                    score += 1; document.getElementById('g-score').innerText = score;
-                } else if (r.x > -40) {
-                    nextRings.push(r);
-                }
-            }
-            rings = nextRings;
-
-            let nextEnemies = new Array();
-            for (let i = 0; i < enemies.length; i++) {
-                let e = enemies.at(i);
-                e.x -= scrollSpeed;
-                if (e.x < 55 && e.x + 20 > 35 && sonicY + 30 > e.y + 10) {
-                    gameActive = false; return gameOver();
-                }
-                if (e.x > -40) {
-                    nextEnemies.push(e);
-                }
-            }
-            enemies = nextEnemies;
-            
-            ctx.fillStyle = '#2452FF'; 
-            ctx.fillRect(0, 0, 240, 400);
-            
-            let cloudOffset = (frames * 0.5) % 240;
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(30 - cloudOffset, 30, 50, 15);
-            ctx.fillRect(270 - cloudOffset, 30, 50, 15);
-            ctx.fillRect(140 - cloudOffset, 60, 40, 10);
-            ctx.fillRect(380 - cloudOffset, 60, 40, 10);
-
-            let palmOffset = (frames * 2) % 240;
-            drawPalm(60 - palmOffset, 220);
-            drawPalm(300 - palmOffset, 220);
-            drawPalm(180 - palmOffset, 220);
-            drawPalm(420 - palmOffset, 220);
-
-            ctx.fillStyle = '#0028A8'; ctx.fillRect(0, 150, 240, 150);
-            ctx.fillStyle = '#0060F8'; ctx.fillRect(0, 160, 240, 140);
-            
-            let floorOffset = (frames * scrollSpeed) % 40;
-            for(let i = -1; i < 7; i++) {
-                let px = (i * 40) - floorOffset;
-                ctx.fillStyle = (i % 2 === 0) ? '#E89000' : '#783800';
-                ctx.fillRect(px, 300, 40, 100);
-            }
-            
-            ctx.fillStyle = '#21E700'; ctx.fillRect(0, 300, 240, 15);
-            ctx.fillStyle = '#10A000'; ctx.fillRect(0, 315, 240, 5);
-
-            let sonicSprite = jumpFrame;
-            if (!isJumping) {
-                let animCycle = Math.floor(frames / 4) % 3;
-                if (animCycle === 0) sonicSprite = frame1;
-                else if (animCycle === 1) sonicSprite = frame2;
-                else sonicSprite = frame3;
-            }
-            
-            drawSpriteStr(sonicSprite, 30, sonicY, 2);
-            for (let i = 0; i < enemies.length; i++) drawSpriteStr(crabFrame, enemies.at(i).x, enemies.at(i).y, 2);
-            for (let i = 0; i < rings.length; i++) drawSpriteStr(ringFrame, rings.at(i).x, rings.at(i).y, 2);
-
-            loop = requestAnimationFrame(upd);
-        }
-        upd();
-    }
-
-    function runSnake() {
-        let s = Array.of({x:5, y:10}), f = {x:2,y:2}, d = {x:0,y:0};
-        window.gameAction = function() {};
-
-        function upd() {
-            let h = {x: s.at(0).x+d.x, y: s.at(0).y+d.y};
-            if(h.x<0||h.x>=12||h.y<0||h.y>=20||( (d.x||d.y) && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
-            if(d.x||d.y) s.unshift(h);
-            if(h.x===f.x && h.y===f.y) { score+=10; document.getElementById('g-score').innerText=score; f={x:Math.floor(Math.random()*12), y:Math.floor(Math.random()*20)}; }
-            else if(d.x||d.y) s.pop();
-            
-            ctx.fillStyle='#000'; ctx.fillRect(0,0,240,400);
-            ctx.fillStyle='#ff0055'; ctx.fillRect(f.x*20, f.y*20, 18, 18);
-            ctx.fillStyle='#00f0ff'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
-            loop = setTimeout(() => requestAnimationFrame(upd), 150);
-        }
-        document.onkeydown = e => {  
-              if(e.key==='ArrowLeft'&&d.x!==1) d={x:-1,y:0};
-              if(e.key==='ArrowRight'&&d.x!==-1) d={x:1,y:0};
-              if(e.key==='ArrowUp'&&d.y!==1) d={x:0,y:-1};
-              if(e.key==='ArrowDown'&&d.y!==-1) d={x:0,y:1};
-              if(!d.x && !d.y) d={x:0,y:1};
-        };
-        upd();
-    }
-
-    function runTetris() {
-        const R=20, C=12; 
-        let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
-        const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(str=>str.split('-').map(r=>r.split('').map(Number)));
-        const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
-        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
-        window.gameAction = function() {};  
-
-        function draw() {
-            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(v); ctx.fillRect(x*20,y*20,19,19); }}));
-            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(p.c); ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
-        }
         
         function coll(ax, ay, m) { 
-            return m.some((r,y)=>r.some((v,x)=> {
-                if(!v) return false;
-                let nx = p.x + x + ax;
-                let ny = p.y + y + ay;
-                if (nx < 0 || nx >= C || ny >= R) return true;
-                let targetRow = bd.at(ny);
-                if(!targetRow) return true;
-                let cell = targetRow.at(nx);
-                return cell !== 0;
-            })); 
+            for(let y=0; y<m.length; y++) {
+                for(let x=0; x<m.at(y).length; x++) {
+                    if(m.at(y).at(x) !== 0) {
+                        let nx = p.x + x + ax;
+                        let ny = p.y + y + ay;
+                        if (nx < 0 || nx >= C || ny >= R) return true;
+                        let targetRow = bd.at(ny);
+                        if(targetRow && targetRow.at(nx) !== 0) return true;
+                    }
+                }
+            }
+            return false;
         }
         
         function rotate(m) { 
-            let nm = m.at(0).map((_,i) => m.map(r => r.at(i)).reverse()); 
-            if(!coll(0,0,nm)) p.m=nm; 
+            let nm = new Array();
+            for(let i=0; i<m.at(0).length; i++) {
+                let row = new Array();
+                for(let j=m.length-1; j>=0; j--) row.push(m.at(j).at(i));
+                nm.push(row);
+            }
+            if(!coll(0,0,nm)) p.m = nm; 
         }
         
-        function upd(t=0) {
-            dc += t - lt; lt = t;
-            if(dc > 1000) {
+        function tick() {
+            if (checkTime()) return;
+            let now = Date.now();
+            let dt = now - lastTime;
+            lastTime = now;
+            
+            dropCounter += dt;
+            if(dropCounter > 1000) {
                 if(!coll(0,1,p.m)) p.y++;
                 else {
-                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) { let row = bd.at(y + p.y); Reflect.set(row, x + p.x, p.c); }}));
-                    bd.forEach((r,y)=>{ if(r.every(v=>v!==0)){ bd.splice(y,1); bd.unshift(Array.from({length:C}, () => 0)); score+=100; document.getElementById('g-score').innerText=score; }});
+                    for(let y=0; y<p.m.length; y++) {
+                        for(let x=0; x<p.m.at(y).length; x++) {
+                            if(p.m.at(y).at(x) !== 0) Reflect.set(bd.at(y + p.y), x + p.x, p.c);
+                        }
+                    }
+                    
+                    for(let y=R-1; y>=0; y--) {
+                        let isFull = true;
+                        for(let x=0; x<C; x++) if(bd.at(y).at(x) === 0) isFull = false;
+                        if(isFull) {
+                            bd.splice(y, 1);
+                            bd.unshift(Array.from({length:C}, () => 0));
+                            score += 100; updateScore();
+                            y++;
+                        }
+                    }
                     p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
                     if(coll(0,0,p.m)) return gameOver();
                 }
-                dc=0;
+                dropCounter = 0;
             }
-            draw(); loop = requestAnimationFrame(upd);
+            draw(); 
+            loop = requestAnimationFrame(tick);
+        }
+        matchTimer = Date.now();
+        loop = requestAnimationFrame(tick);
+    }
+
+    // --- GAME 3: BATTLE CITY ---
+    function runBattleCity() {
+        let px = 5, py = 18, dir = 'up';
+        let bullets = new Array();
+        let map = new Array();
+        let enemies = new Array();
+        
+        for(let r=0; r<20; r++) {
+            let row = new Array();
+            for(let c=0; c<12; c++) {
+                if (r%2!==0 && c%2!==0) row.push(2); 
+                else if (Math.random() < 0.3) row.push(1); 
+                else row.push(0);
+            }
+            map.push(row);
+        }
+        map.at(18).splice(5, 1, 0); 
+        map.at(1).splice(1, 1, 0);
+        map.at(1).splice(10, 1, 0);
+        
+        window.onInput = function(k) {
+            if (k === 'action' && bullets.length < 2) {
+                let bdx = 0, bdy = 0;
+                if(dir==='up') bdy = -1; if(dir==='down') bdy = 1;
+                if(dir==='left') bdx = -1; if(dir==='right') bdx = 1;
+                bullets.push({x: px, y: py, dx: bdx, dy: bdy, isEnemy: false});
+            }
+        };
+
+        function move(dx, dy) {
+            let nx = px + dx, ny = py + dy;
+            if(nx >= 0 && nx < 12 && ny >= 0 && ny < 20) {
+                if (map.at(ny).at(nx) === 0) { px = nx; py = ny; }
+            }
         }
         
-        document.onkeydown = e => {
-            if(e.key==='ArrowLeft' && !coll(-1,0,p.m)) p.x--;
-            if(e.key==='ArrowRight' && !coll(1,0,p.m)) p.x++;
-            if(e.key==='ArrowDown' && !coll(0,1,p.m)) p.y++;
-            if(e.key==='ArrowUp') rotate(p.m);
+        function moveEn(en, dx, dy) {
+            let nx = en.x + dx, ny = en.y + dy;
+            if(nx >= 0 && nx < 12 && ny >= 0 && ny < 20) {
+                if (map.at(ny).at(nx) === 0) {
+                    en.x = nx; en.y = ny;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        let frames = 0, moveDelay = 0;
+        function tick() {
+            if (checkTime()) return;
+            frames++; moveDelay++;
+            
+            if (moveDelay > 6) {
+                if (keys.left) { dir = 'left'; move(-1, 0); moveDelay=0; }
+                else if (keys.right) { dir = 'right'; move(1, 0); moveDelay=0; }
+                else if (keys.up) { dir = 'up'; move(0, -1); moveDelay=0; }
+                else if (keys.down) { dir = 'down'; move(0, 1); moveDelay=0; }
+            }
+            
+            if (frames % 100 === 0 && enemies.length < 4) {
+                let ex = Math.random() < 0.5 ? 1 : 10;
+                enemies.push({x: ex, y: 1, dir: 'down'});
+            }
+            
+            if (frames % 30 === 0) {
+                for(let i=0; i<enemies.length; i++) {
+                    let en = enemies.at(i);
+                    if (Math.random() < 0.3) {
+                        let dirs = Array.of('up','down','left','right');
+                        en.dir = dirs.at(Math.floor(Math.random()*4));
+                    }
+                    let dx=0, dy=0;
+                    if(en.dir==='up') dy=-1; if(en.dir==='down') dy=1;
+                    if(en.dir==='left') dx=-1; if(en.dir==='right') dx=1;
+                    
+                    if(!moveEn(en, dx, dy)) {
+                        let dirs = Array.of('up','down','left','right');
+                        en.dir = dirs.at(Math.floor(Math.random()*4));
+                    }
+                    if (Math.random() < 0.1) {
+                        bullets.push({x: en.x, y: en.y, dx: dx, dy: dy, isEnemy: true});
+                    }
+                }
+            }
+            
+            if (frames % 5 === 0) {
+                let nBullets = new Array();
+                for(let i=0; i<bullets.length; i++) {
+                    let b = bullets.at(i);
+                    b.x += b.dx; b.y += b.dy;
+                    
+                    if(b.x < 0 || b.x >= 12 || b.y < 0 || b.y >= 20) continue;
+                    
+                    let tile = map.at(b.y).at(b.x);
+                    if (tile === 2) continue; 
+                    if (tile === 1) { map.at(b.y).splice(b.x, 1, 0); continue; }
+                    
+                    let hitEnemy = false;
+                    if (!b.isEnemy) {
+                        for(let e=0; e<enemies.length; e++) {
+                            let en = enemies.at(e);
+                            if (en.x === b.x && en.y === b.y) {
+                                enemies.splice(e, 1);
+                                score += 50; updateScore();
+                                hitEnemy = true; break;
+                            }
+                        }
+                    } else {
+                        if (px === b.x && py === b.y) return gameOver();
+                    }
+                    if (!hitEnemy) nBullets.push(b);
+                }
+                bullets = nBullets;
+            }
+            
+            for(let e=0; e<enemies.length; e++) {
+                let en = enemies.at(e);
+                if (en.x === px && en.y === py) return gameOver();
+            }
+            
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
+            for(let r=0; r<20; r++) {
+                for(let c=0; c<12; c++) {
+                    let t = map.at(r).at(c);
+                    if (t === 1) { ctx.fillStyle = '#A0522D'; ctx.fillRect(c*20+1, r*20+1, 18, 18); }
+                    if (t === 2) { ctx.fillStyle = '#888'; ctx.fillRect(c*20, r*20, 20, 20); }
+                }
+            }
+            
+            ctx.fillStyle = '#00f0ff';
+            ctx.fillRect(px*20+2, py*20+2, 16, 16);
+            ctx.fillStyle = '#fff';
+            if(dir==='up') ctx.fillRect(px*20+8, py*20-2, 4, 10);
+            if(dir==='down') ctx.fillRect(px*20+8, py*20+12, 4, 10);
+            if(dir==='left') ctx.fillRect(px*20-2, py*20+8, 10, 4);
+            if(dir==='right') ctx.fillRect(px*20+12, py*20+8, 10, 4);
+            
+            ctx.fillStyle = '#ff0055';
+            for(let e=0; e<enemies.length; e++) {
+                let en = enemies.at(e);
+                ctx.fillRect(en.x*20+2, en.y*20+2, 16, 16);
+            }
+            
+            ctx.fillStyle = '#fff';
+            for(let i=0; i<bullets.length; i++) {
+                let b = bullets.at(i);
+                ctx.fillRect(b.x*20+8, b.y*20+8, 4, 4);
+            }
+            loop = requestAnimationFrame(tick);
+        }
+        matchTimer = Date.now();
+        loop = requestAnimationFrame(tick);
+    }
+
+    // --- GAME 4: ROAD FIGHTER ---
+    function runRoadFighter() {
+        let px = 110, py = 340, pw = 20, ph = 30;
+        let speed = 0;
+        let distance = 0;
+        let enemies = new Array();
+        let lines = 0;
+        
+        window.onInput = function(k) {};
+
+        function tick() {
+            if (checkTime()) return;
+            
+            if (keys.up || keys.action) {
+                speed += 0.1;
+                if (speed > 8) speed = 8;
+            } else {
+                speed -= 0.2;
+                if (speed < 0) speed = 0;
+            }
+            
+            if (keys.left) px -= 3;
+            if (keys.right) px += 3;
+            if (px < 40 || px > 180) speed *= 0.5; 
+            
+            distance += speed;
+            lines += speed;
+            
+            if (distance > 100) {
+                score += 10; distance = 0; updateScore();
+            }
+            
+            if (Math.random() < 0.02 && speed > 2) {
+                let ex = 50 + Math.random() * 120;
+                enemies.push({x: ex, y: -40, speed: 2 + Math.random()*2});
+            }
+            
+            let nEnemies = new Array();
+            for(let i=0; i<enemies.length; i++) {
+                let en = enemies.at(i);
+                en.y += (speed - en.speed);
+                if (px < en.x+20 && px+pw > en.x && py < en.y+30 && py+ph > en.y) return gameOver();
+                if (en.y < 450) nEnemies.push(en);
+            }
+            enemies = nEnemies;
+            
+            ctx.fillStyle = '#228B22'; ctx.fillRect(0,0,240,400); 
+            ctx.fillStyle = '#555'; ctx.fillRect(40,0,160,400); 
+            
+            ctx.fillStyle = '#fff';
+            let offset = lines % 40;
+            for(let y=-40; y<440; y+=40) {
+                ctx.fillRect(118, y + offset, 4, 20);
+            }
+            
+            ctx.fillStyle = '#00f0ff'; ctx.fillRect(px, py, pw, ph); 
+            
+            ctx.fillStyle = '#ff0055'; 
+            for(let i=0; i<enemies.length; i++) {
+                let en = enemies.at(i);
+                ctx.fillRect(en.x, en.y, 20, 30);
+            }
+            loop = requestAnimationFrame(tick);
+        }
+        matchTimer = Date.now();
+        loop = requestAnimationFrame(tick);
+    }
+
+    // --- GAME 5: SPACE INVADERS ---
+    function runSpaceInvaders() {
+        let px = 110, py = 360, pw = 20;
+        let bullets = new Array();
+        let eBullets = new Array();
+        let enemies = new Array();
+        
+        for(let r=0; r<4; r++) {
+            for(let c=0; c<6; c++) {
+                enemies.push({x: 20 + c*30, y: 30 + r*30, active: true});
+            }
+        }
+        let eDir = 1, eSpeed = 0.5;
+        
+        window.onInput = function(k) {
+            if (k === 'action' || k === 'up') {
+                if (bullets.length < 2) bullets.push({x: px + 8, y: py});
+            }
         };
-        upd();
+
+        function tick() {
+            if (checkTime()) return;
+            
+            if (keys.left) px -= 3;
+            if (keys.right) px += 3;
+            px = Math.max(0, Math.min(240 - pw, px));
+            
+            let nBullets = new Array();
+            for(let i=0; i<bullets.length; i++) {
+                let b = bullets.at(i);
+                b.y -= 5;
+                let hit = false;
+                for(let e=0; e<enemies.length; e++) {
+                    let en = enemies.at(e);
+                    if (en.active && b.x > en.x && b.x < en.x+20 && b.y > en.y && b.y < en.y+20) {
+                        en.active = false; hit = true;
+                        score += 20; updateScore();
+                        eSpeed += 0.05;
+                        break;
+                    }
+                }
+                if (!hit && b.y > 0) nBullets.push(b);
+            }
+            bullets = nBullets;
+            
+            let hitWall = false;
+            let activeCount = 0;
+            for(let e=0; e<enemies.length; e++) {
+                let en = enemies.at(e);
+                if (!en.active) continue;
+                activeCount++;
+                en.x += eDir * eSpeed;
+                if (en.x < 5 || en.x > 215) hitWall = true;
+                if (Math.random() < 0.005) eBullets.push({x: en.x+10, y: en.y+20});
+                if (en.y > 340) return gameOver(); 
+            }
+            
+            if (hitWall) {
+                eDir *= -1;
+                for(let e=0; e<enemies.length; e++) enemies.at(e).y += 15;
+            }
+            
+            if (activeCount === 0) {
+                for(let r=0; r<4; r++) {
+                    for(let c=0; c<6; c++) {
+                        enemies.push({x: 20 + c*30, y: 30 + r*30, active: true});
+                    }
+                }
+            }
+            
+            let nEBullets = new Array();
+            for(let i=0; i<eBullets.length; i++) {
+                let eb = eBullets.at(i);
+                eb.y += 4;
+                if (eb.x > px && eb.x < px+pw && eb.y > py && eb.y < py+20) return gameOver();
+                if (eb.y < 400) nEBullets.push(eb);
+            }
+            eBullets = nEBullets;
+            
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
+            ctx.fillStyle = '#00f0ff'; ctx.fillRect(px, py, pw, 20); 
+            
+            ctx.fillStyle = '#ff0055';
+            for(let e=0; e<enemies.length; e++) {
+                let en = enemies.at(e);
+                if(en.active) ctx.fillRect(en.x, en.y, 20, 20);
+            }
+            
+            ctx.fillStyle = '#fff';
+            for(let i=0; i<bullets.length; i++) ctx.fillRect(bullets.at(i).x, bullets.at(i).y, 4, 10);
+            
+            ctx.fillStyle = '#ff0';
+            for(let i=0; i<eBullets.length; i++) ctx.fillRect(eBullets.at(i).x, eBullets.at(i).y, 4, 10);
+            
+            loop = requestAnimationFrame(tick);
+        }
+        matchTimer = Date.now();
+        loop = requestAnimationFrame(tick);
     }
 </script>
 </body>
