@@ -377,7 +377,9 @@
 
     function runTetris() {
         const R=20, C=12; let bd = Array.from({length:R}, () => Array(C).fill(0));
-        const SH =],,],,],,], [,],,],,]];
+        const SH = ],, ],, ],
+            [, ],, ],, ],, ]
+        ];
         const CL =;
         let p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
         function draw() {
