@@ -43,12 +43,13 @@
 
         select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; font-family: -apple-system, sans-serif;}
 
+        /* ПРИНУДИТЕЛЬНЫЕ 16-BIT СТИЛИ ДЛЯ КАНВАСА */
         canvas { 
             border: 4px solid var(--tg-text); 
             border-radius: 4px; 
             background: #000; 
             width: 100% !important; 
-            max-width: 350px; 
+            max-width: 400px; 
             height: auto !important; 
             margin-bottom: 5px; 
             flex-shrink: 0;
@@ -96,7 +97,7 @@
         <div class="card card-free">
             <h2 style="font-size: 1rem;">Story Mode (Sega)</h2>
             <p style="font-size:0.7rem; text-align:center; opacity:0.7; font-family: var(--font-retro); margin-top: 0;">FREE PLAY</p>
-            <button class="btn btn-outline" onclick="launchGame('story')">🎮 PLAY SOLO</button>
+            <button class="btn btn-outline" onclick="launchGame('solo')">🎮 PLAY SOLO</button>
         </div>
     </div>
 
@@ -172,13 +173,52 @@
 </div>
 
 <script>
+    // --- ГЕНЕРАЦИЯ BASE64 СПРАЙТА СОНИКА (Без блокировок ссылок) ---
+    // Формируем картинку 80x16 (5 кадров по 16x16: 1 Idle, 2 Run, 2 Ball)
+    const SONIC_SPRITE_64 = (function() {
+        const c = document.createElement('canvas');
+        c.width = 80; c.height = 16;
+        const ctxx = c.getContext('2d');
+        
+        const pal = new Map();
+        pal.set('.', 'transparent');
+        pal.set('U', '#2039FF'); // Sonic Blue
+        pal.set('S', '#FFCC99'); // Skin
+        pal.set('B', '#000000'); // Black
+        pal.set('W', '#FFFFFF'); // White
+        pal.set('R', '#E00000'); // Red
+
+        const frames = Array.of(
+            "......UUUU..........UUUUUUU........UUUUUUUUU.......UUUUSSS.........UUUUSBS.........UUUUSSS..........UUUSSS...........UUUU...........SUUUUS.........SSUUUUSS.........SUUUUS...........WWWW...........W.WW.W.........RR.RR.RR........RR.RR.RR........RR.RR.RR.....",
+            "......UUUU..........UUUUUUU........UUUUUUUUU.......UUUUSSS.........UUUUSBS.........UUUUSSS..........UUUSSS...........UUUU...........SUUUUS.........SSUUUUSS.........SUUUUS...........WWWW.............WW...........RRRR.............RR.............RR........",
+            "......UUUU..........UUUUUUU........UUUUUUUUU.......UUUUSSS.........UUUUSBS.........UUUUSSS..........UUUSSS...........UUUU...........SUUUUS.........SSUUUUSS.........SUUUUS...........WWWW...........W....W.........RR....RR........RR....RR........RR....RR.....",
+            "......................UUUU........UUWWWWUU.......UWWUUUUWWU......UWUUUUUUUUWU....UWUUUUUUUUWU....UWUUUUUUUUWU.....UWWUUUUWWU......UUWWWWUU........UUUU......................",
+            "......................UUUU........UUUUUUUU.......UUWWWWWWUU......UWWUUUUWWUUU....UWWUUUUWWUUU....UUWWWWWWUU.......UUUUUUUU........UUUU......................"
+        );
+
+        for (let i = 0; i < frames.length; i++) {
+            let f = frames.at(i);
+            for (let p = 0; p < 256; p++) {
+                let char = f.charAt(p);
+                let col = pal.get(char);
+                if (col && col !== 'transparent') {
+                    ctxx.fillStyle = col;
+                    ctxx.fillRect(i * 16 + (p % 16), Math.floor(p / 16), 1, 1);
+                }
+            }
+        }
+        return c.toDataURL();
+    })();
+
+    const sonicImg = new Image();
+    sonicImg.src = SONIC_SPRITE_64;
+
     // --- НАСТРОЙКА КАНВАСА ДЛЯ ПИКСЕЛЬ АРТА ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.style.imageRendering = 'pixelated';
     ctx.imageSmoothingEnabled = false;
 
-    // Внутреннее разрешение Sega Genesis
+    // Классическое 16-битное разрешение Sega Genesis
     canvas.width = 320; 
     canvas.height = 224; 
 
@@ -188,32 +228,10 @@
     
     let user = null, lobby = null, poll = null, loop = null, gameMode = '';
 
-    // --- ЗАГРУЗКА ВНЕШНЕГО СПРАЙТ-ЛИСТА СОНИКА ---
-    const sonicSprite = new Image();
-    sonicSprite.crossOrigin = "Anonymous";
-    sonicSprite.src = "https://info.sonicretro.org/images/1/1a/Sonic1_sheet.png";
-
-    // Анимации Соника
-    const anims = {
-        idle: Array.of({x: 18, y: 22, w: 29, h: 39}),
-        run: Array.of(
-            {x: 17, y: 104, w: 32, h: 39}, 
-            {x: 56, y: 104, w: 32, h: 39}, 
-            {x: 96, y: 104, w: 32, h: 39}, 
-            {x: 133, y: 104, w: 32, h: 39}
-        ),
-        roll: Array.of(
-            {x: 17, y: 201, w: 30, h: 29}, 
-            {x: 52, y: 201, w: 30, h: 29}, 
-            {x: 87, y: 201, w: 30, h: 29}, 
-            {x: 122, y: 201, w: 30, h: 29}
-        )
-    };
-
     // --- ФИЗИКА И ДВИЖОК ПЛАТФОРМЕРА ---
-    const TILE_SIZE = 32;
-    const MAP_W = 60;
-    const MAP_H = 15;
+    const TILE_SIZE = 16;
+    const MAP_W = 150;
+    const MAP_H = 14;
     let mapData = Array.from({length: MAP_W * MAP_H}, () => 0); // 0 = пусто, 1 = земля, 2 = финиш
 
     const GRAVITY = 0.21875;
@@ -223,12 +241,12 @@
     const JUMP_FORCE = 6.5;
 
     let player = {
-        x: 50, y: 50, vx: 0, vy: 0,
-        width: 20, height: 30,
+        x: 30, y: 100, vx: 0, vy: 0,
+        width: 14, height: 14,
         state: 'idle', 
-        frame: 0, frameTimer: 0,
         dir: 1, 
-        grounded: false
+        grounded: false,
+        finished: false
     };
 
     const keys = { left: false, right: false, up: false, down: false, jump: false };
@@ -238,37 +256,36 @@
     function buildLevel() {
         mapData = Array.from({length: MAP_W * MAP_H}, () => 0);
         
-        // Пол
+        // Рисуем пол Green Hill Zone
         for(let x = 0; x < MAP_W; x++) {
+            Reflect.set(mapData, 12 * MAP_W + x, 1);
             Reflect.set(mapData, 13 * MAP_W + x, 1);
-            Reflect.set(mapData, 14 * MAP_W + x, 1);
         }
         
-        // Препятствия и ямы
-        for(let x = 20; x < 25; x++) {
+        // Ямы для прыжков
+        for(let x = 40; x < 45; x++) {
+            Reflect.set(mapData, 12 * MAP_W + x, 0);
             Reflect.set(mapData, 13 * MAP_W + x, 0);
-            Reflect.set(mapData, 14 * MAP_W + x, 0);
+        }
+        for(let x = 80; x < 88; x++) {
+            Reflect.set(mapData, 12 * MAP_W + x, 0);
+            Reflect.set(mapData, 13 * MAP_W + x, 0);
         }
 
-        // Платформы
-        Reflect.set(mapData, 10 * MAP_W + 10, 1);
-        Reflect.set(mapData, 10 * MAP_W + 11, 1);
-        Reflect.set(mapData, 10 * MAP_W + 12, 1);
-
-        Reflect.set(mapData, 9 * MAP_W + 30, 1);
-        Reflect.set(mapData, 9 * MAP_W + 31, 1);
-
-        // Финишная черта
-        Reflect.set(mapData, 12 * MAP_W + (MAP_W - 5), 2);
-        Reflect.set(mapData, 11 * MAP_W + (MAP_W - 5), 2);
+        // Финишная черта в конце
+        Reflect.set(mapData, 11 * MAP_W + (MAP_W - 10), 2);
+        Reflect.set(mapData, 10 * MAP_W + (MAP_W - 10), 2);
     }
 
     function getTile(x, y) {
-        if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H) return 1;
+        if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H) return 0;
         return mapData.at(y * MAP_W + x);
     }
 
     function updatePhysics() {
+        if (player.finished) return;
+
+        // Ввод и Инерция
         if (keys.left) {
             player.dir = -1;
             if (player.vx > -MAX_SPEED) player.vx -= ACCEL;
@@ -288,22 +305,24 @@
             player.state = 'idle';
         }
 
+        // Сворачивание в шар при беге
         if (keys.down && Math.abs(player.vx) > 1) {
             player.state = 'roll';
         }
 
+        // Прыжок
         if (keys.jump && player.grounded) {
             player.vy = -JUMP_FORCE;
             player.grounded = false;
             player.state = 'roll';
             keys.jump = false;
         } else if (!player.grounded) {
-            player.state = 'roll';
+            player.state = 'roll'; // В воздухе всегда шар
         }
 
         player.vy += GRAVITY;
 
-        // Коллизии X
+        // --- КОЛЛИЗИИ X ---
         player.x += player.vx;
         let tx1 = Math.floor(player.x / TILE_SIZE);
         let tx2 = Math.floor((player.x + player.width) / TILE_SIZE);
@@ -322,7 +341,7 @@
             }
         }
 
-        // Коллизии Y
+        // --- КОЛЛИЗИИ Y ---
         player.y += player.vy;
         tx1 = Math.floor((player.x + 2) / TILE_SIZE); 
         tx2 = Math.floor((player.x + player.width - 2) / TILE_SIZE);
@@ -343,77 +362,80 @@
             }
         }
 
-        // Проверка финиша
+        // --- ПРОВЕРКА ФИНИША ---
         let centerTx = Math.floor((player.x + player.width / 2) / TILE_SIZE);
         let centerTy = Math.floor((player.y + player.height / 2) / TILE_SIZE);
         if (getTile(centerTx, centerTy) === 2) {
+            player.finished = true;
             triggerFinish();
         }
 
-        // Падение в яму
+        // Смерть от падения в яму
         if (player.y > MAP_H * TILE_SIZE) {
-            player.x = 50; player.y = 50; player.vx = 0; player.vy = 0; 
+            player.x = 30; player.y = 100; player.vx = 0; player.vy = 0; 
         }
-    }
-
-    function updateAnimation() {
-        player.frameTimer++;
-        let speed = 10;
-        if (player.state === 'run') speed = Math.max(2, 10 - Math.abs(player.vx));
-        if (player.state === 'roll') speed = 4;
-
-        if (player.frameTimer > speed) {
-            player.frameTimer = 0;
-            player.frame++;
-        }
-
-        let currentAnimArray = Reflect.get(anims, player.state) || anims.idle;
-        if (player.frame >= currentAnimArray.length) player.frame = 0;
     }
 
     let cameraX = 0;
+    let timeTicks = 0;
+
     function drawGame() {
-        ctx.fillStyle = '#2452FF'; // Небо
+        timeTicks++;
+
+        // Небо
+        ctx.fillStyle = '#2452FF'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Облака параллакс
+        let cloudOffset = (timeTicks * 0.5) % 320;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(50 - cloudOffset, 30, 60, 20);
+        ctx.fillRect(370 - cloudOffset, 30, 60, 20);
+        ctx.fillRect(180 - cloudOffset, 60, 50, 15);
+        ctx.fillRect(500 - cloudOffset, 60, 50, 15);
 
         cameraX = player.x - canvas.width / 2;
         if (cameraX < 0) cameraX = 0;
         if (cameraX > MAP_W * TILE_SIZE - canvas.width) cameraX = MAP_W * TILE_SIZE - canvas.width;
 
-        // Отрисовка тайлов
+        // Отрисовка Тайлов (Шахматный Green Hill)
+        let startCol = Math.floor(cameraX / TILE_SIZE);
+        let endCol = startCol + (canvas.width / TILE_SIZE) + 1;
+        
         for (let y = 0; y < MAP_H; y++) {
-            for (let x = 0; x < MAP_W; x++) {
+            for (let x = startCol; x <= endCol; x++) {
                 let tile = getTile(x, y);
                 let drawX = Math.floor(x * TILE_SIZE - cameraX);
                 let drawY = Math.floor(y * TILE_SIZE);
 
-                if (drawX < -TILE_SIZE || drawX > canvas.width) continue;
-
                 if (tile === 1) {
-                    ctx.fillStyle = '#8B4513';
+                    ctx.fillStyle = (x % 2 === 0) ? '#8B4513' : '#A0522D'; // Два тона коричневого
                     ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
-                    ctx.fillStyle = '#228B22';
-                    ctx.fillRect(drawX, drawY, TILE_SIZE, 8);
+                    ctx.fillStyle = '#228B22'; // Зеленая трава сверху
+                    ctx.fillRect(drawX, drawY, TILE_SIZE, 4);
                 } else if (tile === 2) {
-                    ctx.fillStyle = '#FFD700'; // Финишная табличка
-                    ctx.fillRect(drawX + 10, drawY, 12, TILE_SIZE);
+                    ctx.fillStyle = '#FFD700'; // Желтая Финишная линия
+                    ctx.fillRect(drawX + 4, drawY, 8, TILE_SIZE);
                 }
             }
         }
 
-        // Отрисовка Соника
-        let currentAnimArray = Reflect.get(anims, player.state) || anims.idle;
-        let frm = currentAnimArray.at(player.frame % currentAnimArray.length);
+        // Выбор кадра Соника
+        let frameIdx = 0;
+        if (player.state === 'idle') frameIdx = 0;
+        else if (player.state === 'run') {
+            frameIdx = (Math.floor(timeTicks / 10) % 2 === 0) ? 1 : 2;
+        } else if (player.state === 'roll') {
+            frameIdx = (Math.floor(timeTicks / 5) % 2 === 0) ? 3 : 4; // Быстрое вращение
+        }
 
+        // Отрисовка Соника из Base64 спрайта
         ctx.save();
         ctx.translate(Math.floor(player.x - cameraX + player.width / 2), Math.floor(player.y + player.height / 2));
         if (player.dir === -1) ctx.scale(-1, 1);
-
-        if (sonicSprite.complete && sonicSprite.naturalWidth !== 0) {
-            ctx.drawImage(sonicSprite, frm.x, frm.y, frm.w, frm.h, -frm.w/2, -frm.h/2 + 4, frm.w, frm.h);
-        } else {
-            ctx.fillStyle = '#0020B0';
-            ctx.fillRect(-player.width/2, -player.height/2, player.width, player.height);
+        
+        if (sonicImg.complete) {
+            ctx.drawImage(sonicImg, frameIdx * 16, 0, 16, 16, -8, -8, 16, 16);
         }
         ctx.restore();
     }
@@ -421,7 +443,6 @@
     function gameTick() {
         if (!loop) return;
         updatePhysics();
-        updateAnimation();
         drawGame();
         loop = requestAnimationFrame(gameTick);
     }
@@ -470,7 +491,7 @@
         document.getElementById('s-game').classList.add('active');
         document.querySelector('.tabs').style.display = 'none';
         
-        player.x = 50; player.y = 50; player.vx = 0; player.vy = 0;
+        player.x = 30; player.y = 100; player.vx = 0; player.vy = 0; player.finished = false;
         buildLevel();
         
         if(loop) cancelAnimationFrame(loop);
@@ -478,6 +499,13 @@
     }
 
     async function triggerFinish() {
+        if (gameMode === 'solo') {
+            // В соло режиме просто перезапускаем уровень для бесконечной игры
+            player.x = 30; player.y = 100; player.vx = 0; player.vy = 0; player.finished = false;
+            return;
+        }
+
+        // В Ranked режиме фиксируем победу
         if (loop) cancelAnimationFrame(loop);
         loop = null;
         
@@ -504,10 +532,6 @@
                 document.getElementById('end-title').style.color = '#ff0055';
                 document.getElementById('end-msg').innerText = 'Opponent reached the finish line first.';
             }
-        } else {
-            document.getElementById('end-title').innerText = 'LEVEL CLEARED';
-            document.getElementById('end-title').style.color = '#00f0ff';
-            document.getElementById('end-msg').innerText = 'You completed the track!';
         }
     }
 
