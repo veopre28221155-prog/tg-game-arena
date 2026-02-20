@@ -1,109 +1,481 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RETRO BATTLE ARENA</title>
+    <title>Retro Battle Arena</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; color: #fff; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
-        #gameCanvas { 
-            display: block; width: 100vw; height: auto; 
-            image-rendering: pixelated; /* Тот самый четкий пиксель */
-            background: #2452FF; 
+        :root {
+            --tg-bg: #111111;
+            --tg-text: #ffffff;
+            --tg-btn: #0044cc;
+            --tg-btn-text: #ffffff;
+            --tg-sec-bg: #222222;
+            --accent-neon: #00f0ff; 
+            --accent-pink: #ff0055; 
+            --font-retro: 'Press Start 2P', cursive;
         }
-        .screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        .active { display: flex; }
-        .btn { 
-            background: #ff0055; border: 4px solid #fff; color: #fff; 
-            padding: 15px 30px; font-weight: bold; cursor: pointer; margin: 10px;
-            box-shadow: 5px 5px 0px #550022; text-transform: uppercase;
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; -webkit-user-select: none; touch-action: none; }
+        
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; font-family: -apple-system, sans-serif; }
+        .screen.active { display: flex; }
+        
+        h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
+        h1 { font-size: 1.4rem; color: var(--accent-neon); margin-top: 15px; line-height: 1.4; text-shadow: 0 0 5px var(--accent-neon); }
+        
+        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid var(--accent-neon); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+        .card-free { border-color: rgba(255, 255, 255, 0.2); box-shadow: none; }
+        
+        .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; }
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
+        .btn-outline { background: transparent; border: 2px solid var(--tg-btn); color: var(--tg-btn); }
+        .btn-danger { background: var(--accent-pink); color: white; border: none; }
+        .btn-duel { background: linear-gradient(45deg, #ff0055, #ff8800); color: white; font-size: 1rem; padding: 18px; border: 2px solid #fff; animation: pulse 2s infinite; }
+        .btn-crypto { background: #2AABEE; color: white; border: none; }
+        .btn-sm { width: auto; padding: 6px 12px; font-size: 0.7rem; margin-bottom: 0; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; font-family: -apple-system, sans-serif;}
+
+        canvas { 
+            border: 4px solid var(--tg-text); 
+            border-radius: 4px; 
+            background: #000; 
+            width: 100% !important; 
+            max-width: 300px; 
+            height: auto !important; 
+            margin-bottom: 15px; 
+            flex-shrink: 0;
+            image-rendering: pixelated;
         }
-        #hud { position: absolute; top: 10px; left: 10px; font-size: 20px; color: #FFFF00; text-shadow: 2px 2px #000; }
+
+        .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; width: 100%; max-width: 250px; margin: 0 auto; }
+        .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; touch-action: manipulation; }
+        .ctrl-btn:active { background: var(--accent-neon); color: black; border-color: var(--accent-neon); }
+        .btn-up { grid-area: up; margin: 0 auto; } 
+        .btn-left { grid-area: left; } 
+        .btn-down { grid-area: down; margin: 0 auto; } 
+        .btn-right { grid-area: right; }
+
+        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--tg-sec-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+        .tab { display: flex; flex-direction: column; align-items: center; color: var(--tg-text); opacity: 0.5; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; }
+        .tab.active { opacity: 1; color: var(--accent-neon); }
+
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center; flex-direction:column; padding: 20px; }
+        .admin-row { font-size: 0.7rem; border-bottom: 1px solid #444; padding: 5px; display: flex; justify-content: space-between; }
+        #admin-panel { display: none; border: 2px solid gold; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<div id="hud" style="display:none;">RINGS: <span id="rings">0</span></div>
+<div id="app">
+    <!-- MENU SCREEN -->
+    <div id="s-play" class="screen active">
+        <h1>RETRO BATTLE<br>ARENA</h1>
 
-<div id="s-menu" class="screen active">
-    <h1 style="color:#00f0ff; text-shadow: 4px 4px #ff0055;">RETRO BATTLE ARENA</h1>
-    <div class="btn" onclick="launchGame('solo')">Solo Training</div>
-    <div class="btn" style="background:#0088ff;" onclick="nav('ranked')">Ranked 1v1</div>
-    <p>Balance: <span id="p-bal">0</span></p>
+        <div class="card">
+            <h2 style="color: var(--accent-neon); font-size: 1.1rem;">Ranked Match 1v1</h2>
+            <p style="font-size:0.7rem; text-align:center; opacity:0.8; font-family: var(--font-retro);">Higher score wins the pot!</p>
+            <select id="search-game">
+                <option value="snake">🐍 Classic Snake</option>
+                <option value="tetris">🧱 Tetris Block</option>
+            </select>
+            <select id="search-bet">
+                <option value="10">Bet: 10 ⭐️</option>
+                <option value="50">Bet: 50 ⭐️</option>
+                <option value="100">Bet: 100 ⭐️</option>
+                <option value="500">Bet: 500 ⭐️</option>
+            </select>
+            <button class="btn btn-duel" onclick="startMatchmaking()">⚔️ FIND DUEL ⚔️</button>
+        </div>
+
+        <div class="card card-free">
+            <h2 style="font-size: 1rem;">Solo Training</h2>
+            <p style="font-size:0.7rem; text-align:center; opacity:0.7; font-family: var(--font-retro); margin-top: 0;">FREE PLAY</p>
+            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Play Snake</button>
+            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Play Tetris</button>
+        </div>
+    </div>
+
+    <!-- SEARCH SCREEN -->
+    <div id="s-search" class="screen" style="justify-content: center;">
+        <h1 class="blink" style="color: #ff8800;">SEARCHING ENEMY...</h1>
+        <p style="text-align: center; opacity: 0.7; margin-bottom: 30px;">Waiting for opponent</p>
+        <button class="btn btn-danger" onclick="cancelMatchmaking()">CANCEL</button>
+    </div>
+
+    <!-- PROFILE SCREEN -->
+    <div id="s-profile" class="screen">
+        <h1>PROFILE</h1>
+        <div class="card card-free" style="text-align: center;">
+            <div style="font-size: 2.5rem; font-family: var(--font-retro); color: gold; text-shadow: 2px 2px 0 #000;">
+                <span id="p-bal">0</span> ★
+            </div>
+            <div style="opacity: 0.7; font-size: 0.8rem; margin-top: 10px; font-weight: bold;">VIRTUAL STARS</div>
+        </div>
+
+        <div class="card card-free">
+            <h2 style="font-size: 1rem;">High Scores</h2>
+            <div style="display: flex; justify-content: space-between; font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 5px;"><span>Snake:</span> <span id="p-snake" style="color:#00ff00;">0</span></div>
+            <div style="display: flex; justify-content: space-between; font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 5px;"><span>Tetris:</span> <span id="p-tetris" style="color:#ff0055;">0</span></div>
+        </div>
+
+        <div class="card card-free">
+            <h2 style="font-size: 1rem;">Deposit (Crypto)</h2>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn btn-crypto" onclick="depositCrypto('USDT', 1, 100)">1 USDT (+100★)</button>
+                <button class="btn btn-crypto" onclick="depositCrypto('TON', 1, 500)">1 TON (+500★)</button>
+                <button class="btn btn-crypto" onclick="depositCrypto('NOT', 1000, 1000)">1000 NOT (+1000★)</button>
+            </div>
+        </div>
+        <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
+        
+        <div id="admin-panel" class="card">
+            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
+            <div class="admin-row" style="margin-bottom: 10px;">
+                <span style="font-weight: bold;">Commission:</span> 
+                <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
+            </div>
+            <button class="btn btn-sm" onclick="loadAdminData()">REFRESH</button>
+        </div>
+        <div style="height: 20px;"></div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0;">
+        <div style="width: 100%; max-width: 300px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <button class="btn btn-danger btn-sm" style="margin:0;" onclick="quitGame()">GIVE UP</button>
+            <div style="font-family: var(--font-retro); color: gold; font-size: 0.8rem;">
+                SCORE: <span id="g-score">0</span>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="controls">
+            <div class="ctrl-btn btn-up" ontouchstart="press('up',true)" ontouchend="press('up',false)" onmousedown="press('up',true)" onmouseup="press('up',false)">▲</div>
+            <div class="ctrl-btn btn-left" ontouchstart="press('left',true)" ontouchend="press('left',false)" onmousedown="press('left',true)" onmouseup="press('left',false)">◀</div>
+            <div class="ctrl-btn btn-down" ontouchstart="press('down',true)" ontouchend="press('down',false)" onmousedown="press('down',true)" onmouseup="press('down',false)">▼</div>
+            <div class="ctrl-btn btn-right" ontouchstart="press('right',true)" ontouchend="press('right',false)" onmousedown="press('right',true)" onmouseup="press('right',false)">▶</div>
+        </div>
+    </div>
 </div>
 
-<div id="s-game" class="screen">
-    <canvas id="gameCanvas"></canvas>
-    <div style="position:fixed; bottom:20px; width:100%; display:flex; justify-content: space-around;">
-        <button class="btn" ontouchstart="press('left', true)" ontouchend="press('left', false)">L</button>
-        <button class="btn" ontouchstart="press('jump', true)" ontouchend="press('jump', false)">JUMP</button>
-        <button class="btn" ontouchstart="press('right', true)" ontouchend="press('right', false)">R</button>
-    </div>
+<div class="tabs">
+    <div class="tab active" onclick="nav('play', this)"><div class="tab-icon">🎮</div><div>PLAY</div></div>
+    <div class="tab" onclick="nav('profile', this)"><div class="tab-icon">👤</div><div>PROFILE</div></div>
+</div>
+
+<!-- GAME OVER MODAL -->
+<div id="modal-over" class="modal">
+    <h1 style="color:red; font-size:2.5rem; text-align: center; margin-bottom: 10px;">GAME OVER</h1>
+    <h2 id="end-score" style="color:white; font-size: 2rem;">0</h2>
+    <p id="end-msg" style="color:gold; font-family: var(--font-retro); font-size: 0.8rem; text-align: center; line-height: 1.5; margin-bottom: 30px;"></p>
+    <button class="btn btn-outline" style="width:240px;" onclick="location.reload()">RETURN TO MENU</button>
 </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 320; canvas.height = 224;
-    ctx.imageSmoothingEnabled = false;
+    canvas.width = 240; 
+    canvas.height = 400;
 
-    // ФИЗИКА SEGA
-    let player = {
-        x: 50, y: 150, vx: 0, vy: 0,
-        acc: 0.046, fric: 0.046, maxSpd: 6,
-        jump: 6.5, grav: 0.21,
-        width: 20, height: 30, state: 'idle', dir: 1
+    const API = "https://tg-game-arena.onrender.com";
+    const ADMIN_ID = 1463465416;
+    const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+    
+    let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
+    const keys = { left: false, right: false, up: false, down: false };
+
+    window.press = function(k, state) { 
+        Reflect.set(keys, k, state); 
+        if(state && window.onInput) window.onInput(k);
     };
 
-    let keys = { left: false, right: false, jump: false };
-    function press(k, s) { keys[k] = s; }
+    document.onkeydown = e => {
+        if(e.key === 'ArrowLeft') press('left', true);
+        if(e.key === 'ArrowRight') press('right', true);
+        if(e.key === 'ArrowDown') press('down', true);
+        if(e.key === 'ArrowUp') press('up', true);
+    };
 
-    function drawSonic() {
-        ctx.save();
-        ctx.translate(player.x, player.y);
-        if(player.dir === -1) ctx.scale(-1, 1);
-        
-        // РИСУЕМ СОНИКА (Здесь ИИ отрисует 16-бит спрайт через drawImage или PixelData)
-        // Для теста: классический синий шар при прыжке
-        if(player.state === 'jump') {
-            ctx.fillStyle = '#0000FF';
-            ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.stroke();
-        } else {
-            // Тот самый Соник (упрощенный пример пикселями, чтобы точно работал)
-            ctx.fillStyle = '#0000FF'; ctx.fillRect(-10, -15, 20, 30); // Тело
-            ctx.fillStyle = '#FFE4B5'; ctx.fillRect(-5, -5, 10, 10);   // Мордочка
-            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(-8, 10, 16, 5);    // Кеды
+    // --- СЕТЕВАЯ ЧАСТЬ И ИНТЕРФЕЙС ---
+    async function init() {
+        const r = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
+        user = await r.json(); 
+        document.getElementById('p-bal').innerText = user.balance;
+        document.getElementById('p-snake').innerText = Reflect.get(user.highScores, 'snake') || 0;
+        document.getElementById('p-tetris').innerText = Reflect.get(user.highScores, 'tetris') || 0;
+        if (user.telegramId === ADMIN_ID) document.getElementById('admin-panel').style.display = 'block';
+    }
+    init();
+
+    function nav(id, el) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('s-' + id).classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        if(el) el.classList.add('active');
+    }
+
+    async function startMatchmaking() {
+        const g = document.getElementById('search-game').value;
+        const b = parseInt(document.getElementById('search-bet').value);
+        if (user.balance < b) return tg.showAlert('Insufficient balance');
+        nav('search');
+        const r = await fetch(API + '/api/search-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
+        const d = await r.json();
+        if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame(g, true); }
+        else { 
+            poll = setInterval(async () => {
+                const cr = await fetch(API + '/api/check-match-status', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
+                const cd = await cr.json(); 
+                if (cd.status === 'match_found') { clearInterval(poll); lobby = cd.lobby; launchGame(lobby.gameType, true); }
+            }, 3000); 
         }
-        ctx.restore();
     }
 
-    function update() {
-        // Логика движения Соника с инерцией
-        if(keys.left) { player.vx -= player.acc; player.dir = -1; }
-        else if(keys.right) { player.vx += player.acc; player.dir = 1; }
-        else { player.vx *= 0.95; }
-
-        player.vy += player.grav;
-        player.x += player.vx;
-        player.y += player.vy;
-
-        if(player.y > 180) { player.y = 180; player.vy = 0; player.state = 'idle'; }
-        if(Math.abs(player.vx) > 0.1) player.state = 'run';
-        if(player.vy < 0) player.state = 'jump';
-
-        // Рендер фона
-        ctx.fillStyle = '#2452FF'; ctx.fillRect(0,0,320,224);
-        ctx.fillStyle = '#8B4513'; ctx.fillRect(0,200,320,24); // Земля
-        
-        drawSonic();
-        requestAnimationFrame(update);
+    async function cancelMatchmaking() {
+        clearInterval(poll);
+        await fetch(API + '/api/cancel-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
+        location.reload();
     }
 
-    function launchGame(mode) {
-        document.getElementById('s-menu').classList.remove('active');
+    function launchGame(type, isRanked) {
+        gameType = type;
+        score = 0;
+        document.getElementById('g-score').innerText = '0';
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('s-game').classList.add('active');
-        update();
+        document.querySelector('.tabs').style.display = 'none';
+        
+        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); }
+        
+        if (type === 'snake') runSnake();
+        if (type === 'tetris') runTetris();
+    }
+
+    async function gameOver() {
+        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); }
+        loop = null;
+        
+        document.getElementById('modal-over').style.display = 'flex';
+        document.getElementById('end-score').innerText = score;
+        
+        if (lobby) {
+            document.getElementById('end-msg').innerText = 'Waiting for opponent to finish...';
+            await fetch(API + '/api/submit-score', { 
+                method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: lobby.lobbyId }) 
+            });
+        } else {
+            document.getElementById('end-msg').innerText = '';
+            await fetch(API + '/api/submit-score', { 
+                method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: null }) 
+            });
+        }
+    }
+
+    function quitGame() {
+        tg.showConfirm('Forfeit the game?', async function(confirmed) {
+            if(!confirmed) return;
+            if (lobby) await fetch(API + '/api/forfeit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, lobbyId: lobby.lobbyId }) });
+            location.reload();
+        });
+    }
+
+    async function depositCrypto(asset, cryptoAmount, starsAmount) {
+        const r = await fetch(API + '/api/deposit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, asset: asset, amount: cryptoAmount, stars: starsAmount }) });
+        const d = await r.json();
+        if (d.payUrl) {
+            tg.openTelegramLink(d.payUrl);
+            let checkingTimer = setInterval(async () => {
+                const cur = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
+                const curUser = await cur.json();
+                if(curUser.balance > user.balance) {
+                    user.balance = curUser.balance;
+                    document.getElementById('p-bal').innerText = user.balance;
+                    clearInterval(checkingTimer);
+                    tg.showAlert('Balance updated!');
+                }
+            }, 3000);
+            setTimeout(() => clearInterval(checkingTimer), 300000);
+        } else { tg.showAlert('Invoice error'); }
+    }
+
+    function withdraw() {
+        if(user.balance <= 0) return tg.showAlert('Empty balance');
+        tg.showConfirm('Withdraw ' + user.balance + ' Stars?', async function(confirmed) {
+            if(!confirmed) return;
+            const r = await fetch(API + '/api/withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
+            const d = await r.json();
+            if (d.success) { 
+                user.balance = d.newBalance; 
+                document.getElementById('p-bal').innerText = user.balance; 
+                tg.showAlert('Request sent!'); 
+            } else tg.showAlert(d.error);
+        });
+    }
+
+    async function loadAdminData() {
+        const r = await fetch(API + '/api/admin/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId }) });
+        const d = await r.json();
+        document.getElementById('adm-commission').innerText = (d.adminCommission || 0) + '★';
+    }
+
+    // --- GAME 1: SNAKE ---
+    function runSnake() {
+        let s = Array.of({x:5, y:10});
+        let f = {x:2, y:2};
+        let dx = 0, dy = -1;
+        
+        window.onInput = function(k) {
+            if (k === 'left' && dx !== 1) { dx = -1; dy = 0; }
+            if (k === 'right' && dx !== -1) { dx = 1; dy = 0; }
+            if (k === 'up' && dy !== 1) { dx = 0; dy = -1; }
+            if (k === 'down' && dy !== -1) { dx = 0; dy = 1; }
+        };
+
+        function tick() {
+            let h = {x: s.at(0).x + dx, y: s.at(0).y + dy};
+            
+            // Стены и хвост
+            let hitTail = s.some(p => p.x === h.x && p.y === h.y);
+            if(h.x < 0 || h.x >= 12 || h.y < 0 || h.y >= 20 || hitTail) return gameOver();
+            
+            s.unshift(h);
+            
+            if(h.x === f.x && h.y === f.y) { 
+                score += 10; 
+                document.getElementById('g-score').innerText = score; 
+                f = {x: Math.floor(Math.random()*12), y: Math.floor(Math.random()*20)}; 
+            } else {
+                s.pop();
+            }
+            
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 400);
+            ctx.fillStyle = '#ff0055'; ctx.fillRect(f.x*20, f.y*20, 19, 19);
+            ctx.fillStyle = '#00f0ff'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 19, 19));
+            
+            loop = setTimeout(tick, 150 - Math.min(score, 100));
+        }
+        tick();
+    }
+
+    // --- GAME 2: TETRIS ---
+    function runTetris() {
+        const R = 20, C = 12; 
+        let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
+        
+        const SH_STR = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',');
+        const SH = new Array();
+        for(let i=0; i<SH_STR.length; i++) {
+            let rows = SH_STR.at(i).split('-');
+            let matrix = new Array();
+            for(let r=0; r<rows.length; r++) {
+                let chars = rows.at(r).split('');
+                let numRow = new Array();
+                for(let c=0; c<chars.length; c++) numRow.push(Number(chars.at(c)));
+                matrix.push(numRow);
+            }
+            SH.push(matrix);
+        }
+
+        const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
+        
+        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
+        let dropCounter = 0;
+        let lastTime = 0;
+
+        window.onInput = function(k) {
+            if(k === 'left' && !coll(-1,0,p.m)) p.x--;
+            if(k === 'right' && !coll(1,0,p.m)) p.x++;
+            if(k === 'down' && !coll(0,1,p.m)) p.y++;
+            if(k === 'up') rotate(p.m);
+        };
+
+        function draw() {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
+            for(let y=0; y<R; y++) {
+                for(let x=0; x<C; x++) {
+                    let v = bd.at(y).at(x);
+                    if(v !== 0) { ctx.fillStyle = CL.at(v); ctx.fillRect(x*20, y*20, 19, 19); }
+                }
+            }
+            for(let y=0; y<p.m.length; y++) {
+                for(let x=0; x<p.m.at(y).length; x++) {
+                    if(p.m.at(y).at(x) !== 0) {
+                        ctx.fillStyle = CL.at(p.c); 
+                        ctx.fillRect((p.x+x)*20, (p.y+y)*20, 19, 19);
+                    }
+                }
+            }
+        }
+        
+        function coll(ax, ay, m) { 
+            for(let y=0; y<m.length; y++) {
+                for(let x=0; x<m.at(y).length; x++) {
+                    if(m.at(y).at(x) !== 0) {
+                        let nx = p.x + x + ax;
+                        let ny = p.y + y + ay;
+                        if (nx < 0 || nx >= C || ny >= R) return true;
+                        let targetRow = bd.at(ny);
+                        if(targetRow && targetRow.at(nx) !== 0) return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        function rotate(m) { 
+            let nm = new Array();
+            for(let i=0; i<m.at(0).length; i++) {
+                let row = new Array();
+                for(let j=m.length-1; j>=0; j--) row.push(m.at(j).at(i));
+                nm.push(row);
+            }
+            if(!coll(0,0,nm)) p.m = nm; 
+        }
+        
+        function tick(time = 0) {
+            dropCounter += time - lastTime; 
+            lastTime = time;
+            
+            if(dropCounter > 1000) {
+                if(!coll(0,1,p.m)) p.y++;
+                else {
+                    for(let y=0; y<p.m.length; y++) {
+                        for(let x=0; x<p.m.at(y).length; x++) {
+                            if(p.m.at(y).at(x) !== 0) Reflect.set(bd.at(y + p.y), x + p.x, p.c);
+                        }
+                    }
+                    
+                    for(let y=R-1; y>=0; y--) {
+                        let isFull = true;
+                        for(let x=0; x<C; x++) if(bd.at(y).at(x) === 0) isFull = false;
+                        if(isFull) {
+                            bd.splice(y, 1);
+                            bd.unshift(Array.from({length:C}, () => 0));
+                            score += 100;
+                            document.getElementById('g-score').innerText = score;
+                            y++;
+                        }
+                    }
+                    p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
+                    if(coll(0,0,p.m)) return gameOver();
+                }
+                dropCounter = 0;
+            }
+            draw(); 
+            loop = requestAnimationFrame(tick);
+        }
+        tick();
     }
 </script>
 </body>
