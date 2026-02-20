@@ -245,8 +245,10 @@ app.post('/api/cancel-match', async (req, res) => {
 app.post('/api/submit-score', async (req, res) => {
     const { telegramId, game, score, lobbyId } = req.body;
     try {
-        const updateScoreKey = `highScores.${game}`;
-        await User.findOneAndUpdate({ telegramId }, { $max: {: score } });
+        const updateData = {};
+        updateData = score;
+        await User.findOneAndUpdate({ telegramId }, { $max: updateData });
+
         if (!lobbyId) return res.json({ success: true });
 
         const lobby = await Lobby.findOne({ lobbyId });
