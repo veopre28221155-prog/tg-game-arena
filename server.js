@@ -27,7 +27,7 @@ const UserSchema = new mongoose.Schema({
     username: String,
     firstName: String,
     balance: { type: Number, default: 0 },
-    adminCommission: { type: Number, default: 0 }, // Счетчик общего дохода админа
+    adminCommission: { type: Number, default: 0 }, 
     highScores: { snake: { type: Number, default: 0 }, tetris: { type: Number, default: 0 } },
     createdAt: { type: Date, default: Date.now }
 });
@@ -69,33 +69,34 @@ const MatchHistory = mongoose.model('MatchHistory', MatchHistorySchema);
 const Withdrawal = mongoose.model('Withdrawal', WithdrawalSchema);
 const MatchRequest = mongoose.model('MatchRequest', MatchRequestSchema);
 
-
 // --- CRYPTO PAY WEBHOOK ---
 app.post('/api/crypto-webhook', async (req, res) => {
     const update = req.body;
     try {
         if (update && update.update_type === 'invoice_paid') {
             const invoice = update.payload;
-            const customPayload = invoice.payload; // Строка вида: "userId_starsAmount"
+            const customPayload = invoice.payload; 
             
             if (customPayload) {
-                const = customPayload.split('_');
+                const parts = customPayload.split('_');
+                const userId = parts;
+                const starsAmount = parts;
+
                 if (userId && starsAmount) {
                     await User.findOneAndUpdate(
                         { telegramId: Number(userId) }, 
                         { $inc: { balance: Number(starsAmount) } }, 
                         { upsert: true }
                     );
-                    console.log(`✅ Пополнен баланс: ID ${userId} на ${starsAmount} Stars`);
+                    console.log(`✅ Баланс пополнен: ID ${userId} на ${starsAmount} Stars`);
                 }
             }
         }
     } catch (e) { 
         console.error('Webhook error:', e); 
     }
-    res.sendStatus(200); // Обязательно возвращаем 200, чтобы CryptoBot понял, что мы приняли вебхук
+    res.sendStatus(200); 
 });
-
 
 // --- API ROUTES ---
 app.post('/api/user-data', async (req, res) => {
@@ -112,21 +113,19 @@ app.post('/api/user-data', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Новый эндпоинт пополнения через CryptoBot
 app.post('/api/deposit', async (req, res) => {
     const { telegramId, asset, amount, stars } = req.body;
     try {
         const response = await axios.post(`https://pay.crypt.bot/api/createInvoice`, {
             asset: asset,
             amount: amount.toString(),
-            description: `Пополнение внутреннего баланса на ${stars} ⭐️`,
-            payload: `${telegramId}_${stars}` // передаем данные в вебхук
+            description: `Пополнение баланса на ${stars} ⭐️`,
+            payload: `${telegramId}_${stars}`
         }, {
             headers: { 'Crypto-Pay-API-Token': CONFIG.CRYPTO_BOT_TOKEN }
         });
 
         if (response.data && response.data.ok) {
-            // Используем mini_app_invoice_url для нативного открытия инвойса в телеграм
             res.json({ payUrl: response.data.result.mini_app_invoice_url });
         } else {
             res.status(400).json({ error: 'Failed to create invoice' });
@@ -136,7 +135,6 @@ app.post('/api/deposit', async (req, res) => {
         res.status(500).json({ error: 'Invoice failed' }); 
     }
 });
-
 
 // --- ADMIN ROUTES ---
 app.post('/api/admin/data', async (req, res) => {
@@ -163,7 +161,6 @@ app.post('/api/admin/set-balance', async (req, res) => {
         res.json({ success: true, user });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
 
 // --- GAME LOGIC ---
 app.post('/api/create-lobby-friend', async (req, res) => {
@@ -204,7 +201,11 @@ app.post('/api/search-match', async (req, res) => {
 app.post('/api/check-match-status', async (req, res) => {
     const { telegramId } = req.body;
     try {
-        const lobby = await Lobby.findOne({ $or:, status: 'active', createdAt: { $gt: new Date(Date.now() - 60000) } });
+        const lobby = await Lobby.findOne({ 
+            $or:, 
+            status: 'active', 
+            createdAt: { $gt: new Date(Date.now() - 60000) } 
+        });
         if (lobby) return res.json({ status: 'match_found', lobby });
         const r = await MatchRequest.findOne({ telegramId });
         res.json({ status: r ? 'waiting' : 'none' });
@@ -244,6 +245,7 @@ app.post('/api/cancel-match', async (req, res) => {
 app.post('/api/submit-score', async (req, res) => {
     const { telegramId, game, score, lobbyId } = req.body;
     try {
+        const updateScoreKey = `highScores.${game}`;
         await User.findOneAndUpdate({ telegramId }, { $max: {: score } });
         if (!lobbyId) return res.json({ success: true });
 
@@ -267,21 +269,17 @@ app.post('/api/submit-score', async (req, res) => {
             if (lobby.scores.player1 > lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; }
             else if (lobby.scores.player2 > lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; }
 
-            // 1. Начисляем 10% АДМИНУ в balance (чтобы мог вывести) и в adminCommission (для статистики)
             await User.findOneAndUpdate(
                 { telegramId: CONFIG.ADMIN_ID }, 
                 { $inc: { balance: fee, adminCommission: fee } }, 
                 { upsert: true }
             );
 
-            // 2. Начисляем выигрыш ПОБЕДИТЕЛЮ
             if (winnerId) {
                 await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } });
-                
                 const history = new MatchHistory({ winnerId, loserId, gameType: lobby.gameType, betAmount: lobby.betAmount, prize });
                 await history.save();
             } else {
-                // Ничья (возвращаем ставку без комиссии)
                 const refund = lobby.betAmount;
                 await User.findOneAndUpdate({ telegramId: lobby.player1Id }, { $inc: { balance: refund } });
                 await User.findOneAndUpdate({ telegramId: lobby.player2Id }, { $inc: { balance: refund } });
