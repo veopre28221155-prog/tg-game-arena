@@ -196,7 +196,8 @@
     <h1 style="color:red; font-size:2.5rem; text-align: center; margin-bottom: 10px;">GAME OVER</h1>
     <h2 id="end-score" style="color:white; font-size: 2rem;">0</h2>
     <p id="end-msg" style="color:gold; font-family: var(--font-retro); font-size: 0.8rem; text-align: center; line-height: 1.5; margin-bottom: 30px;"></p>
-    <button class="btn btn-outline" style="width:240px;" onclick="location.reload()">RETURN TO MENU</button>
+    <button class="btn btn-duel" style="width:240px;" id="btn-play-again" onclick="restartGameFromModal()">PLAY AGAIN</button>
+    <button class="btn btn-outline" style="width:240px; margin-top: 10px;" onclick="location.reload()">EXIT TO MENU</button>
 </div>
 
 <script>
@@ -211,7 +212,6 @@
     
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
     
-    // Timer System
     let isRanked = false;
     let timeLeft = 0;
     let matchTimer = 0;
@@ -305,6 +305,32 @@
         await fetch(API + '/api/cancel-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
         location.reload();
     }
+    
+    function drawCountdownText(text) {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0,0,240,400);
+        ctx.fillStyle = '#fff';
+        ctx.font = '30px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, 120, 200);
+    }
+    
+    function startCountdown(type) {
+        let count = 3;
+        drawCountdownText(count);
+        
+        let interval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                drawCountdownText(count);
+            } else if (count === 0) {
+                drawCountdownText('GO!');
+            } else {
+                clearInterval(interval);
+                switchGame(type);
+            }
+        }, 1000);
+    }
 
     function launchGame(type, ranked) {
         gameType = type;
@@ -313,10 +339,8 @@
         updateScore();
         timeLeft = ranked ? 60 : 0;
         
-        Reflect.set(keys, 'left', false);
-        Reflect.set(keys, 'right', false);
-        Reflect.set(keys, 'up', false);
-        Reflect.set(keys, 'down', false);
+        Reflect.set(keys, 'left', false); Reflect.set(keys, 'right', false);
+        Reflect.set(keys, 'up', false); Reflect.set(keys, 'down', false);
         Reflect.set(keys, 'action', false);
 
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -324,10 +348,13 @@
         document.querySelector('.tabs').style.display = 'none';
         
         document.getElementById('g-time-box').style.display = ranked ? 'inline' : 'none';
-        document.getElementById('g-time').innerText = timeLeft;
         
-        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); }
+        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); loop = null; }
         
+        startCountdown(type);
+    }
+
+    function switchGame(type) {
         if (type === 'snake') runSnake();
         else if (type === 'tetris') runTetris();
         else if (type === 'battleCity') runBattleCity();
@@ -342,19 +369,25 @@
         document.getElementById('modal-over').style.display = 'flex';
         document.getElementById('end-score').innerText = score;
         
-        if (lobby) {
+        const playAgainBtn = document.getElementById('btn-play-again');
+        
+        if (lobby || isRanked) {
+            playAgainBtn.style.display = 'none';
             document.getElementById('end-msg').innerText = 'Waiting for opponent to finish...';
-            await fetch(API + '/api/submit-score', { 
-                method: 'POST', headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: lobby.lobbyId }) 
-            });
         } else {
+            playAgainBtn.style.display = 'block';
             document.getElementById('end-msg').innerText = '';
-            await fetch(API + '/api/submit-score', { 
-                method: 'POST', headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: null }) 
-            });
         }
+
+        await fetch(API + '/api/submit-score', { 
+            method: 'POST', headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: lobby ? lobby.lobbyId : null }) 
+        });
+    }
+
+    function restartGameFromModal() {
+        document.getElementById('modal-over').style.display = 'none';
+        launchGame(gameType, false); // Restart is always solo
     }
 
     function quitGame() {
@@ -405,480 +438,73 @@
     }
 
     // ==========================================
-    // GAMES ENGINES (GRID-BASED / HTML5 CANVAS)
+    // GAMES ENGINES
     // ==========================================
 
-    // --- GAME 1: SNAKE ---
     function runSnake() {
-        let s = Array.of({x:5, y:10});
-        let f = {x:2, y:2};
-        let dx = 0, dy = -1;
-        let frames = 0;
-        
-        window.onInput = function(k) {
+        let s = Array.of({x:5, y:10}), f = {x:2, y:2}, dx = 0, dy = -1, frames = 0;
+        window.onInput = (k) => {
             if (k === 'left' && dx !== 1) { dx = -1; dy = 0; }
             if (k === 'right' && dx !== -1) { dx = 1; dy = 0; }
             if (k === 'up' && dy !== 1) { dx = 0; dy = -1; }
             if (k === 'down' && dy !== -1) { dx = 0; dy = 1; }
         };
-
         function tick() {
-            if (checkTime()) return;
-            frames++;
-            
-            if (frames % Math.max(5, 10 - Math.floor(score/50)) === 0) {
+            if (checkTime() || !loop) return;
+            if (++frames % Math.max(5, 10 - Math.floor(score/50)) === 0) {
                 let h = {x: s.at(0).x + dx, y: s.at(0).y + dy};
                 let hitTail = s.some(p => p.x === h.x && p.y === h.y);
                 if(h.x < 0 || h.x >= 12 || h.y < 0 || h.y >= 20 || hitTail) return gameOver();
-                
                 s.unshift(h);
                 if(h.x === f.x && h.y === f.y) { 
                     score += 10; updateScore();
                     f = {x: Math.floor(Math.random()*12), y: Math.floor(Math.random()*20)}; 
-                } else { s.pop(); }
+                } else s.pop();
             }
-            
-            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 400);
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
             ctx.fillStyle = '#ff0055'; ctx.fillRect(f.x*20, f.y*20, 19, 19);
             ctx.fillStyle = '#00f0ff'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 19, 19));
-            
             loop = requestAnimationFrame(tick);
         }
-        matchTimer = Date.now();
-        loop = requestAnimationFrame(tick);
+        matchTimer = Date.now(); loop = requestAnimationFrame(tick);
     }
 
-    // --- GAME 2: TETRIS ---
     function runTetris() {
-        const R = 20, C = 12; 
-        let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
-        
+        const R=20, C=12; let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
         const SH_STR = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',');
-        const SH = new Array();
-        for(let i=0; i<SH_STR.length; i++) {
-            let rows = SH_STR.at(i).split('-');
-            let matrix = new Array();
-            for(let r=0; r<rows.length; r++) {
-                let chars = rows.at(r).split('');
-                let numRow = new Array();
-                for(let c=0; c<chars.length; c++) numRow.push(Number(chars.at(c)));
-                matrix.push(numRow);
-            }
-            SH.push(matrix);
-        }
+        const SH = new Array(); for(let i=0;i<SH_STR.length;i++){let rows=SH_STR.at(i).split('-'),m=new Array();for(let r=0;r<rows.length;r++){let cs=rows.at(r).split(''),nr=new Array();for(let c=0;c<cs.length;c++)nr.push(Number(cs.at(c)));m.push(nr)}SH.push(m)}
         const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
-        
-        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
-        let dropCounter = 0, lastTime = Date.now();
-
-        window.onInput = function(k) {
-            if(k === 'left' && !coll(-1,0,p.m)) p.x--;
-            if(k === 'right' && !coll(1,0,p.m)) p.x++;
-            if(k === 'down' && !coll(0,1,p.m)) p.y++;
-            if(k === 'up' || k === 'action') rotate(p.m);
-        };
-
-        function draw() {
-            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            for(let y=0; y<R; y++) {
-                for(let x=0; x<C; x++) {
-                    let v = bd.at(y).at(x);
-                    if(v !== 0) { ctx.fillStyle = CL.at(v); ctx.fillRect(x*20, y*20, 19, 19); }
-                }
-            }
-            for(let y=0; y<p.m.length; y++) {
-                for(let x=0; x<p.m.at(y).length; x++) {
-                    if(p.m.at(y).at(x) !== 0) {
-                        ctx.fillStyle = CL.at(p.c); 
-                        ctx.fillRect((p.x+x)*20, (p.y+y)*20, 19, 19);
-                    }
-                }
-            }
-        }
-        
-        function coll(ax, ay, m) { 
-            for(let y=0; y<m.length; y++) {
-                for(let x=0; x<m.at(y).length; x++) {
-                    if(m.at(y).at(x) !== 0) {
-                        let nx = p.x + x + ax;
-                        let ny = p.y + y + ay;
-                        if (nx < 0 || nx >= C || ny >= R) return true;
-                        let targetRow = bd.at(ny);
-                        if(targetRow && targetRow.at(nx) !== 0) return true;
-                    }
-                }
-            }
-            return false;
-        }
-        
-        function rotate(m) { 
-            let nm = new Array();
-            for(let i=0; i<m.at(0).length; i++) {
-                let row = new Array();
-                for(let j=m.length-1; j>=0; j--) row.push(m.at(j).at(i));
-                nm.push(row);
-            }
-            if(!coll(0,0,nm)) p.m = nm; 
-        }
-        
-        function tick() {
-            if (checkTime()) return;
-            let now = Date.now();
-            let dt = now - lastTime;
-            lastTime = now;
-            
-            dropCounter += dt;
-            if(dropCounter > 1000) {
-                if(!coll(0,1,p.m)) p.y++;
-                else {
-                    for(let y=0; y<p.m.length; y++) {
-                        for(let x=0; x<p.m.at(y).length; x++) {
-                            if(p.m.at(y).at(x) !== 0) Reflect.set(bd.at(y + p.y), x + p.x, p.c);
-                        }
-                    }
-                    
-                    for(let y=R-1; y>=0; y--) {
-                        let isFull = true;
-                        for(let x=0; x<C; x++) if(bd.at(y).at(x) === 0) isFull = false;
-                        if(isFull) {
-                            bd.splice(y, 1);
-                            bd.unshift(Array.from({length:C}, () => 0));
-                            score += 100; updateScore();
-                            y++;
-                        }
-                    }
-                    p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
-                    if(coll(0,0,p.m)) return gameOver();
-                }
-                dropCounter = 0;
-            }
-            draw(); 
-            loop = requestAnimationFrame(tick);
-        }
-        matchTimer = Date.now();
-        loop = requestAnimationFrame(tick);
+        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dropCounter = 0, lastTime = Date.now();
+        window.onInput = k => { if(k==='left'&&!coll(-1,0,p.m))p.x--; if(k==='right'&&!coll(1,0,p.m))p.x++; if(k==='down'&&!coll(0,1,p.m))p.y++; if(k==='up'||k==='action')rotate(p.m); };
+        function draw(){ctx.fillStyle='#000';ctx.fillRect(0,0,240,400);for(let y=0;y<R;y++)for(let x=0;x<C;x++){let v=bd.at(y).at(x);if(v!==0){ctx.fillStyle=CL.at(v);ctx.fillRect(x*20,y*20,19,19)}}for(let y=0;y<p.m.length;y++)for(let x=0;x<p.m.at(y).length;x++)if(p.m.at(y).at(x)!==0){ctx.fillStyle=CL.at(p.c);ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19)}}
+        function coll(ax,ay,m){for(let y=0;y<m.length;y++)for(let x=0;x<m.at(y).length;x++)if(m.at(y).at(x)!==0){let nx=p.x+x+ax,ny=p.y+y+ay;if(nx<0||nx>=C||ny>=R)return true;let tr=bd.at(ny);if(tr&&tr.at(nx)!==0)return true}return false}
+        function rotate(m){let nm=new Array();for(let i=0;i<m.at(0).length;i++){let row=new Array();for(let j=m.length-1;j>=0;j--)row.push(m.at(j).at(i));nm.push(row)}if(!coll(0,0,nm))p.m=nm}
+        function tick(){if(checkTime()||!loop)return;let now=Date.now(),dt=now-lastTime;lastTime=now;dropCounter+=dt;if(dropCounter>1000){if(!coll(0,1,p.m))p.y++;else{for(let y=0;y<p.m.length;y++)for(let x=0;x<p.m.at(y).length;x++)if(p.m.at(y).at(x)!==0)Reflect.set(bd.at(y+p.y),x+p.x,p.c);for(let y=R-1;y>=0;y--){let isFull=true;for(let x=0;x<C;x++)if(bd.at(y).at(x)===0)isFull=false;if(isFull){bd.splice(y,1);bd.unshift(Array.from({length:C},()=>0));score+=100;updateScore();y++}}p={m:SH.at(Math.floor(Math.random()*7)),c:Math.floor(Math.random()*7)+1,x:4,y:0};if(coll(0,0,p.m))return gameOver()}dropCounter=0}draw();loop=requestAnimationFrame(tick)}
+        matchTimer = Date.now(); loop = requestAnimationFrame(tick);
     }
 
-    // --- GAME 3: BATTLE CITY ---
     function runBattleCity() {
-        let px = 5, py = 18, dir = 'up';
-        let bullets = new Array();
-        let map = new Array();
-        let enemies = new Array();
-        
-        for(let r=0; r<20; r++) {
-            let row = new Array();
-            for(let c=0; c<12; c++) {
-                if (r%2!==0 && c%2!==0) row.push(2); 
-                else if (Math.random() < 0.3) row.push(1); 
-                else row.push(0);
-            }
-            map.push(row);
-        }
-        map.at(18).splice(5, 1, 0); 
-        map.at(1).splice(1, 1, 0);
-        map.at(1).splice(10, 1, 0);
-        
-        window.onInput = function(k) {
-            if (k === 'action' && bullets.length < 2) {
-                let bdx = 0, bdy = 0;
-                if(dir==='up') bdy = -1; if(dir==='down') bdy = 1;
-                if(dir==='left') bdx = -1; if(dir==='right') bdx = 1;
-                bullets.push({x: px, y: py, dx: bdx, dy: bdy, isEnemy: false});
-            }
-        };
-
-        function move(dx, dy) {
-            let nx = px + dx, ny = py + dy;
-            if(nx >= 0 && nx < 12 && ny >= 0 && ny < 20) {
-                if (map.at(ny).at(nx) === 0) { px = nx; py = ny; }
-            }
-        }
-        
-        function moveEn(en, dx, dy) {
-            let nx = en.x + dx, ny = en.y + dy;
-            if(nx >= 0 && nx < 12 && ny >= 0 && ny < 20) {
-                if (map.at(ny).at(nx) === 0) {
-                    en.x = nx; en.y = ny;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        let frames = 0, moveDelay = 0;
-        function tick() {
-            if (checkTime()) return;
-            frames++; moveDelay++;
-            
-            if (moveDelay > 6) {
-                if (keys.left) { dir = 'left'; move(-1, 0); moveDelay=0; }
-                else if (keys.right) { dir = 'right'; move(1, 0); moveDelay=0; }
-                else if (keys.up) { dir = 'up'; move(0, -1); moveDelay=0; }
-                else if (keys.down) { dir = 'down'; move(0, 1); moveDelay=0; }
-            }
-            
-            if (frames % 100 === 0 && enemies.length < 4) {
-                let ex = Math.random() < 0.5 ? 1 : 10;
-                enemies.push({x: ex, y: 1, dir: 'down'});
-            }
-            
-            if (frames % 30 === 0) {
-                for(let i=0; i<enemies.length; i++) {
-                    let en = enemies.at(i);
-                    if (Math.random() < 0.3) {
-                        let dirs = Array.of('up','down','left','right');
-                        en.dir = dirs.at(Math.floor(Math.random()*4));
-                    }
-                    let dx=0, dy=0;
-                    if(en.dir==='up') dy=-1; if(en.dir==='down') dy=1;
-                    if(en.dir==='left') dx=-1; if(en.dir==='right') dx=1;
-                    
-                    if(!moveEn(en, dx, dy)) {
-                        let dirs = Array.of('up','down','left','right');
-                        en.dir = dirs.at(Math.floor(Math.random()*4));
-                    }
-                    if (Math.random() < 0.1) {
-                        bullets.push({x: en.x, y: en.y, dx: dx, dy: dy, isEnemy: true});
-                    }
-                }
-            }
-            
-            if (frames % 5 === 0) {
-                let nBullets = new Array();
-                for(let i=0; i<bullets.length; i++) {
-                    let b = bullets.at(i);
-                    b.x += b.dx; b.y += b.dy;
-                    
-                    if(b.x < 0 || b.x >= 12 || b.y < 0 || b.y >= 20) continue;
-                    
-                    let tile = map.at(b.y).at(b.x);
-                    if (tile === 2) continue; 
-                    if (tile === 1) { map.at(b.y).splice(b.x, 1, 0); continue; }
-                    
-                    let hitEnemy = false;
-                    if (!b.isEnemy) {
-                        for(let e=0; e<enemies.length; e++) {
-                            let en = enemies.at(e);
-                            if (en.x === b.x && en.y === b.y) {
-                                enemies.splice(e, 1);
-                                score += 50; updateScore();
-                                hitEnemy = true; break;
-                            }
-                        }
-                    } else {
-                        if (px === b.x && py === b.y) return gameOver();
-                    }
-                    if (!hitEnemy) nBullets.push(b);
-                }
-                bullets = nBullets;
-            }
-            
-            for(let e=0; e<enemies.length; e++) {
-                let en = enemies.at(e);
-                if (en.x === px && en.y === py) return gameOver();
-            }
-            
-            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            for(let r=0; r<20; r++) {
-                for(let c=0; c<12; c++) {
-                    let t = map.at(r).at(c);
-                    if (t === 1) { ctx.fillStyle = '#A0522D'; ctx.fillRect(c*20+1, r*20+1, 18, 18); }
-                    if (t === 2) { ctx.fillStyle = '#888'; ctx.fillRect(c*20, r*20, 20, 20); }
-                }
-            }
-            
-            ctx.fillStyle = '#00f0ff';
-            ctx.fillRect(px*20+2, py*20+2, 16, 16);
-            ctx.fillStyle = '#fff';
-            if(dir==='up') ctx.fillRect(px*20+8, py*20-2, 4, 10);
-            if(dir==='down') ctx.fillRect(px*20+8, py*20+12, 4, 10);
-            if(dir==='left') ctx.fillRect(px*20-2, py*20+8, 10, 4);
-            if(dir==='right') ctx.fillRect(px*20+12, py*20+8, 10, 4);
-            
-            ctx.fillStyle = '#ff0055';
-            for(let e=0; e<enemies.length; e++) {
-                let en = enemies.at(e);
-                ctx.fillRect(en.x*20+2, en.y*20+2, 16, 16);
-            }
-            
-            ctx.fillStyle = '#fff';
-            for(let i=0; i<bullets.length; i++) {
-                let b = bullets.at(i);
-                ctx.fillRect(b.x*20+8, b.y*20+8, 4, 4);
-            }
-            loop = requestAnimationFrame(tick);
-        }
-        matchTimer = Date.now();
-        loop = requestAnimationFrame(tick);
+        let px = 5, py = 18, dir = 'up', bullets = new Array(), map = new Array(), enemies = new Array();
+        for(let r=0; r<20; r++){let row=new Array();for(let c=0; c<12; c++)row.push(r%2!==0&&c%2!==0?2:Math.random()<0.3?1:0);map.push(row)}map.at(18).splice(5,1,0);map.at(1).splice(1,1,0);map.at(1).splice(10,1,0);
+        window.onInput=k=>{if(k==='action'&&bullets.length<2){let bdx=0,bdy=0;if(dir==='up')bdy=-1;if(dir==='down')bdy=1;if(dir==='left')bdx=-1;if(dir==='right')bdx=1;bullets.push({x:px,y:py,dx:bdx,dy:bdy,isEnemy:false})}};
+        function move(dx,dy){let nx=px+dx,ny=py+dy;if(nx>=0&&nx<12&&ny>=0&&ny<20&&map.at(ny).at(nx)===0){px=nx;py=ny}}
+        function moveEn(en,dx,dy){let nx=en.x+dx,ny=en.y+dy;if(nx>=0&&nx<12&&ny>=0&&ny<20&&map.at(ny).at(nx)===0){en.x=nx;en.y=ny;return true}return false}
+        let frames=0,moveDelay=0;function tick(){if(checkTime()||!loop)return;frames++;moveDelay++;if(moveDelay>6){if(keys.left){dir='left';move(-1,0);moveDelay=0}else if(keys.right){dir='right';move(1,0);moveDelay=0}else if(keys.up){dir='up';move(0,-1);moveDelay=0}else if(keys.down){dir='down';move(0,1);moveDelay=0}}if(frames%100===0&&enemies.length<4){let ex=Math.random()<0.5?1:10;enemies.push({x:ex,y:1,dir:'down'})}if(frames%30===0)for(let i=0;i<enemies.length;i++){let en=enemies.at(i);if(Math.random()<0.3){let dirs=Array.of('up','down','left','right');en.dir=dirs.at(Math.floor(Math.random()*4))}let dx=0,dy=0;if(en.dir==='up')dy=-1;if(en.dir==='down')dy=1;if(en.dir==='left')dx=-1;if(en.dir==='right')dx=1;if(!moveEn(en,dx,dy)){let dirs=Array.of('up','down','left','right');en.dir=dirs.at(Math.floor(Math.random()*4))}if(Math.random()<0.1)bullets.push({x:en.x,y:en.y,dx:dx,dy:dy,isEnemy:true})}if(frames%5===0){let nB=new Array();for(let i=0;i<bullets.length;i++){let b=bullets.at(i);b.x+=b.dx;b.y+=b.dy;if(b.x<0||b.x>=12||b.y<0||b.y>=20)continue;let t=map.at(b.y).at(b.x);if(t===2)continue;if(t===1){map.at(b.y).splice(b.x,1,0);continue}let hE=false;if(!b.isEnemy){for(let e=0;e<enemies.length;e++){let en=enemies.at(e);if(en.x===b.x&&en.y===b.y){enemies.splice(e,1);score+=50;updateScore();hE=true;break}}}else if(px===b.x&&py===b.y)return gameOver();if(!hE)nB.push(b)}bullets=nB}for(let e=0;e<enemies.length;e++)if(enemies.at(e).x===px&&enemies.at(e).y===py)return gameOver();ctx.fillStyle='#000';ctx.fillRect(0,0,240,400);for(let r=0;r<20;r++)for(let c=0;c<12;c++){let t=map.at(r).at(c);if(t===1){ctx.fillStyle='#A0522D';ctx.fillRect(c*20+1,r*20+1,18,18)}if(t===2){ctx.fillStyle='#888';ctx.fillRect(c*20,r*20,20,20)}}ctx.fillStyle='#00f0ff';ctx.fillRect(px*20+2,py*20+2,16,16);ctx.fillStyle='#fff';if(dir==='up')ctx.fillRect(px*20+8,py*20-2,4,10);if(dir==='down')ctx.fillRect(px*20+8,py*20+12,4,10);if(dir==='left')ctx.fillRect(px*20-2,py*20+8,10,4);if(dir==='right')ctx.fillRect(px*20+12,py*20+8,10,4);ctx.fillStyle='#ff0055';for(let e=0;e<enemies.length;e++){let en=enemies.at(e);ctx.fillRect(en.x*20+2,en.y*20+2,16,16)}ctx.fillStyle='#fff';for(let i=0;i<bullets.length;i++){let b=bullets.at(i);ctx.fillRect(b.x*20+8,b.y*20+8,4,4)}loop=requestAnimationFrame(tick)}
+        matchTimer = Date.now(); loop = requestAnimationFrame(tick);
     }
 
-    // --- GAME 4: ROAD FIGHTER ---
     function runRoadFighter() {
-        let px = 110, py = 340, pw = 20, ph = 30;
-        let speed = 0;
-        let distance = 0;
-        let enemies = new Array();
-        let lines = 0;
-        
-        window.onInput = function(k) {};
-
-        function tick() {
-            if (checkTime()) return;
-            
-            if (keys.up || keys.action) {
-                speed += 0.1;
-                if (speed > 8) speed = 8;
-            } else {
-                speed -= 0.2;
-                if (speed < 0) speed = 0;
-            }
-            
-            if (keys.left) px -= 3;
-            if (keys.right) px += 3;
-            if (px < 40 || px > 180) speed *= 0.5; 
-            
-            distance += speed;
-            lines += speed;
-            
-            if (distance > 100) {
-                score += 10; distance = 0; updateScore();
-            }
-            
-            if (Math.random() < 0.02 && speed > 2) {
-                let ex = 50 + Math.random() * 120;
-                enemies.push({x: ex, y: -40, speed: 2 + Math.random()*2});
-            }
-            
-            let nEnemies = new Array();
-            for(let i=0; i<enemies.length; i++) {
-                let en = enemies.at(i);
-                en.y += (speed - en.speed);
-                if (px < en.x+20 && px+pw > en.x && py < en.y+30 && py+ph > en.y) return gameOver();
-                if (en.y < 450) nEnemies.push(en);
-            }
-            enemies = nEnemies;
-            
-            ctx.fillStyle = '#228B22'; ctx.fillRect(0,0,240,400); 
-            ctx.fillStyle = '#555'; ctx.fillRect(40,0,160,400); 
-            
-            ctx.fillStyle = '#fff';
-            let offset = lines % 40;
-            for(let y=-40; y<440; y+=40) {
-                ctx.fillRect(118, y + offset, 4, 20);
-            }
-            
-            ctx.fillStyle = '#00f0ff'; ctx.fillRect(px, py, pw, ph); 
-            
-            ctx.fillStyle = '#ff0055'; 
-            for(let i=0; i<enemies.length; i++) {
-                let en = enemies.at(i);
-                ctx.fillRect(en.x, en.y, 20, 30);
-            }
-            loop = requestAnimationFrame(tick);
-        }
-        matchTimer = Date.now();
-        loop = requestAnimationFrame(tick);
+        let px=110,py=340,pw=20,ph=30,speed=0,dist=0,enemies=new Array(),lines=0;
+        function tick(){if(checkTime()||!loop)return;if(keys.up||keys.action){speed+=0.1;if(speed>8)speed=8}else{speed-=0.2;if(speed<0)speed=0}if(keys.left)px-=3;if(keys.right)px+=3;if(px<40||px>180)speed*=0.5;dist+=speed;lines+=speed;if(dist>100){score+=10;dist=0;updateScore()}if(Math.random()<0.02&&speed>2){let ex=50+Math.random()*120;enemies.push({x:ex,y:-40,speed:2+Math.random()*2})}let nE=new Array();for(let i=0;i<enemies.length;i++){let en=enemies.at(i);en.y+=(speed-en.speed);if(px<en.x+20&&px+pw>en.x&&py<en.y+30&&py+ph>en.y)return gameOver();if(en.y<450)nE.push(en)}enemies=nE;ctx.fillStyle='#228B22';ctx.fillRect(0,0,240,400);ctx.fillStyle='#555';ctx.fillRect(40,0,160,400);ctx.fillStyle='#fff';let offset=lines%40;for(let y=-40;y<440;y+=40)ctx.fillRect(118,y+offset,4,20);ctx.fillStyle='#00f0ff';ctx.fillRect(px,py,pw,ph);ctx.fillStyle='#ff0055';for(let i=0;i<enemies.length;i++){let en=enemies.at(i);ctx.fillRect(en.x,en.y,20,30)}loop=requestAnimationFrame(tick)}
+        matchTimer = Date.now(); loop = requestAnimationFrame(tick);
     }
 
-    // --- GAME 5: SPACE INVADERS ---
     function runSpaceInvaders() {
-        let px = 110, py = 360, pw = 20;
-        let bullets = new Array();
-        let eBullets = new Array();
-        let enemies = new Array();
-        
-        for(let r=0; r<4; r++) {
-            for(let c=0; c<6; c++) {
-                enemies.push({x: 20 + c*30, y: 30 + r*30, active: true});
-            }
-        }
-        let eDir = 1, eSpeed = 0.5;
-        
-        window.onInput = function(k) {
-            if (k === 'action' || k === 'up') {
-                if (bullets.length < 2) bullets.push({x: px + 8, y: py});
-            }
-        };
-
-        function tick() {
-            if (checkTime()) return;
-            
-            if (keys.left) px -= 3;
-            if (keys.right) px += 3;
-            px = Math.max(0, Math.min(240 - pw, px));
-            
-            let nBullets = new Array();
-            for(let i=0; i<bullets.length; i++) {
-                let b = bullets.at(i);
-                b.y -= 5;
-                let hit = false;
-                for(let e=0; e<enemies.length; e++) {
-                    let en = enemies.at(e);
-                    if (en.active && b.x > en.x && b.x < en.x+20 && b.y > en.y && b.y < en.y+20) {
-                        en.active = false; hit = true;
-                        score += 20; updateScore();
-                        eSpeed += 0.05;
-                        break;
-                    }
-                }
-                if (!hit && b.y > 0) nBullets.push(b);
-            }
-            bullets = nBullets;
-            
-            let hitWall = false;
-            let activeCount = 0;
-            for(let e=0; e<enemies.length; e++) {
-                let en = enemies.at(e);
-                if (!en.active) continue;
-                activeCount++;
-                en.x += eDir * eSpeed;
-                if (en.x < 5 || en.x > 215) hitWall = true;
-                if (Math.random() < 0.005) eBullets.push({x: en.x+10, y: en.y+20});
-                if (en.y > 340) return gameOver(); 
-            }
-            
-            if (hitWall) {
-                eDir *= -1;
-                for(let e=0; e<enemies.length; e++) enemies.at(e).y += 15;
-            }
-            
-            if (activeCount === 0) {
-                for(let r=0; r<4; r++) {
-                    for(let c=0; c<6; c++) {
-                        enemies.push({x: 20 + c*30, y: 30 + r*30, active: true});
-                    }
-                }
-            }
-            
-            let nEBullets = new Array();
-            for(let i=0; i<eBullets.length; i++) {
-                let eb = eBullets.at(i);
-                eb.y += 4;
-                if (eb.x > px && eb.x < px+pw && eb.y > py && eb.y < py+20) return gameOver();
-                if (eb.y < 400) nEBullets.push(eb);
-            }
-            eBullets = nEBullets;
-            
-            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            ctx.fillStyle = '#00f0ff'; ctx.fillRect(px, py, pw, 20); 
-            
-            ctx.fillStyle = '#ff0055';
-            for(let e=0; e<enemies.length; e++) {
-                let en = enemies.at(e);
-                if(en.active) ctx.fillRect(en.x, en.y, 20, 20);
-            }
-            
-            ctx.fillStyle = '#fff';
-            for(let i=0; i<bullets.length; i++) ctx.fillRect(bullets.at(i).x, bullets.at(i).y, 4, 10);
-            
-            ctx.fillStyle = '#ff0';
-            for(let i=0; i<eBullets.length; i++) ctx.fillRect(eBullets.at(i).x, eBullets.at(i).y, 4, 10);
-            
-            loop = requestAnimationFrame(tick);
-        }
-        matchTimer = Date.now();
-        loop = requestAnimationFrame(tick);
+        let px=110,py=360,pw=20,bullets=new Array(),eBullets=new Array(),enemies=new Array();
+        for(let r=0;r<4;r++)for(let c=0;c<6;c++)enemies.push({x:20+c*30,y:30+r*30,active:true});
+        let eDir=1,eSpeed=0.5;window.onInput=k=>{if((k==='action'||k==='up')&&bullets.length<2)bullets.push({x:px+8,y:py})};
+        function tick(){if(checkTime()||!loop)return;if(keys.left)px-=3;if(keys.right)px+=3;px=Math.max(0,Math.min(240-pw,px));let nB=new Array();for(let i=0;i<bullets.length;i++){let b=bullets.at(i);b.y-=5;let hit=false;for(let e=0;e<enemies.length;e++){let en=enemies.at(e);if(en.active&&b.x>en.x&&b.x<en.x+20&&b.y>en.y&&b.y<en.y+20){en.active=false;hit=true;score+=20;updateScore();eSpeed+=0.05;break}}if(!hit&&b.y>0)nB.push(b)}bullets=nB;let hW=false,aC=0;for(let e=0;e<enemies.length;e++){let en=enemies.at(e);if(!en.active)continue;aC++;en.x+=eDir*eSpeed;if(en.x<5||en.x>215)hW=true;if(Math.random()<0.005)eBullets.push({x:en.x+10,y:en.y+20});if(en.y>340)return gameOver()}if(hW){eDir*=-1;for(let e=0;e<enemies.length;e++)enemies.at(e).y+=15}if(aC===0)for(let r=0;r<4;r++)for(let c=0;c<6;c++)enemies.push({x:20+c*30,y:30+r*30,active:true});let nEB=new Array();for(let i=0;i<eBullets.length;i++){let eb=eBullets.at(i);eb.y+=4;if(eb.x>px&&eb.x<px+pw&&eb.y>py&&eb.y<py+20)return gameOver();if(eb.y<400)nEB.push(eb)}eBullets=nEB;ctx.fillStyle='#000';ctx.fillRect(0,0,240,400);ctx.fillStyle='#00f0ff';ctx.fillRect(px,py,pw,20);ctx.fillStyle='#bc13fe';for(let e=0;e<enemies.length;e++){let en=enemies.at(e);if(en.active)ctx.fillRect(en.x,en.y,20,20)}ctx.fillStyle='#fff';for(let i=0;i<bullets.length;i++)ctx.fillRect(bullets.at(i).x,bullets.at(i).y,4,10);ctx.fillStyle='#ff0';for(let i=0;i<eBullets.length;i++)ctx.fillRect(eBullets.at(i).x,eBullets.at(i).y,4,10);loop=requestAnimationFrame(tick)}
+        matchTimer = Date.now(); loop = requestAnimationFrame(tick);
     }
 </script>
 </body>
