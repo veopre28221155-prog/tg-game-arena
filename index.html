@@ -13,7 +13,9 @@
             --tg-btn: var(--tg-theme-button-color, #2481cc);
             --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
             --tg-sec-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
-            --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive;
+            --accent-neon: #00f0ff; 
+            --accent-pink: #ff0055; 
+            --font-retro: 'Press Start 2P', cursive;
         }
         * { box-sizing: border-box; }
         body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: -apple-system, sans-serif; height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; -webkit-user-select: none; touch-action: none; }
@@ -24,11 +26,17 @@
         .screen::-webkit-scrollbar { width: 5px; }
         .screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 
-        h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 10px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); text-align: center; }
-        h1 { font-size: 1.4rem; color: var(--accent-neon); margin-top: 10px; line-height: 1.4; }
+        h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
         
-        .hero-text { font-size: 0.65rem; text-align: center; color: #ccc; margin-bottom: 20px; line-height: 1.5; font-family: sans-serif; }
-
+        /* Классический 8-bit неоновый заголовок */
+        h1 { 
+            font-size: 1.6rem; 
+            color: var(--accent-neon); 
+            margin-top: 15px; 
+            line-height: 1.4;
+            text-shadow: 0 0 5px var(--accent-neon), 0 0 10px #0088ff;
+        }
+        
         .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
         
         .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; }
@@ -43,7 +51,6 @@
 
         select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; }
 
-        /* ИСПРАВЛЕНИЕ: ЖЕСТКИЙ ЗАПРЕТ СГЛАЖИВАНИЯ ДЛЯ 16-BIT ГРАФИКИ */
         canvas { 
             border: 4px solid var(--tg-text); 
             border-radius: 4px; 
@@ -81,14 +88,10 @@
 <div id="app">
     <!-- PLAY MENU -->
     <div id="s-play" class="screen active">
-        <h1>ТВОЙ СКИЛЛ —<br>ТВОЙ КАПИТАЛ</h1>
-        <div class="hero-text">
-            Не нужен киберспорт, чтобы зарабатывать.<br>
-            Раскатай соперника 1 на 1 на миду и забери банк!
-        </div>
+        <h1>RETRO BATTLE<br>ARENA</h1>
 
         <div class="card" style="border: 2px solid var(--accent-neon); box-shadow: 0 0 15px rgba(0,240,255,0.2);">
-            <h2 style="color: var(--accent-neon);">Ranked Match</h2>
+            <h2 style="color: var(--accent-neon);">Ranked Match 1v1</h2>
             <select id="search-game">
                 <option value="sonic">🦔 Sonic Rush (16-bit)</option>
                 <option value="snake">🐍 Snake Classic</option>
@@ -105,9 +108,9 @@
 
         <div class="card">
             <h2>Solo Training</h2>
-            <button class="btn btn-outline" onclick="launchGame('sonic', false)">🦔 Тренировка Sonic</button>
-            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Тренировка Snake</button>
-            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Тренировка Tetris</button>
+            <button class="btn btn-outline" onclick="launchGame('sonic', false)">🦔 Sonic Rush</button>
+            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Snake</button>
+            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Tetris</button>
         </div>
         
         <div class="card">
@@ -122,7 +125,7 @@
         <button class="btn btn-danger" onclick="cancelMatchmaking()">ОТМЕНА</button>
     </div>
 
-    <!-- PROFILE -->
+    <!-- PROFILE / WALLET -->
     <div id="s-profile" class="screen">
         <h1>PROFILE</h1>
         
@@ -163,11 +166,11 @@
         </div>
 
         <div class="card">
-            <h2>Deposit</h2>
+            <h2>Deposit (CryptoBot)</h2>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button class="btn btn-crypto" onclick="depositCrypto('USDT', 1, 100)">CryptoBot 1 USDT (+100★)</button>
-                <button class="btn btn-crypto" onclick="depositCrypto('TON', 1, 500)">CryptoBot 1 TON (+500★)</button>
-                <button class="btn btn-crypto" onclick="depositCrypto('NOT', 1000, 1000)">CryptoBot 1000 NOT (+1000★)</button>
+                <button class="btn btn-crypto" onclick="depositCrypto('USDT', 1, 100)">1 USDT (+100★)</button>
+                <button class="btn btn-crypto" onclick="depositCrypto('TON', 1, 500)">1 TON (+500★)</button>
+                <button class="btn btn-crypto" onclick="depositCrypto('NOT', 1000, 1000)">1000 NOT (+1000★)</button>
             </div>
         </div>
         <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
@@ -238,7 +241,6 @@
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
     
-    // Отключение сглаживания Canvas на уровне JS для 16-bit стиля
     ctx.imageSmoothingEnabled = false;
     
     const dpr = window.devicePixelRatio || 1;
@@ -418,7 +420,7 @@
         if (gameType === 'sonic' && (e.key === ' ' || e.key === 'ArrowUp')) window.gameAction();
     };
 
-    // --- SONIC 16-BIT RUNNER (No brackets code) ---
+    // --- SONIC 16-BIT RUNNER (Full Parallax, No brackets) ---
     function runSonic() {
         let sonicY = 270;
         let sonicVy = 0;
@@ -443,13 +445,11 @@
             }
         };
 
-        // 16-bit Palette
         const colors = { 
             '.': null, 'B': '#000000', 'U': '#2039FF', 'W': '#FFFFFF', 
             'R': '#E00000', 'S': '#FFCC99', 'G': '#FFD700', 'C': '#FF2600'
         };
 
-        // Compact Sprite Engine
         function drawSpriteStr(str, dx, dy, scale) {
             let rows = str.split('-');
             for (let r = 0; r < rows.length; r++) {
@@ -465,7 +465,22 @@
             }
         }
 
-        // Sonic Run Frames (16x16 encoded)
+        function drawPalm(px, py) {
+            // Ствол
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(px + 12, py, 6, 80);
+            ctx.fillRect(px + 10, py + 10, 10, 5);
+            ctx.fillRect(px + 10, py + 30, 10, 5);
+            ctx.fillRect(px + 10, py + 50, 10, 5);
+            ctx.fillRect(px + 10, py + 70, 10, 5);
+            
+            // Листья
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(px, py - 10, 30, 10);
+            ctx.fillRect(px - 10, py - 4, 50, 6);
+            ctx.fillRect(px + 5, py - 20, 20, 15);
+        }
+
         const frame1 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-....W.WW.W......-...RR.RR.RR.....-...RR.RR.RR.....-...RR.RR.RR.....";
         const frame2 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-......WW........-.....RRRR.......-......RR........-......RR........";
         const frame3 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-....W....W......-...RR....RR.....-...RR....RR.....-...RR....RR.....";
@@ -491,7 +506,6 @@
             sonicY += sonicVy;
             if (sonicY >= 270) { sonicY = 270; sonicVy = 0; isJumping = false; }
 
-            // Спавн
             if (frames % 40 === 0) {
                 if (Math.random() > 0.6) {
                     let obj = { x: 240, y: 286, type: 'crab' };
@@ -502,12 +516,10 @@
                 }
             }
 
-            // Логика колец
             let nextRings = Array.of();
             for (let i = 0; i < rings.length; i++) {
                 let r = rings.at(i);
                 r.x -= scrollSpeed;
-                // Collision Hitbox: Sonic (30, sonicY, 32, 32) vs Ring (r.x, r.y, 32, 32)
                 if (r.x < 50 && r.x > 0 && sonicY < r.y + 20 && sonicY + 32 > r.y) {
                     score += 1; document.getElementById('g-score').innerText = score;
                 } else if (r.x > -40) {
@@ -516,12 +528,10 @@
             }
             rings = nextRings;
 
-            // Логика врагов (Крабы)
             let nextEnemies = Array.of();
             for (let i = 0; i < enemies.length; i++) {
                 let e = enemies.at(i);
                 e.x -= scrollSpeed;
-                // Более точный хитбокс, чтобы было честно
                 if (e.x < 55 && e.x + 20 > 35 && sonicY + 30 > e.y + 10) {
                     gameActive = false; return gameOver();
                 }
@@ -531,26 +541,44 @@
             }
             enemies = nextEnemies;
 
-            // --- ОТРИСОВКА PARALLAX БЕКГРАУНДА (GREEN HILL) ---
-            ctx.fillStyle = '#2452FF'; // Sky
+            // --- ПАРАЛЛАКС ФОН (GREEN HILL) ---
+            
+            // 1. Небо
+            ctx.fillStyle = '#2452FF'; 
             ctx.fillRect(0, 0, 240, 400);
 
-            // Океан
+            // 2. Медленные облака (Parallax 1)
+            let cloudOffset = (frames * 0.5) % 240;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(30 - cloudOffset, 30, 50, 15);
+            ctx.fillRect(270 - cloudOffset, 30, 50, 15); // Бесшовность
+            ctx.fillRect(140 - cloudOffset, 60, 40, 10);
+            ctx.fillRect(380 - cloudOffset, 60, 40, 10); // Бесшовность
+
+            // 3. Средние пальмы (Parallax 2)
+            let palmOffset = (frames * 2) % 240;
+            drawPalm(60 - palmOffset, 220);
+            drawPalm(300 - palmOffset, 220); // Бесшовность
+            drawPalm(180 - palmOffset, 220);
+            drawPalm(420 - palmOffset, 220); // Бесшовность
+
+            // 4. Океан
             ctx.fillStyle = '#0028A8'; ctx.fillRect(0, 150, 240, 150);
             ctx.fillStyle = '#0060F8'; ctx.fillRect(0, 160, 240, 140);
             
-            // Шахматный пол (Green Hill)
+            // 5. Быстрый шахматный пол (Parallax 3)
             let floorOffset = (frames * scrollSpeed) % 40;
             for(let i = -1; i < 7; i++) {
                 let px = (i * 40) - floorOffset;
                 ctx.fillStyle = (i % 2 === 0) ? '#E89000' : '#783800';
                 ctx.fillRect(px, 300, 40, 100);
             }
+            
             // Трава сверху
             ctx.fillStyle = '#21E700'; ctx.fillRect(0, 300, 240, 15);
             ctx.fillStyle = '#10A000'; ctx.fillRect(0, 315, 240, 5);
 
-            // --- ОТРИСОВКА СПРАЙТОВ ---
+            // --- СПРАЙТЫ ---
             let sonicSprite = jumpFrame;
             if (!isJumping) {
                 let animCycle = Math.floor(frames / 4) % 3;
