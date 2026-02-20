@@ -27,7 +27,6 @@ const UserSchema = new mongoose.Schema({
     firstName: String,
     balance: { type: Number, default: 0 },
     adminCommission: { type: Number, default: 0 },
-    highScores: { sonicSprint: { type: Number, default: 0 } },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -37,7 +36,7 @@ const LobbySchema = new mongoose.Schema({
     player2Id: Number,
     gameType: String,
     betAmount: Number,
-    status: { type: String, default: 'active' }, // active, finished, cancelled
+    status: { type: String, default: 'active' }, 
     winnerId: { type: Number, default: null },
     createdAt: { type: Date, default: Date.now }
 });
@@ -88,11 +87,13 @@ app.post('/api/crypto-webhook', async (req, res) => {
                         { $inc: { balance: Number(starsAmount) } },
                         { upsert: true }
                     );
-                    console.log(`✅ Баланс пополнен: ID ${userId} на ${starsAmount} Stars`);
+                    console.log('✅ Balance updated for ID ' + userId + ' with ' + starsAmount + ' Stars');
                 }
             }
         }
-    } catch (e) { console.error('Webhook error:', e); }
+    } catch (e) {
+        console.error('Webhook error:', e);
+    }
     res.sendStatus(200);
 });
 
@@ -109,7 +110,7 @@ app.post('/api/user-data', async (req, res) => {
             await user.save();
         }
 
-        // --- ВОЗВРАТ СРЕДСТВ ИЗ ЗАВИСШИХ ЛОББИ ---
+        // Возврат средств из зависших лобби (статус active более 30 минут)
         const stuckLobbies = await Lobby.find({
             $or: Array.of({ player1Id: user.telegramId }, { player2Id: user.telegramId }),
             status: 'active',
@@ -132,15 +133,23 @@ app.post('/api/user-data', async (req, res) => {
 app.post('/api/deposit', async (req, res) => {
     const { telegramId, asset, amount, stars } = req.body;
     try {
-        const response = await axios.post(`https://pay.crypt.bot/api/createInvoice`, {
+        const response = await axios.post('https://pay.crypt.bot/api/createInvoice', {
             asset: asset,
             amount: amount.toString(),
-            description: `Пополнение баланса на ${stars} ⭐️`,
-            payload: `${telegramId}_${stars}`
-        }, { headers: { 'Crypto-Pay-API-Token': CONFIG.CRYPTO_BOT_TOKEN } });
-        if (response.data && response.data.ok) res.json({ payUrl: response.data.result.mini_app_invoice_url });
-        else res.status(400).json({ error: 'Failed to create invoice' });
-    } catch (e) { res.status(500).json({ error: 'Invoice failed' }); }
+            description: 'Top up balance with ' + stars + ' Stars',
+            payload: telegramId + '_' + stars
+        }, {
+            headers: { 'Crypto-Pay-API-Token': CONFIG.CRYPTO_BOT_TOKEN }
+        });
+        if (response.data && response.data.ok) {
+            res.json({ payUrl: response.data.result.mini_app_invoice_url });
+        } else {
+            res.status(400).json({ error: 'Failed to create invoice' });
+        }
+    } catch (e) {
+        console.error(e.message);
+        res.status(500).json({ error: 'Invoice failed' });
+    }
 });
 
 app.post('/api/admin/data', async (req, res) => {
@@ -152,16 +161,6 @@ app.post('/api/admin/data', async (req, res) => {
         const withdrawals = await Withdrawal.find().sort({ date: -1 }).limit(20);
         const matches = await MatchHistory.find().sort({ date: -1 }).limit(20);
         res.json({ withdrawals, matches, adminCommission });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/admin/set-balance', async (req, res) => {
-    const { adminId, targetId, newBalance } = req.body;
-    if (adminId !== CONFIG.ADMIN_ID) return res.status(403).json({ error: 'Access denied' });
-    try {
-        const user = await User.findOneAndUpdate({ telegramId: targetId }, { balance: newBalance }, { new: true });
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ success: true, user });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -182,7 +181,7 @@ app.post('/api/search-match', async (req, res) => {
         });
         
         if (opponent) {
-            const lobbyId = `L_${Date.now()}`;
+            const lobbyId = 'L_' + Date.now();
             const lobby = new Lobby({ lobbyId, player1Id: opponent.telegramId, player2Id: telegramId, gameType, betAmount, status: 'active' });
             await lobby.save();
             return res.json({ status: 'match_found', lobbyId, newBalance: user.balance });
@@ -219,20 +218,21 @@ app.post('/api/cancel-match', async (req, res) => {
         const r = await MatchRequest.findOneAndDelete({ telegramId });
         if (r) {
             const u = await User.findOne({ telegramId });
-            u.balance += r.betAmount; await u.save();
+            u.balance += r.betAmount; 
+            await u.save();
             return res.json({ success: true, newBalance: u.balance });
         }
         res.json({ success: false });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Атомарная фиксация первого финишировавшего
+// Атомарная фиксация победителя спринта
 app.post('/api/submit-score', async (req, res) => {
     const { telegramId, finished, lobbyId } = req.body;
     try {
         if (!lobbyId || !finished) return res.json({ success: true });
 
-        // Атомарное закрытие лобби (кто первый вызвал с status: 'active', тот и победитель)
+        // Кто первый обновит статус active на finished, тот и забирает банк
         const lobby = await Lobby.findOneAndUpdate(
             { lobbyId, status: 'active' },
             { $set: { status: 'finished', winnerId: telegramId } },
@@ -240,25 +240,23 @@ app.post('/api/submit-score', async (req, res) => {
         );
 
         if (lobby && lobby.winnerId === telegramId) {
-            // Победитель определен! Начисляем выигрыш
             const pool = lobby.betAmount * 2;
             const fee = Math.floor(pool * 0.1);
             const prize = pool - fee;
 
             const loserId = (lobby.player1Id === telegramId) ? lobby.player2Id : lobby.player1Id;
 
-            // Начисляем 10% админу
+            // 10% Админу
             await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: fee, adminCommission: fee } }, { upsert: true });
             
-            // Начисляем 90% победителю
+            // 90% Победителю
             await User.findOneAndUpdate({ telegramId: telegramId }, { $inc: { balance: prize } });
 
-            // Запись в историю
             await new MatchHistory({ winnerId: telegramId, loserId, gameType: lobby.gameType, betAmount: lobby.betAmount, prize }).save();
 
             return res.json({ success: true, isWinner: true });
         } else {
-            // Лобби уже было закрыто другим игроком, значит текущий игрок проиграл
+            // Лобби уже закрыто оппонентом
             return res.json({ success: true, isWinner: false });
         }
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -304,4 +302,4 @@ app.post('/api/withdraw', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.listen(CONFIG.PORT, () => console.log(`🚀 Server running on port ${CONFIG.PORT}`));
+app.listen(CONFIG.PORT, () => console.log('Server running on port ' + CONFIG.PORT));
