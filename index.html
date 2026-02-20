@@ -353,9 +353,9 @@
     function input(k, e) { e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' })); }
 
     function runSnake() {
-        let s=, f={x:2,y:2}, d={x:0,y:0};
+        let s =, f = {x:2,y:2}, d = {x:0,y:0};
         function upd() {
-            let h={x:s.x+d.x, y:s.y+d.y};
+            let h = {x:s.x+d.x, y:s.y+d.y};
             if(h.x<0||h.x>=12||h.y<0||h.y>=20||( (d.x||d.y) && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
             if(d.x||d.y) s.unshift(h);
             if(h.x===f.x && h.y===f.y) { score+=10; document.getElementById('g-score').innerText=score; f={x:Math.floor(Math.random()*12), y:Math.floor(Math.random()*20)}; }
@@ -376,19 +376,32 @@
     }
 
     function runTetris() {
-        const R=20, C=12; let bd = Array.from({length:R}, () => Array(C).fill(0));
-        const SH = ],, ],, ],
-            [, ],, ],, ],, ]
+        const R=20, C=12; 
+        let bd = Array.from({length:R}, () => Array(C).fill(0));
+        
+        const SH =],,],,], 
+            [,],,],,],,]
         ];
+        
         const CL =;
+        
         let p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
+        
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
             bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect(x*20,y*20,19,19); }}));
             p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
         }
-        function coll(ax, ay, m) { return m.some((r,y)=>r.some((v,x)=> v && (bd === undefined || bd === undefined || bd !== 0))); }
-        function rotate(m) { let nm=m.map((_,i)=>m.map(r=>r).reverse()); if(!coll(0,0,nm)) p.m=nm; }
+        
+        function coll(ax, ay, m) { 
+            return m.some((r,y)=>r.some((v,x)=> v && (bd === undefined || bd === undefined || bd !== 0))); 
+        }
+        
+        function rotate(m) { 
+            let nm=m.map((_,i)=>m.map(r=>r).reverse()); 
+            if(!coll(0,0,nm)) p.m=nm; 
+        }
+        
         function upd(t=0) {
             dc += t - lt; lt = t;
             if(dc > 1000) {
@@ -403,6 +416,7 @@
             }
             draw(); loop = requestAnimationFrame(upd);
         }
+        
         document.onkeydown = e => {
             if(e.key==='ArrowLeft' && !coll(-1,0,p.m)) p.x--;
             if(e.key==='ArrowRight' && !coll(1,0,p.m)) p.x++;
