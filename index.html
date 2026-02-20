@@ -8,11 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            --tg-bg: var(--tg-theme-bg-color, #111111);
-            --tg-text: var(--tg-theme-text-color, #ffffff);
-            --tg-btn: var(--tg-theme-button-color, #0044cc);
-            --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
-            --tg-sec-bg: var(--tg-theme-secondary-bg-color, #222222);
+            --tg-bg: #111111;
+            --tg-text: #ffffff;
+            --tg-btn: #0044cc;
+            --tg-btn-text: #ffffff;
+            --tg-sec-bg: #222222;
             --accent-neon: #00f0ff; 
             --accent-pink: #ff0055; 
             --font-retro: 'Press Start 2P', cursive;
@@ -26,7 +26,8 @@
         h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
         h1 { font-size: 1.4rem; color: var(--accent-neon); margin-top: 15px; line-height: 1.4; text-shadow: 0 0 5px var(--accent-neon); }
         
-        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid var(--accent-neon); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+        .card-free { border-color: rgba(255, 255, 255, 0.2); box-shadow: none; }
         
         .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
@@ -46,9 +47,9 @@
             border: 4px solid var(--tg-text); 
             border-radius: 4px; 
             background: #000; 
-            width: 100%; 
-            max-width: 320px; 
-            height: auto; 
+            width: 100% !important; 
+            max-width: 350px; 
+            height: auto !important; 
             margin-bottom: 5px; 
             flex-shrink: 0;
             image-rendering: -moz-crisp-edges;
@@ -57,7 +58,7 @@
             image-rendering: crisp-edges;
         }
 
-        .controls { display: flex; width: 100%; max-width: 320px; justify-content: space-between; gap: 10px; margin-top: 10px; }
+        .controls { display: flex; width: 100%; max-width: 350px; justify-content: space-between; gap: 10px; margin-top: 10px; }
         .dpad-side, .action-side { display: flex; gap: 10px; }
         .ctrl-btn { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; touch-action: manipulation; }
         .ctrl-btn:active { background: var(--accent-neon); color: black; border-color: var(--accent-neon); }
@@ -70,19 +71,19 @@
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center; flex-direction:column; padding: 20px; }
         .admin-row { font-size: 0.7rem; border-bottom: 1px solid #444; padding: 5px; display: flex; justify-content: space-between; }
-        #admin-panel { display: none; border: 2px solid gold; }
+        #admin-panel { display: none; border: 2px solid gold; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- MENU -->
+    <!-- MENU SCREEN -->
     <div id="s-play" class="screen active">
         <h1>RETRO ARENA</h1>
 
-        <div class="card" style="border: 2px solid var(--accent-neon); box-shadow: 0 0 15px rgba(0,240,255,0.2);">
+        <div class="card">
             <h2 style="color: var(--accent-neon); font-size: 1.1rem;">Ranked Sprint 1v1</h2>
-            <p style="font-size:0.7rem; text-align:center; opacity:0.8;">Race to the finish line!<br>First player wins the pot.</p>
+            <p style="font-size:0.7rem; text-align:center; opacity:0.8; font-family: var(--font-retro);">Race to the finish line!<br>First player wins the pot.</p>
             <select id="search-bet">
                 <option value="10">Bet: 10 ⭐️</option>
                 <option value="50">Bet: 50 ⭐️</option>
@@ -92,45 +93,31 @@
             <button class="btn btn-duel" onclick="startMatchmaking()">🏁 RACE NOW 🏁</button>
         </div>
 
-        <div class="card">
+        <div class="card card-free">
             <h2 style="font-size: 1rem;">Story Mode (Sega)</h2>
             <p style="font-size:0.7rem; text-align:center; opacity:0.7; font-family: var(--font-retro); margin-top: 0;">FREE PLAY</p>
-            <button class="btn btn-outline" onclick="launchGame('story')">🎮 PLAY STORY</button>
+            <button class="btn btn-outline" onclick="launchGame('story')">🎮 PLAY SOLO</button>
         </div>
     </div>
 
-    <!-- SEARCH -->
+    <!-- SEARCH SCREEN -->
     <div id="s-search" class="screen" style="justify-content: center;">
         <h1 class="blink" style="color: #ff8800;">WAITING FOR OPPONENT...</h1>
         <p style="text-align: center; opacity: 0.7; margin-bottom: 30px;">Finding match</p>
         <button class="btn btn-danger" onclick="cancelMatchmaking()">CANCEL</button>
     </div>
 
-    <!-- PROFILE -->
+    <!-- PROFILE SCREEN -->
     <div id="s-profile" class="screen">
         <h1>PROFILE</h1>
-        <div class="card" style="text-align: center;">
+        <div class="card card-free" style="text-align: center;">
             <div style="font-size: 2.5rem; font-family: var(--font-retro); color: gold; text-shadow: 2px 2px 0 #000;">
                 <span id="p-bal">0</span> ★
             </div>
             <div style="opacity: 0.7; font-size: 0.8rem; margin-top: 10px; font-weight: bold;">VIRTUAL STARS</div>
         </div>
 
-        <div id="admin-panel" class="card">
-            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
-            <div class="admin-row" style="margin-bottom: 10px;">
-                <span style="font-weight: bold;">Commission:</span> 
-                <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
-            </div>
-            <button class="btn btn-sm" onclick="loadAdminData()">REFRESH</button>
-            <div style="text-align: left; margin-top: 10px;">
-                <input type="number" id="adm-target-id" placeholder="User ID">
-                <input type="number" id="adm-new-bal" placeholder="New Balance">
-                <button class="btn btn-danger btn-sm" onclick="adminSetBalance()">SET</button>
-            </div>
-        </div>
-
-        <div class="card">
+        <div class="card card-free">
             <h2 style="font-size: 1rem;">Deposit (Crypto)</h2>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button class="btn btn-crypto" onclick="depositCrypto('USDT', 1, 100)">1 USDT (+100★)</button>
@@ -139,12 +126,21 @@
             </div>
         </div>
         <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
+        
+        <div id="admin-panel" class="card">
+            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
+            <div class="admin-row" style="margin-bottom: 10px;">
+                <span style="font-weight: bold;">Commission:</span> 
+                <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
+            </div>
+            <button class="btn btn-sm" onclick="loadAdminData()">REFRESH</button>
+        </div>
         <div style="height: 20px;"></div>
     </div>
 
-    <!-- GAME -->
+    <!-- GAME SCREEN -->
     <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0;">
-        <div style="width: 100%; max-width: 320px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <div style="width: 100%; max-width: 350px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
             <button class="btn btn-danger btn-sm" style="margin:0;" onclick="quitGame()">GIVE UP</button>
         </div>
         
@@ -168,25 +164,269 @@
     <div class="tab" onclick="nav('profile', this)"><div class="tab-icon">👤</div><div>PROFILE</div></div>
 </div>
 
-<!-- MODALS -->
+<!-- GAME OVER MODAL -->
 <div id="modal-over" class="modal">
-    <h1 id="end-title" style="color:red; font-size:2.5rem; text-align: center; margin-bottom: 10px;">GAME OVER</h1>
+    <h1 id="end-title" style="color:red; font-size:2.5rem; text-align: center; margin-bottom: 10px;">FINISH</h1>
     <p id="end-msg" style="color:white; font-family: var(--font-retro); font-size: 1rem; text-align: center; line-height: 1.5; margin-bottom: 30px;"></p>
     <button class="btn btn-outline" style="width:240px;" onclick="location.reload()">RETURN TO MENU</button>
 </div>
 
 <script>
+    // --- НАСТРОЙКА КАНВАСА ДЛЯ ПИКСЕЛЬ АРТА ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.style.imageRendering = 'pixelated';
+    ctx.imageSmoothingEnabled = false;
+
+    // Внутреннее разрешение Sega Genesis
+    canvas.width = 320; 
+    canvas.height = 224; 
+
     const API = "https://tg-game-arena.onrender.com";
     const ADMIN_ID = 1463465416;
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     
     let user = null, lobby = null, poll = null, loop = null, gameMode = '';
-    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
-    
-    ctx.imageSmoothingEnabled = false;
-    canvas.width = 320; 
-    canvas.height = 224; // Classic Sega Genesis resolution
 
+    // --- ЗАГРУЗКА ВНЕШНЕГО СПРАЙТ-ЛИСТА СОНИКА ---
+    const sonicSprite = new Image();
+    sonicSprite.crossOrigin = "Anonymous";
+    sonicSprite.src = "https://info.sonicretro.org/images/1/1a/Sonic1_sheet.png";
+
+    // Анимации Соника
+    const anims = {
+        idle: Array.of({x: 18, y: 22, w: 29, h: 39}),
+        run: Array.of(
+            {x: 17, y: 104, w: 32, h: 39}, 
+            {x: 56, y: 104, w: 32, h: 39}, 
+            {x: 96, y: 104, w: 32, h: 39}, 
+            {x: 133, y: 104, w: 32, h: 39}
+        ),
+        roll: Array.of(
+            {x: 17, y: 201, w: 30, h: 29}, 
+            {x: 52, y: 201, w: 30, h: 29}, 
+            {x: 87, y: 201, w: 30, h: 29}, 
+            {x: 122, y: 201, w: 30, h: 29}
+        )
+    };
+
+    // --- ФИЗИКА И ДВИЖОК ПЛАТФОРМЕРА ---
+    const TILE_SIZE = 32;
+    const MAP_W = 60;
+    const MAP_H = 15;
+    let mapData = Array.from({length: MAP_W * MAP_H}, () => 0); // 0 = пусто, 1 = земля, 2 = финиш
+
+    const GRAVITY = 0.21875;
+    const ACCEL = 0.046875;
+    const FRICTION = 0.046875;
+    const MAX_SPEED = 6;
+    const JUMP_FORCE = 6.5;
+
+    let player = {
+        x: 50, y: 50, vx: 0, vy: 0,
+        width: 20, height: 30,
+        state: 'idle', 
+        frame: 0, frameTimer: 0,
+        dir: 1, 
+        grounded: false
+    };
+
+    const keys = { left: false, right: false, up: false, down: false, jump: false };
+
+    window.press = function(k, state) { Reflect.set(keys, k, state); };
+
+    function buildLevel() {
+        mapData = Array.from({length: MAP_W * MAP_H}, () => 0);
+        
+        // Пол
+        for(let x = 0; x < MAP_W; x++) {
+            Reflect.set(mapData, 13 * MAP_W + x, 1);
+            Reflect.set(mapData, 14 * MAP_W + x, 1);
+        }
+        
+        // Препятствия и ямы
+        for(let x = 20; x < 25; x++) {
+            Reflect.set(mapData, 13 * MAP_W + x, 0);
+            Reflect.set(mapData, 14 * MAP_W + x, 0);
+        }
+
+        // Платформы
+        Reflect.set(mapData, 10 * MAP_W + 10, 1);
+        Reflect.set(mapData, 10 * MAP_W + 11, 1);
+        Reflect.set(mapData, 10 * MAP_W + 12, 1);
+
+        Reflect.set(mapData, 9 * MAP_W + 30, 1);
+        Reflect.set(mapData, 9 * MAP_W + 31, 1);
+
+        // Финишная черта
+        Reflect.set(mapData, 12 * MAP_W + (MAP_W - 5), 2);
+        Reflect.set(mapData, 11 * MAP_W + (MAP_W - 5), 2);
+    }
+
+    function getTile(x, y) {
+        if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H) return 1;
+        return mapData.at(y * MAP_W + x);
+    }
+
+    function updatePhysics() {
+        if (keys.left) {
+            player.dir = -1;
+            if (player.vx > -MAX_SPEED) player.vx -= ACCEL;
+            player.state = 'run';
+        } else if (keys.right) {
+            player.dir = 1;
+            if (player.vx < MAX_SPEED) player.vx += ACCEL;
+            player.state = 'run';
+        } else {
+            if (player.vx > 0) {
+                player.vx -= FRICTION;
+                if (player.vx < 0) player.vx = 0;
+            } else if (player.vx < 0) {
+                player.vx += FRICTION;
+                if (player.vx > 0) player.vx = 0;
+            }
+            player.state = 'idle';
+        }
+
+        if (keys.down && Math.abs(player.vx) > 1) {
+            player.state = 'roll';
+        }
+
+        if (keys.jump && player.grounded) {
+            player.vy = -JUMP_FORCE;
+            player.grounded = false;
+            player.state = 'roll';
+            keys.jump = false;
+        } else if (!player.grounded) {
+            player.state = 'roll';
+        }
+
+        player.vy += GRAVITY;
+
+        // Коллизии X
+        player.x += player.vx;
+        let tx1 = Math.floor(player.x / TILE_SIZE);
+        let tx2 = Math.floor((player.x + player.width) / TILE_SIZE);
+        let ty1 = Math.floor(player.y / TILE_SIZE);
+        let ty2 = Math.floor((player.y + player.height - 1) / TILE_SIZE);
+
+        if (player.vx > 0) {
+            if (getTile(tx2, ty1) === 1 || getTile(tx2, ty2) === 1) {
+                player.x = tx2 * TILE_SIZE - player.width - 0.1;
+                player.vx = 0;
+            }
+        } else if (player.vx < 0) {
+            if (getTile(tx1, ty1) === 1 || getTile(tx1, ty2) === 1) {
+                player.x = (tx1 + 1) * TILE_SIZE + 0.1;
+                player.vx = 0;
+            }
+        }
+
+        // Коллизии Y
+        player.y += player.vy;
+        tx1 = Math.floor((player.x + 2) / TILE_SIZE); 
+        tx2 = Math.floor((player.x + player.width - 2) / TILE_SIZE);
+        ty1 = Math.floor(player.y / TILE_SIZE);
+        ty2 = Math.floor((player.y + player.height) / TILE_SIZE);
+
+        player.grounded = false;
+        if (player.vy > 0) { 
+            if (getTile(tx1, ty2) === 1 || getTile(tx2, ty2) === 1) {
+                player.y = ty2 * TILE_SIZE - player.height;
+                player.vy = 0;
+                player.grounded = true;
+            }
+        } else if (player.vy < 0) { 
+            if (getTile(tx1, ty1) === 1 || getTile(tx2, ty1) === 1) {
+                player.y = (ty1 + 1) * TILE_SIZE;
+                player.vy = 0;
+            }
+        }
+
+        // Проверка финиша
+        let centerTx = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+        let centerTy = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+        if (getTile(centerTx, centerTy) === 2) {
+            triggerFinish();
+        }
+
+        // Падение в яму
+        if (player.y > MAP_H * TILE_SIZE) {
+            player.x = 50; player.y = 50; player.vx = 0; player.vy = 0; 
+        }
+    }
+
+    function updateAnimation() {
+        player.frameTimer++;
+        let speed = 10;
+        if (player.state === 'run') speed = Math.max(2, 10 - Math.abs(player.vx));
+        if (player.state === 'roll') speed = 4;
+
+        if (player.frameTimer > speed) {
+            player.frameTimer = 0;
+            player.frame++;
+        }
+
+        let currentAnimArray = Reflect.get(anims, player.state) || anims.idle;
+        if (player.frame >= currentAnimArray.length) player.frame = 0;
+    }
+
+    let cameraX = 0;
+    function drawGame() {
+        ctx.fillStyle = '#2452FF'; // Небо
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        cameraX = player.x - canvas.width / 2;
+        if (cameraX < 0) cameraX = 0;
+        if (cameraX > MAP_W * TILE_SIZE - canvas.width) cameraX = MAP_W * TILE_SIZE - canvas.width;
+
+        // Отрисовка тайлов
+        for (let y = 0; y < MAP_H; y++) {
+            for (let x = 0; x < MAP_W; x++) {
+                let tile = getTile(x, y);
+                let drawX = Math.floor(x * TILE_SIZE - cameraX);
+                let drawY = Math.floor(y * TILE_SIZE);
+
+                if (drawX < -TILE_SIZE || drawX > canvas.width) continue;
+
+                if (tile === 1) {
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(drawX, drawY, TILE_SIZE, 8);
+                } else if (tile === 2) {
+                    ctx.fillStyle = '#FFD700'; // Финишная табличка
+                    ctx.fillRect(drawX + 10, drawY, 12, TILE_SIZE);
+                }
+            }
+        }
+
+        // Отрисовка Соника
+        let currentAnimArray = Reflect.get(anims, player.state) || anims.idle;
+        let frm = currentAnimArray.at(player.frame % currentAnimArray.length);
+
+        ctx.save();
+        ctx.translate(Math.floor(player.x - cameraX + player.width / 2), Math.floor(player.y + player.height / 2));
+        if (player.dir === -1) ctx.scale(-1, 1);
+
+        if (sonicSprite.complete && sonicSprite.naturalWidth !== 0) {
+            ctx.drawImage(sonicSprite, frm.x, frm.y, frm.w, frm.h, -frm.w/2, -frm.h/2 + 4, frm.w, frm.h);
+        } else {
+            ctx.fillStyle = '#0020B0';
+            ctx.fillRect(-player.width/2, -player.height/2, player.width, player.height);
+        }
+        ctx.restore();
+    }
+
+    function gameTick() {
+        if (!loop) return;
+        updatePhysics();
+        updateAnimation();
+        drawGame();
+        loop = requestAnimationFrame(gameTick);
+    }
+
+    // --- СЕТЕВАЯ ИГРА И UI ---
     async function init() {
         const r = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
         user = await r.json(); 
@@ -204,7 +444,7 @@
 
     async function startMatchmaking() {
         const b = parseInt(document.getElementById('search-bet').value);
-        if (user.balance < b) return tg.showAlert("Insufficient balance");
+        if (user.balance < b) return tg.showAlert('Insufficient balance');
         nav('search');
         const r = await fetch(API + '/api/search-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: 'sonicSprint', betAmount: b }) });
         const d = await r.json();
@@ -224,147 +464,29 @@
         location.reload();
     }
 
-    function quitGame() {
-        tg.showConfirm("Forfeit the match?", async function(confirmed) {
-            if(!confirmed) return;
-            if (lobby) {
-                await fetch(API + '/api/forfeit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, lobbyId: lobby.lobbyId }) });
-            }
-            location.reload();
-        });
-    }
-
-    // --- SONIC 16-BIT ENGINE ---
-    
-    // Virtual Inputs
-    const keys = { left: false, right: false, up: false, down: false, jump: false };
-    function press(k, state) { Reflect.set(keys, k, state); }
-    
-    document.onkeydown = e => {
-        if(e.key === 'ArrowLeft') press('left', true);
-        if(e.key === 'ArrowRight') press('right', true);
-        if(e.key === 'ArrowDown') press('down', true);
-        if(e.key === ' ' || e.key === 'ArrowUp') press('jump', true);
-    };
-    document.onkeyup = e => {
-        if(e.key === 'ArrowLeft') press('left', false);
-        if(e.key === 'ArrowRight') press('right', false);
-        if(e.key === 'ArrowDown') press('down', false);
-        if(e.key === ' ' || e.key === 'ArrowUp') press('jump', false);
-    };
-
-    // Color Palette
-    const C = new Map();
-    C.set('.', 'transparent');
-    C.set('B', '#000000');
-    C.set('u', '#0020B0'); // Sonic Blue
-    C.set('S', '#F0B080'); // Skin
-    C.set('R', '#E00000'); // Red
-    C.set('W', '#FFFFFF'); // White
-    C.set('Y', '#FFFF00'); // Yellow
-    C.set('g', '#00C000'); // Grass Green
-    C.set('G', '#805020'); // Dirt Brown
-    C.set('C', '#E04000'); // Crabmeat Orange
-
-    function renderSprite(str, w, h) {
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        const xctx = c.getContext('2d');
-        for (let i = 0; i < str.length; i++) {
-            let col = C.get(str.charAt(i));
-            if (col && col !== 'transparent') {
-                xctx.fillStyle = col;
-                xctx.fillRect(i % w, Math.floor(i / w), 1, 1);
-            }
-        }
-        return c;
-    }
-
-    // Sprites Data (16x16)
-    const sprSonicStand = "......uu..............uuuu............uuuuuu..........uWWuu.........uuWWu..........uuuS.........SSuSS........S.SSS.........SSuuS..........uuW..........uuW.........RR..RR.......RWR..RWR......BB....BB....";
-    const sprSonicRoll  = "......................uuuu............uWWuuu........uuWWuuuu......uuuSWSWuu.....uuSSSWSWuu....uWWuSSuuWuu...uWWWuuWuuWuu...uuWuuWuuWuu.....uuuuWuuu.......uuuuuu......................";
-    const sprRing       = "......................YYYY............YWWYY.........YY..YY........YY..YY........YY..YY........YY..YY........YY..YY........YY..YY........YY..YY.........YYYY.......................";
-    const sprCrab       = "......................CC..............CCCC.........CCCCCC.......C.CCCC.C....C..CC.CC..C...CCCCCCCCCC....C.B.CC.B.C....C.W.CC.W.C...CCCCCCCCCCCC..CC.CCCCCC.CC..CC........CC..CC........CC";
-    const sprTileGrass  = "gggggggggggggggggggggggggggggggggGgGgGgGgGgGgGgGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG";
-    const sprTileDirt   = "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG";
-    const sprGoal       = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW......BBBB..........BBBB......";
-
-    const sStand = renderSprite(sprSonicStand, 16, 16);
-    const sRoll = renderSprite(sprSonicRoll, 16, 16);
-    const sRing = renderSprite(sprRing, 16, 16);
-    const sCrab = renderSprite(sprCrab, 16, 16);
-    const sGrass = renderSprite(sprTileGrass, 16, 16);
-    const sDirt = renderSprite(sprTileDirt, 16, 16);
-    const sGoal = renderSprite(sprGoal, 16, 16);
-
-    // Engine Variables
-    let mapW = 200, mapH = 15;
-    let tiles = Array.from({length: mapW * mapH}, () => '.');
-    let entities = new Array();
-    
-    function setT(x,y,c) { if(x>=0 && x<mapW && y>=0 && y<mapH) Reflect.set(tiles, y*mapW + x, c); }
-    function getT(x,y) { if(x>=0 && x<mapW && y>=0 && y<mapH) return tiles.at(y*mapW + x); return '.'; }
-
-    // Sonic Physics State
-    let sx = 30, sy = 100, svx = 0, svy = 0;
-    let sGnd = false, sRollState = false;
-    let rings = 0, score = 0, timeFrames = 0;
-    
-    // Physics Constants
-    const acc = 0.046875, dec = 0.5, frc = 0.046875, topSpeed = 6;
-    const grv = 0.21875, jmp = 6.5;
-
-    let spawnX = 30, spawnY = 100;
-
-    function buildLevel() {
-        tiles = Array.from({length: mapW * mapH}, () => '.');
-        entities = new Array();
-        
-        // Ground
-        for(let x=0; x<mapW; x++) {
-            setT(x, 13, 'g');
-            setT(x, 14, 'd');
-        }
-
-        // Pits & Obstacles
-        for(let x=40; x<45; x++) { setT(x, 13, '.'); setT(x, 14, '.'); }
-        for(let x=80; x<85; x++) { setT(x, 13, '.'); setT(x, 14, '.'); }
-
-        // Platforms & Rings & Enemies
-        for(let i=20; i<mapW-20; i+=15) {
-            setT(i, 10, 'g'); setT(i+1, 10, 'g'); setT(i+2, 10, 'g');
-            entities.push({type: 'ring', x: i*16, y: 8*16, active: true});
-            entities.push({type: 'ring', x: (i+1)*16, y: 8*16, active: true});
-            
-            if (i % 2 === 0) entities.push({type: 'crab', x: (i+5)*16, y: 12*16, active: true, dir: 1});
-        }
-
-        // Goal Sign
-        entities.push({type: 'goal', x: (mapW-10)*16, y: 12*16, active: true});
-    }
-
     function launchGame(mode) {
         gameMode = mode;
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('s-game').classList.add('active');
         document.querySelector('.tabs').style.display = 'none';
         
-        rings = 0; score = 0; timeFrames = 0;
-        spawnX = 30; spawnY = 100;
-        sx = spawnX; sy = spawnY; svx = 0; svy = 0;
-
+        player.x = 50; player.y = 50; player.vx = 0; player.vy = 0;
         buildLevel();
+        
         if(loop) cancelAnimationFrame(loop);
         loop = requestAnimationFrame(gameTick);
     }
 
     async function triggerFinish() {
-        cancelAnimationFrame(loop);
+        if (loop) cancelAnimationFrame(loop);
+        loop = null;
+        
         document.getElementById('modal-over').style.display = 'flex';
         
-        if (gameMode === 'ranked') {
-            document.getElementById('end-title').innerText = "FINISH!";
-            document.getElementById('end-msg').innerText = "Validating result with server...";
+        if (lobby && gameMode === 'ranked') {
+            document.getElementById('end-title').innerText = 'FINISH!';
+            document.getElementById('end-title').style.color = '#ff8800';
+            document.getElementById('end-msg').innerText = 'Validating result with server...';
             
             const r = await fetch(API + '/api/submit-score', { 
                 method: 'POST', 
@@ -374,174 +496,68 @@
             const d = await r.json();
             
             if (d.isWinner) {
-                document.getElementById('end-title').innerText = "YOU WIN!";
-                document.getElementById('end-title').style.color = "#00f0ff";
-                document.getElementById('end-msg').innerText = "Prize credited to your balance!";
+                document.getElementById('end-title').innerText = 'YOU WIN!';
+                document.getElementById('end-title').style.color = '#00f0ff';
+                document.getElementById('end-msg').innerText = 'Prize credited to your balance!';
             } else {
-                document.getElementById('end-title').innerText = "YOU LOST";
-                document.getElementById('end-msg').innerText = "Opponent reached the finish line first.";
+                document.getElementById('end-title').innerText = 'DEFEAT';
+                document.getElementById('end-title').style.color = '#ff0055';
+                document.getElementById('end-msg').innerText = 'Opponent reached the finish line first.';
             }
         } else {
-            document.getElementById('end-title').innerText = "LEVEL CLEARED";
-            document.getElementById('end-title').style.color = "#00f0ff";
-            document.getElementById('end-msg').innerText = "Time: " + Math.floor(timeFrames/60) + "s\nRings: " + rings;
+            document.getElementById('end-title').innerText = 'LEVEL CLEARED';
+            document.getElementById('end-title').style.color = '#00f0ff';
+            document.getElementById('end-msg').innerText = 'You completed the track!';
         }
     }
 
-    function death() {
-        if (gameMode === 'ranked') {
-            // High stakes: restart from beginning
-            sx = 30; sy = 100; svx = 0; svy = 0; rings = 0;
-        } else {
-            // Story: restart at checkpoint
-            sx = spawnX; sy = spawnY; svx = 0; svy = 0; rings = 0;
-        }
+    function quitGame() {
+        tg.showConfirm('Forfeit the match?', async function(confirmed) {
+            if(!confirmed) return;
+            if (lobby) {
+                await fetch(API + '/api/forfeit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, lobbyId: lobby.lobbyId }) });
+            }
+            location.reload();
+        });
     }
 
-    function gameTick() {
-        timeFrames++;
-
-        // Physics Input X
-        if (keys.left) {
-            if (svx > 0) svx -= dec;
-            else if (svx > -topSpeed) svx -= acc;
-        } else if (keys.right) {
-            if (svx < 0) svx += dec;
-            else if (svx < topSpeed) svx += acc;
-        } else {
-            svx -= Math.min(Math.abs(svx), frc) * Math.sign(svx);
-        }
-
-        // Rolling logic
-        if (sGnd && keys.down && Math.abs(svx) > 1) sRollState = true;
-        if (Math.abs(svx) < 0.5) sRollState = false;
-
-        // Jump
-        if (keys.jump && sGnd) {
-            svy = -jmp;
-            sGnd = false;
-            sRollState = true;
-            keys.jump = false; // Prevent hold bouncing
-        }
-
-        svy += grv;
-
-        // Integrate X
-        sx += svx;
-        let tx = Math.floor(sx / 16);
-        let ty = Math.floor(sy / 16);
-        
-        // Simple AABB vs Tiles
-        let tType = getT(tx, ty);
-        if (tType === 'g' || tType === 'd') {
-            if (svx > 0) { sx = tx * 16 - 1; svx = 0; }
-            else if (svx < 0) { sx = tx * 16 + 17; svx = 0; }
-        }
-
-        // Integrate Y
-        sy += svy;
-        tx = Math.floor(sx / 16);
-        ty = Math.floor(sy / 16);
-        let tFoot = getT(tx, Math.floor((sy+15) / 16));
-        
-        sGnd = false;
-        if (svy >= 0 && (tFoot === 'g' || tFoot === 'd')) {
-            sy = Math.floor((sy+15) / 16) * 16 - 16;
-            svy = 0;
-            sGnd = true;
-        }
-
-        // Death by falling
-        if (sy > mapH * 16) death();
-
-        // Entity Updates & Collisions
-        for (let i = 0; i < entities.length; i++) {
-            let e = entities.at(i);
-            if (!e.active) continue;
-
-            // Crabmeat movement
-            if (e.type === 'crab') {
-                e.x += 0.5 * e.dir;
-                if (timeFrames % 120 === 0) e.dir *= -1;
-            }
-
-            // AABB Collision with Sonic (16x16 approximate)
-            if (Math.abs(sx - e.x) < 14 && Math.abs(sy - e.y) < 14) {
-                if (e.type === 'ring') {
-                    e.active = false;
-                    rings++; score += 10;
-                } else if (e.type === 'goal') {
-                    return triggerFinish();
-                } else if (e.type === 'crab') {
-                    if (sRollState && svy > 0) { // Bouncing on enemy
-                        e.active = false;
-                        svy = -jmp * 0.8;
-                        score += 100;
-                    } else {
-                        if (rings > 0) { rings = 0; svy = -4; svx = -2 * Math.sign(svx||1); sGnd = false; }
-                        else death();
-                    }
+    async function depositCrypto(asset, cryptoAmount, starsAmount) {
+        const r = await fetch(API + '/api/deposit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, asset, amount: cryptoAmount, stars: starsAmount }) });
+        const d = await r.json();
+        if (d.payUrl) {
+            tg.openTelegramLink(d.payUrl);
+            let checkingTimer = setInterval(async () => {
+                const cur = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
+                const curUser = await cur.json();
+                if(curUser.balance > user.balance) {
+                    user.balance = curUser.balance;
+                    document.getElementById('p-bal').innerText = user.balance;
+                    clearInterval(checkingTimer);
+                    tg.showAlert('Balance updated!');
                 }
-            }
-        }
+            }, 3000);
+            setTimeout(() => clearInterval(checkingTimer), 300000);
+        } else { tg.showAlert('Invoice error'); }
+    }
 
-        // Rendering
-        ctx.fillStyle = '#0060F8'; // Sky
-        ctx.fillRect(0, 0, 320, 224);
+    function withdraw() {
+        if(user.balance <= 0) return tg.showAlert('Empty balance');
+        tg.showConfirm('Withdraw ' + user.balance + ' Stars?', async function(confirmed) {
+            if(!confirmed) return;
+            const r = await fetch(API + '/api/withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
+            const d = await r.json();
+            if (d.success) { 
+                user.balance = d.newBalance; 
+                document.getElementById('p-bal').innerText = user.balance; 
+                tg.showAlert('Request sent!'); 
+            } else tg.showAlert(d.error);
+        });
+    }
 
-        let camX = Math.floor(sx - 160);
-        let camY = Math.floor(sy - 112);
-        if (camX < 0) camX = 0;
-        if (camX > mapW*16 - 320) camX = mapW*16 - 320;
-        if (camY < 0) camY = 0;
-        if (camY > mapH*16 - 224) camY = mapH*16 - 224;
-
-        // Draw Map
-        let startCol = Math.floor(camX / 16);
-        let endCol = startCol + 21;
-        let startRow = Math.floor(camY / 16);
-        let endRow = startRow + 15;
-
-        for (let r = startRow; r <= endRow; r++) {
-            for (let c = startCol; c <= endCol; c++) {
-                let t = getT(c, r);
-                if (t === 'g') ctx.drawImage(sGrass, c*16 - camX, r*16 - camY);
-                if (t === 'd') ctx.drawImage(sDirt, c*16 - camX, r*16 - camY);
-            }
-        }
-
-        // Draw Entities
-        for (let i = 0; i < entities.length; i++) {
-            let e = entities.at(i);
-            if (!e.active) continue;
-            let drawX = Math.floor(e.x - camX);
-            let drawY = Math.floor(e.y - camY);
-            if (drawX < -16 || drawX > 320 || drawY < -16 || drawY > 224) continue;
-
-            if (e.type === 'ring') ctx.drawImage(sRing, drawX, drawY);
-            if (e.type === 'crab') ctx.drawImage(sCrab, drawX, drawY);
-            if (e.type === 'goal') ctx.drawImage(sGoal, drawX, drawY);
-        }
-
-        // Draw Sonic
-        ctx.save();
-        ctx.translate(Math.floor(sx - camX + 8), Math.floor(sy - camY + 8));
-        if (svx < -0.1) ctx.scale(-1, 1); // Flip horizontally if moving left
-        
-        if (sRollState) ctx.drawImage(sRoll, -8, -8);
-        else ctx.drawImage(sStand, -8, -8);
-        ctx.restore();
-
-        // Draw HUD
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '10px "Press Start 2P"';
-        ctx.fillText("SCORE  " + score, 10, 20);
-        ctx.fillText("TIME   " + Math.floor(timeFrames/60), 10, 35);
-        if (rings === 0 && Math.floor(timeFrames/15)%2 === 0) ctx.fillStyle = '#FF0000'; // Blink red
-        else ctx.fillStyle = '#FFFF00';
-        ctx.fillText("RINGS  " + rings, 10, 50);
-
-        loop = requestAnimationFrame(gameTick);
+    async function loadAdminData() {
+        const r = await fetch(API + '/api/admin/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId }) });
+        const d = await r.json();
+        document.getElementById('adm-commission').innerText = (d.adminCommission || 0) + '★';
     }
 </script>
 </body>
