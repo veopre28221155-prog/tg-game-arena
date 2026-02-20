@@ -21,7 +21,6 @@ mongoose.connect(CONFIG.MONGO_URI)
     .then(() => console.log('✅ MongoDB Connected'))
     .catch(err => console.error('❌ MongoDB Error:', err));
 
-// --- SCHEMAS ---
 const UserSchema = new mongoose.Schema({
     telegramId: { type: Number, required: true, unique: true },
     username: String,
@@ -79,8 +78,8 @@ app.post('/api/crypto-webhook', async (req, res) => {
             
             if (customPayload) {
                 const parts = customPayload.split('_');
-                const userId = parts;
-                const starsAmount = parts;
+                const userId = parts.at(0);
+                const starsAmount = parts.at(1);
 
                 if (userId && starsAmount) {
                     await User.findOneAndUpdate(
@@ -136,7 +135,6 @@ app.post('/api/deposit', async (req, res) => {
     }
 });
 
-// --- ADMIN ROUTES ---
 app.post('/api/admin/data', async (req, res) => {
     const { adminId } = req.body;
     if (adminId !== CONFIG.ADMIN_ID) return res.status(403).json({ error: 'Access denied' });
@@ -144,7 +142,6 @@ app.post('/api/admin/data', async (req, res) => {
     try {
         const adminUser = await User.findOne({ telegramId: CONFIG.ADMIN_ID });
         const adminCommission = adminUser ? adminUser.adminCommission : 0;
-
         const withdrawals = await Withdrawal.find().sort({ date: -1 }).limit(20);
         const matches = await MatchHistory.find().sort({ date: -1 }).limit(20);
         res.json({ withdrawals, matches, adminCommission });
@@ -162,7 +159,6 @@ app.post('/api/admin/set-balance', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- GAME LOGIC ---
 app.post('/api/create-lobby-friend', async (req, res) => {
     const { telegramId, gameType, betAmount } = req.body;
     try {
@@ -201,8 +197,9 @@ app.post('/api/search-match', async (req, res) => {
 app.post('/api/check-match-status', async (req, res) => {
     const { telegramId } = req.body;
     try {
+        const searchConditions = Array.of({ player1Id: telegramId }, { player2Id: telegramId });
         const lobby = await Lobby.findOne({ 
-            $or:, 
+            $or: searchConditions, 
             status: 'active', 
             createdAt: { $gt: new Date(Date.now() - 60000) } 
         });
@@ -245,9 +242,9 @@ app.post('/api/cancel-match', async (req, res) => {
 app.post('/api/submit-score', async (req, res) => {
     const { telegramId, game, score, lobbyId } = req.body;
     try {
-        const updateData = {};
-        updateData = score;
-        await User.findOneAndUpdate({ telegramId }, { $max: updateData });
+        const scoreUpdate = { $max: {} };
+        Reflect.set(scoreUpdate.$max, "highScores." + game, score);
+        await User.findOneAndUpdate({ telegramId }, scoreUpdate);
 
         if (!lobbyId) return res.json({ success: true });
 
@@ -298,7 +295,6 @@ app.post('/api/withdraw', async (req, res) => {
         if (u.balance < amount) return res.status(400).json({ error: 'Low balance' });
         
         u.balance -= amount; await u.save();
-
         const w = new Withdrawal({ telegramId, amount, status: 'pending' });
         await w.save();
 
