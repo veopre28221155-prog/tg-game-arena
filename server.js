@@ -260,8 +260,8 @@ app.post('/api/submit-score', async (req, res) => {
             lobby.status = 'finished'; await lobby.save();
 
             const pool = lobby.betAmount * 2;
-            const fee = Math.floor(pool * 0.1); // 10% комиссия
-            const prize = pool - fee; // 90% победителю
+            const fee = Math.floor(pool * 0.1); 
+            const prize = pool - fee; 
 
             let winnerId = null;
             let loserId = null;
