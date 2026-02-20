@@ -8,11 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            --tg-bg: #111111;
-            --tg-text: #ffffff;
-            --tg-btn: #0044cc;
-            --tg-btn-text: #ffffff;
-            --tg-sec-bg: #222222;
+            --tg-bg: var(--tg-theme-bg-color, #111111);
+            --tg-text: var(--tg-theme-text-color, #ffffff);
+            --tg-btn: var(--tg-theme-button-color, #0044cc);
+            --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --tg-sec-bg: var(--tg-theme-secondary-bg-color, #222222);
             --accent-neon: #00f0ff; 
             --accent-pink: #ff0055; 
             --font-retro: 'Press Start 2P', cursive;
@@ -26,8 +26,7 @@
         h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
         h1 { font-size: 1.4rem; color: var(--accent-neon); margin-top: 15px; line-height: 1.4; text-shadow: 0 0 5px var(--accent-neon); }
         
-        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid var(--accent-neon); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
-        .card-free { border-color: rgba(255, 255, 255, 0.2); box-shadow: none; }
+        .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); }
         
         .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
@@ -47,21 +46,23 @@
             border: 4px solid var(--tg-text); 
             border-radius: 4px; 
             background: #000; 
-            width: 100% !important; 
-            max-width: 300px; 
-            height: auto !important; 
-            margin-bottom: 15px; 
+            width: 100%; 
+            max-width: 320px; 
+            height: auto; 
+            margin-bottom: 5px; 
             flex-shrink: 0;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
             image-rendering: pixelated;
+            image-rendering: crisp-edges;
         }
 
-        .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; width: 100%; max-width: 250px; margin: 0 auto; }
-        .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; touch-action: manipulation; }
+        .controls { display: flex; width: 100%; max-width: 320px; justify-content: space-between; gap: 10px; margin-top: 10px; }
+        .dpad-side, .action-side { display: flex; gap: 10px; }
+        .ctrl-btn { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; touch-action: manipulation; }
         .ctrl-btn:active { background: var(--accent-neon); color: black; border-color: var(--accent-neon); }
-        .btn-up { grid-area: up; margin: 0 auto; } 
-        .btn-left { grid-area: left; } 
-        .btn-down { grid-area: down; margin: 0 auto; } 
-        .btn-right { grid-area: right; }
+        .btn-jump { border-radius: 50%; width: 70px; height: 70px; background: rgba(255,0,85,0.5); border-color: var(--accent-pink); }
+        .btn-jump:active { background: var(--accent-pink); }
 
         .tabs { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--tg-sec-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
         .tab { display: flex; flex-direction: column; align-items: center; color: var(--tg-text); opacity: 0.5; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; }
@@ -69,64 +70,67 @@
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center; flex-direction:column; padding: 20px; }
         .admin-row { font-size: 0.7rem; border-bottom: 1px solid #444; padding: 5px; display: flex; justify-content: space-between; }
-        #admin-panel { display: none; border: 2px solid gold; margin-top: 20px; }
+        #admin-panel { display: none; border: 2px solid gold; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- MENU SCREEN -->
+    <!-- MENU -->
     <div id="s-play" class="screen active">
-        <h1>RETRO BATTLE<br>ARENA</h1>
+        <h1>RETRO ARENA</h1>
 
-        <div class="card">
-            <h2 style="color: var(--accent-neon); font-size: 1.1rem;">Ranked Match 1v1</h2>
-            <p style="font-size:0.7rem; text-align:center; opacity:0.8; font-family: var(--font-retro);">Higher score wins the pot!</p>
-            <select id="search-game">
-                <option value="snake">🐍 Classic Snake</option>
-                <option value="tetris">🧱 Tetris Block</option>
-            </select>
+        <div class="card" style="border: 2px solid var(--accent-neon); box-shadow: 0 0 15px rgba(0,240,255,0.2);">
+            <h2 style="color: var(--accent-neon); font-size: 1.1rem;">Ranked Sprint 1v1</h2>
+            <p style="font-size:0.7rem; text-align:center; opacity:0.8;">Race to the finish line!<br>First player wins the pot.</p>
             <select id="search-bet">
                 <option value="10">Bet: 10 ⭐️</option>
                 <option value="50">Bet: 50 ⭐️</option>
                 <option value="100">Bet: 100 ⭐️</option>
                 <option value="500">Bet: 500 ⭐️</option>
             </select>
-            <button class="btn btn-duel" onclick="startMatchmaking()">⚔️ FIND DUEL ⚔️</button>
+            <button class="btn btn-duel" onclick="startMatchmaking()">🏁 RACE NOW 🏁</button>
         </div>
 
-        <div class="card card-free">
-            <h2 style="font-size: 1rem;">Solo Training</h2>
+        <div class="card">
+            <h2 style="font-size: 1rem;">Story Mode (Sega)</h2>
             <p style="font-size:0.7rem; text-align:center; opacity:0.7; font-family: var(--font-retro); margin-top: 0;">FREE PLAY</p>
-            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Play Snake</button>
-            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Play Tetris</button>
+            <button class="btn btn-outline" onclick="launchGame('story')">🎮 PLAY STORY</button>
         </div>
     </div>
 
-    <!-- SEARCH SCREEN -->
+    <!-- SEARCH -->
     <div id="s-search" class="screen" style="justify-content: center;">
-        <h1 class="blink" style="color: #ff8800;">SEARCHING ENEMY...</h1>
-        <p style="text-align: center; opacity: 0.7; margin-bottom: 30px;">Waiting for opponent</p>
+        <h1 class="blink" style="color: #ff8800;">WAITING FOR OPPONENT...</h1>
+        <p style="text-align: center; opacity: 0.7; margin-bottom: 30px;">Finding match</p>
         <button class="btn btn-danger" onclick="cancelMatchmaking()">CANCEL</button>
     </div>
 
-    <!-- PROFILE SCREEN -->
+    <!-- PROFILE -->
     <div id="s-profile" class="screen">
         <h1>PROFILE</h1>
-        <div class="card card-free" style="text-align: center;">
+        <div class="card" style="text-align: center;">
             <div style="font-size: 2.5rem; font-family: var(--font-retro); color: gold; text-shadow: 2px 2px 0 #000;">
                 <span id="p-bal">0</span> ★
             </div>
             <div style="opacity: 0.7; font-size: 0.8rem; margin-top: 10px; font-weight: bold;">VIRTUAL STARS</div>
         </div>
 
-        <div class="card card-free">
-            <h2 style="font-size: 1rem;">High Scores</h2>
-            <div style="display: flex; justify-content: space-between; font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 5px;"><span>Snake:</span> <span id="p-snake" style="color:#00ff00;">0</span></div>
-            <div style="display: flex; justify-content: space-between; font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 5px;"><span>Tetris:</span> <span id="p-tetris" style="color:#ff0055;">0</span></div>
+        <div id="admin-panel" class="card">
+            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
+            <div class="admin-row" style="margin-bottom: 10px;">
+                <span style="font-weight: bold;">Commission:</span> 
+                <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
+            </div>
+            <button class="btn btn-sm" onclick="loadAdminData()">REFRESH</button>
+            <div style="text-align: left; margin-top: 10px;">
+                <input type="number" id="adm-target-id" placeholder="User ID">
+                <input type="number" id="adm-new-bal" placeholder="New Balance">
+                <button class="btn btn-danger btn-sm" onclick="adminSetBalance()">SET</button>
+            </div>
         </div>
 
-        <div class="card card-free">
+        <div class="card">
             <h2 style="font-size: 1rem;">Deposit (Crypto)</h2>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button class="btn btn-crypto" onclick="depositCrypto('USDT', 1, 100)">1 USDT (+100★)</button>
@@ -135,34 +139,26 @@
             </div>
         </div>
         <button class="btn btn-danger" onclick="withdraw()">WITHDRAW FUNDS</button>
-        
-        <div id="admin-panel" class="card">
-            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
-            <div class="admin-row" style="margin-bottom: 10px;">
-                <span style="font-weight: bold;">Commission:</span> 
-                <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
-            </div>
-            <button class="btn btn-sm" onclick="loadAdminData()">REFRESH</button>
-        </div>
         <div style="height: 20px;"></div>
     </div>
 
-    <!-- GAME SCREEN -->
+    <!-- GAME -->
     <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0;">
-        <div style="width: 100%; max-width: 300px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="width: 100%; max-width: 320px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
             <button class="btn btn-danger btn-sm" style="margin:0;" onclick="quitGame()">GIVE UP</button>
-            <div style="font-family: var(--font-retro); color: gold; font-size: 0.8rem;">
-                SCORE: <span id="g-score">0</span>
-            </div>
         </div>
         
         <canvas id="gameCanvas"></canvas>
         
         <div class="controls">
-            <div class="ctrl-btn btn-up" ontouchstart="press('up',true)" ontouchend="press('up',false)" onmousedown="press('up',true)" onmouseup="press('up',false)">▲</div>
-            <div class="ctrl-btn btn-left" ontouchstart="press('left',true)" ontouchend="press('left',false)" onmousedown="press('left',true)" onmouseup="press('left',false)">◀</div>
-            <div class="ctrl-btn btn-down" ontouchstart="press('down',true)" ontouchend="press('down',false)" onmousedown="press('down',true)" onmouseup="press('down',false)">▼</div>
-            <div class="ctrl-btn btn-right" ontouchstart="press('right',true)" ontouchend="press('right',false)" onmousedown="press('right',true)" onmouseup="press('right',false)">▶</div>
+            <div class="dpad-side">
+                <div class="ctrl-btn" ontouchstart="press('left',true)" ontouchend="press('left',false)" onmousedown="press('left',true)" onmouseup="press('left',false)">◀</div>
+                <div class="ctrl-btn" ontouchstart="press('right',true)" ontouchend="press('right',false)" onmousedown="press('right',true)" onmouseup="press('right',false)">▶</div>
+                <div class="ctrl-btn" ontouchstart="press('down',true)" ontouchend="press('down',false)" onmousedown="press('down',true)" onmouseup="press('down',false)">▼</div>
+            </div>
+            <div class="action-side">
+                <div class="ctrl-btn btn-jump" ontouchstart="press('jump',true)" ontouchend="press('jump',false)" onmousedown="press('jump',true)" onmouseup="press('jump',false)">A</div>
+            </div>
         </div>
     </div>
 </div>
@@ -172,46 +168,29 @@
     <div class="tab" onclick="nav('profile', this)"><div class="tab-icon">👤</div><div>PROFILE</div></div>
 </div>
 
-<!-- GAME OVER MODAL -->
+<!-- MODALS -->
 <div id="modal-over" class="modal">
-    <h1 style="color:red; font-size:2.5rem; text-align: center; margin-bottom: 10px;">GAME OVER</h1>
-    <h2 id="end-score" style="color:white; font-size: 2rem;">0</h2>
-    <p id="end-msg" style="color:gold; font-family: var(--font-retro); font-size: 0.8rem; text-align: center; line-height: 1.5; margin-bottom: 30px;"></p>
+    <h1 id="end-title" style="color:red; font-size:2.5rem; text-align: center; margin-bottom: 10px;">GAME OVER</h1>
+    <p id="end-msg" style="color:white; font-family: var(--font-retro); font-size: 1rem; text-align: center; line-height: 1.5; margin-bottom: 30px;"></p>
     <button class="btn btn-outline" style="width:240px;" onclick="location.reload()">RETURN TO MENU</button>
 </div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 240; 
-    canvas.height = 400;
-
     const API = "https://tg-game-arena.onrender.com";
     const ADMIN_ID = 1463465416;
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     
-    let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
-    const keys = { left: false, right: false, up: false, down: false };
+    let user = null, lobby = null, poll = null, loop = null, gameMode = '';
+    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+    
+    ctx.imageSmoothingEnabled = false;
+    canvas.width = 320; 
+    canvas.height = 224; // Classic Sega Genesis resolution
 
-    window.press = function(k, state) { 
-        Reflect.set(keys, k, state); 
-        if(state && window.onInput) window.onInput(k);
-    };
-
-    document.onkeydown = e => {
-        if(e.key === 'ArrowLeft') press('left', true);
-        if(e.key === 'ArrowRight') press('right', true);
-        if(e.key === 'ArrowDown') press('down', true);
-        if(e.key === 'ArrowUp') press('up', true);
-    };
-
-    // --- СЕТЕВАЯ ЧАСТЬ И ИНТЕРФЕЙС ---
     async function init() {
         const r = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
         user = await r.json(); 
         document.getElementById('p-bal').innerText = user.balance;
-        document.getElementById('p-snake').innerText = Reflect.get(user.highScores, 'snake') || 0;
-        document.getElementById('p-tetris').innerText = Reflect.get(user.highScores, 'tetris') || 0;
         if (user.telegramId === ADMIN_ID) document.getElementById('admin-panel').style.display = 'block';
     }
     init();
@@ -224,18 +203,17 @@
     }
 
     async function startMatchmaking() {
-        const g = document.getElementById('search-game').value;
         const b = parseInt(document.getElementById('search-bet').value);
-        if (user.balance < b) return tg.showAlert('Insufficient balance');
+        if (user.balance < b) return tg.showAlert("Insufficient balance");
         nav('search');
-        const r = await fetch(API + '/api/search-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
+        const r = await fetch(API + '/api/search-match', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: 'sonicSprint', betAmount: b }) });
         const d = await r.json();
-        if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame(g, true); }
+        if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame('ranked'); }
         else { 
             poll = setInterval(async () => {
                 const cr = await fetch(API + '/api/check-match-status', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
                 const cd = await cr.json(); 
-                if (cd.status === 'match_found') { clearInterval(poll); lobby = cd.lobby; launchGame(lobby.gameType, true); }
+                if (cd.status === 'match_found') { clearInterval(poll); lobby = cd.lobby; launchGame('ranked'); }
             }, 3000); 
         }
     }
@@ -246,236 +224,324 @@
         location.reload();
     }
 
-    function launchGame(type, isRanked) {
-        gameType = type;
-        score = 0;
-        document.getElementById('g-score').innerText = '0';
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById('s-game').classList.add('active');
-        document.querySelector('.tabs').style.display = 'none';
-        
-        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); }
-        
-        if (type === 'snake') runSnake();
-        if (type === 'tetris') runTetris();
-    }
-
-    async function gameOver() {
-        if (loop) { clearTimeout(loop); cancelAnimationFrame(loop); }
-        loop = null;
-        
-        document.getElementById('modal-over').style.display = 'flex';
-        document.getElementById('end-score').innerText = score;
-        
-        if (lobby) {
-            document.getElementById('end-msg').innerText = 'Waiting for opponent to finish...';
-            await fetch(API + '/api/submit-score', { 
-                method: 'POST', headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: lobby.lobbyId }) 
-            });
-        } else {
-            document.getElementById('end-msg').innerText = '';
-            await fetch(API + '/api/submit-score', { 
-                method: 'POST', headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score: score, lobbyId: null }) 
-            });
-        }
-    }
-
     function quitGame() {
-        tg.showConfirm('Forfeit the game?', async function(confirmed) {
+        tg.showConfirm("Forfeit the match?", async function(confirmed) {
             if(!confirmed) return;
-            if (lobby) await fetch(API + '/api/forfeit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, lobbyId: lobby.lobbyId }) });
+            if (lobby) {
+                await fetch(API + '/api/forfeit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, lobbyId: lobby.lobbyId }) });
+            }
             location.reload();
         });
     }
 
-    async function depositCrypto(asset, cryptoAmount, starsAmount) {
-        const r = await fetch(API + '/api/deposit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, asset: asset, amount: cryptoAmount, stars: starsAmount }) });
-        const d = await r.json();
-        if (d.payUrl) {
-            tg.openTelegramLink(d.payUrl);
-            let checkingTimer = setInterval(async () => {
-                const cur = await fetch(API + '/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ initData: tg.initData }) });
-                const curUser = await cur.json();
-                if(curUser.balance > user.balance) {
-                    user.balance = curUser.balance;
-                    document.getElementById('p-bal').innerText = user.balance;
-                    clearInterval(checkingTimer);
-                    tg.showAlert('Balance updated!');
-                }
-            }, 3000);
-            setTimeout(() => clearInterval(checkingTimer), 300000);
-        } else { tg.showAlert('Invoice error'); }
+    // --- SONIC 16-BIT ENGINE ---
+    
+    // Virtual Inputs
+    const keys = { left: false, right: false, up: false, down: false, jump: false };
+    function press(k, state) { Reflect.set(keys, k, state); }
+    
+    document.onkeydown = e => {
+        if(e.key === 'ArrowLeft') press('left', true);
+        if(e.key === 'ArrowRight') press('right', true);
+        if(e.key === 'ArrowDown') press('down', true);
+        if(e.key === ' ' || e.key === 'ArrowUp') press('jump', true);
+    };
+    document.onkeyup = e => {
+        if(e.key === 'ArrowLeft') press('left', false);
+        if(e.key === 'ArrowRight') press('right', false);
+        if(e.key === 'ArrowDown') press('down', false);
+        if(e.key === ' ' || e.key === 'ArrowUp') press('jump', false);
+    };
+
+    // Color Palette
+    const C = new Map();
+    C.set('.', 'transparent');
+    C.set('B', '#000000');
+    C.set('u', '#0020B0'); // Sonic Blue
+    C.set('S', '#F0B080'); // Skin
+    C.set('R', '#E00000'); // Red
+    C.set('W', '#FFFFFF'); // White
+    C.set('Y', '#FFFF00'); // Yellow
+    C.set('g', '#00C000'); // Grass Green
+    C.set('G', '#805020'); // Dirt Brown
+    C.set('C', '#E04000'); // Crabmeat Orange
+
+    function renderSprite(str, w, h) {
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const xctx = c.getContext('2d');
+        for (let i = 0; i < str.length; i++) {
+            let col = C.get(str.charAt(i));
+            if (col && col !== 'transparent') {
+                xctx.fillStyle = col;
+                xctx.fillRect(i % w, Math.floor(i / w), 1, 1);
+            }
+        }
+        return c;
     }
 
-    function withdraw() {
-        if(user.balance <= 0) return tg.showAlert('Empty balance');
-        tg.showConfirm('Withdraw ' + user.balance + ' Stars?', async function(confirmed) {
-            if(!confirmed) return;
-            const r = await fetch(API + '/api/withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
+    // Sprites Data (16x16)
+    const sprSonicStand = "......uu..............uuuu............uuuuuu..........uWWuu.........uuWWu..........uuuS.........SSuSS........S.SSS.........SSuuS..........uuW..........uuW.........RR..RR.......RWR..RWR......BB....BB....";
+    const sprSonicRoll  = "......................uuuu............uWWuuu........uuWWuuuu......uuuSWSWuu.....uuSSSWSWuu....uWWuSSuuWuu...uWWWuuWuuWuu...uuWuuWuuWuu.....uuuuWuuu.......uuuuuu......................";
+    const sprRing       = "......................YYYY............YWWYY.........YY..YY........YY..YY........YY..YY........YY..YY........YY..YY........YY..YY........YY..YY.........YYYY.......................";
+    const sprCrab       = "......................CC..............CCCC.........CCCCCC.......C.CCCC.C....C..CC.CC..C...CCCCCCCCCC....C.B.CC.B.C....C.W.CC.W.C...CCCCCCCCCCCC..CC.CCCCCC.CC..CC........CC..CC........CC";
+    const sprTileGrass  = "gggggggggggggggggggggggggggggggggGgGgGgGgGgGgGgGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG";
+    const sprTileDirt   = "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG";
+    const sprGoal       = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWBBBBBBBBBBBBWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW......BBBB..........BBBB......";
+
+    const sStand = renderSprite(sprSonicStand, 16, 16);
+    const sRoll = renderSprite(sprSonicRoll, 16, 16);
+    const sRing = renderSprite(sprRing, 16, 16);
+    const sCrab = renderSprite(sprCrab, 16, 16);
+    const sGrass = renderSprite(sprTileGrass, 16, 16);
+    const sDirt = renderSprite(sprTileDirt, 16, 16);
+    const sGoal = renderSprite(sprGoal, 16, 16);
+
+    // Engine Variables
+    let mapW = 200, mapH = 15;
+    let tiles = Array.from({length: mapW * mapH}, () => '.');
+    let entities = new Array();
+    
+    function setT(x,y,c) { if(x>=0 && x<mapW && y>=0 && y<mapH) Reflect.set(tiles, y*mapW + x, c); }
+    function getT(x,y) { if(x>=0 && x<mapW && y>=0 && y<mapH) return tiles.at(y*mapW + x); return '.'; }
+
+    // Sonic Physics State
+    let sx = 30, sy = 100, svx = 0, svy = 0;
+    let sGnd = false, sRollState = false;
+    let rings = 0, score = 0, timeFrames = 0;
+    
+    // Physics Constants
+    const acc = 0.046875, dec = 0.5, frc = 0.046875, topSpeed = 6;
+    const grv = 0.21875, jmp = 6.5;
+
+    let spawnX = 30, spawnY = 100;
+
+    function buildLevel() {
+        tiles = Array.from({length: mapW * mapH}, () => '.');
+        entities = new Array();
+        
+        // Ground
+        for(let x=0; x<mapW; x++) {
+            setT(x, 13, 'g');
+            setT(x, 14, 'd');
+        }
+
+        // Pits & Obstacles
+        for(let x=40; x<45; x++) { setT(x, 13, '.'); setT(x, 14, '.'); }
+        for(let x=80; x<85; x++) { setT(x, 13, '.'); setT(x, 14, '.'); }
+
+        // Platforms & Rings & Enemies
+        for(let i=20; i<mapW-20; i+=15) {
+            setT(i, 10, 'g'); setT(i+1, 10, 'g'); setT(i+2, 10, 'g');
+            entities.push({type: 'ring', x: i*16, y: 8*16, active: true});
+            entities.push({type: 'ring', x: (i+1)*16, y: 8*16, active: true});
+            
+            if (i % 2 === 0) entities.push({type: 'crab', x: (i+5)*16, y: 12*16, active: true, dir: 1});
+        }
+
+        // Goal Sign
+        entities.push({type: 'goal', x: (mapW-10)*16, y: 12*16, active: true});
+    }
+
+    function launchGame(mode) {
+        gameMode = mode;
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('s-game').classList.add('active');
+        document.querySelector('.tabs').style.display = 'none';
+        
+        rings = 0; score = 0; timeFrames = 0;
+        spawnX = 30; spawnY = 100;
+        sx = spawnX; sy = spawnY; svx = 0; svy = 0;
+
+        buildLevel();
+        if(loop) cancelAnimationFrame(loop);
+        loop = requestAnimationFrame(gameTick);
+    }
+
+    async function triggerFinish() {
+        cancelAnimationFrame(loop);
+        document.getElementById('modal-over').style.display = 'flex';
+        
+        if (gameMode === 'ranked') {
+            document.getElementById('end-title').innerText = "FINISH!";
+            document.getElementById('end-msg').innerText = "Validating result with server...";
+            
+            const r = await fetch(API + '/api/submit-score', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ telegramId: user.telegramId, finished: true, lobbyId: lobby.lobbyId }) 
+            });
             const d = await r.json();
-            if (d.success) { 
-                user.balance = d.newBalance; 
-                document.getElementById('p-bal').innerText = user.balance; 
-                tg.showAlert('Request sent!'); 
-            } else tg.showAlert(d.error);
-        });
-    }
-
-    async function loadAdminData() {
-        const r = await fetch(API + '/api/admin/data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId }) });
-        const d = await r.json();
-        document.getElementById('adm-commission').innerText = (d.adminCommission || 0) + '★';
-    }
-
-    // --- GAME 1: SNAKE ---
-    function runSnake() {
-        let s = Array.of({x:5, y:10});
-        let f = {x:2, y:2};
-        let dx = 0, dy = -1;
-        
-        window.onInput = function(k) {
-            if (k === 'left' && dx !== 1) { dx = -1; dy = 0; }
-            if (k === 'right' && dx !== -1) { dx = 1; dy = 0; }
-            if (k === 'up' && dy !== 1) { dx = 0; dy = -1; }
-            if (k === 'down' && dy !== -1) { dx = 0; dy = 1; }
-        };
-
-        function tick() {
-            let h = {x: s.at(0).x + dx, y: s.at(0).y + dy};
             
-            // Стены и хвост
-            let hitTail = s.some(p => p.x === h.x && p.y === h.y);
-            if(h.x < 0 || h.x >= 12 || h.y < 0 || h.y >= 20 || hitTail) return gameOver();
-            
-            s.unshift(h);
-            
-            if(h.x === f.x && h.y === f.y) { 
-                score += 10; 
-                document.getElementById('g-score').innerText = score; 
-                f = {x: Math.floor(Math.random()*12), y: Math.floor(Math.random()*20)}; 
+            if (d.isWinner) {
+                document.getElementById('end-title').innerText = "YOU WIN!";
+                document.getElementById('end-title').style.color = "#00f0ff";
+                document.getElementById('end-msg').innerText = "Prize credited to your balance!";
             } else {
-                s.pop();
+                document.getElementById('end-title').innerText = "YOU LOST";
+                document.getElementById('end-msg').innerText = "Opponent reached the finish line first.";
             }
-            
-            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 240, 400);
-            ctx.fillStyle = '#ff0055'; ctx.fillRect(f.x*20, f.y*20, 19, 19);
-            ctx.fillStyle = '#00f0ff'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 19, 19));
-            
-            loop = setTimeout(tick, 150 - Math.min(score, 100));
+        } else {
+            document.getElementById('end-title').innerText = "LEVEL CLEARED";
+            document.getElementById('end-title').style.color = "#00f0ff";
+            document.getElementById('end-msg').innerText = "Time: " + Math.floor(timeFrames/60) + "s\nRings: " + rings;
         }
-        tick();
     }
 
-    // --- GAME 2: TETRIS ---
-    function runTetris() {
-        const R = 20, C = 12; 
-        let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
-        
-        const SH_STR = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',');
-        const SH = new Array();
-        for(let i=0; i<SH_STR.length; i++) {
-            let rows = SH_STR.at(i).split('-');
-            let matrix = new Array();
-            for(let r=0; r<rows.length; r++) {
-                let chars = rows.at(r).split('');
-                let numRow = new Array();
-                for(let c=0; c<chars.length; c++) numRow.push(Number(chars.at(c)));
-                matrix.push(numRow);
-            }
-            SH.push(matrix);
+    function death() {
+        if (gameMode === 'ranked') {
+            // High stakes: restart from beginning
+            sx = 30; sy = 100; svx = 0; svy = 0; rings = 0;
+        } else {
+            // Story: restart at checkpoint
+            sx = spawnX; sy = spawnY; svx = 0; svy = 0; rings = 0;
+        }
+    }
+
+    function gameTick() {
+        timeFrames++;
+
+        // Physics Input X
+        if (keys.left) {
+            if (svx > 0) svx -= dec;
+            else if (svx > -topSpeed) svx -= acc;
+        } else if (keys.right) {
+            if (svx < 0) svx += dec;
+            else if (svx < topSpeed) svx += acc;
+        } else {
+            svx -= Math.min(Math.abs(svx), frc) * Math.sign(svx);
         }
 
-        const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
-        
-        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
-        let dropCounter = 0;
-        let lastTime = 0;
+        // Rolling logic
+        if (sGnd && keys.down && Math.abs(svx) > 1) sRollState = true;
+        if (Math.abs(svx) < 0.5) sRollState = false;
 
-        window.onInput = function(k) {
-            if(k === 'left' && !coll(-1,0,p.m)) p.x--;
-            if(k === 'right' && !coll(1,0,p.m)) p.x++;
-            if(k === 'down' && !coll(0,1,p.m)) p.y++;
-            if(k === 'up') rotate(p.m);
-        };
+        // Jump
+        if (keys.jump && sGnd) {
+            svy = -jmp;
+            sGnd = false;
+            sRollState = true;
+            keys.jump = false; // Prevent hold bouncing
+        }
 
-        function draw() {
-            ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            for(let y=0; y<R; y++) {
-                for(let x=0; x<C; x++) {
-                    let v = bd.at(y).at(x);
-                    if(v !== 0) { ctx.fillStyle = CL.at(v); ctx.fillRect(x*20, y*20, 19, 19); }
-                }
-            }
-            for(let y=0; y<p.m.length; y++) {
-                for(let x=0; x<p.m.at(y).length; x++) {
-                    if(p.m.at(y).at(x) !== 0) {
-                        ctx.fillStyle = CL.at(p.c); 
-                        ctx.fillRect((p.x+x)*20, (p.y+y)*20, 19, 19);
-                    }
-                }
-            }
-        }
+        svy += grv;
+
+        // Integrate X
+        sx += svx;
+        let tx = Math.floor(sx / 16);
+        let ty = Math.floor(sy / 16);
         
-        function coll(ax, ay, m) { 
-            for(let y=0; y<m.length; y++) {
-                for(let x=0; x<m.at(y).length; x++) {
-                    if(m.at(y).at(x) !== 0) {
-                        let nx = p.x + x + ax;
-                        let ny = p.y + y + ay;
-                        if (nx < 0 || nx >= C || ny >= R) return true;
-                        let targetRow = bd.at(ny);
-                        if(targetRow && targetRow.at(nx) !== 0) return true;
+        // Simple AABB vs Tiles
+        let tType = getT(tx, ty);
+        if (tType === 'g' || tType === 'd') {
+            if (svx > 0) { sx = tx * 16 - 1; svx = 0; }
+            else if (svx < 0) { sx = tx * 16 + 17; svx = 0; }
+        }
+
+        // Integrate Y
+        sy += svy;
+        tx = Math.floor(sx / 16);
+        ty = Math.floor(sy / 16);
+        let tFoot = getT(tx, Math.floor((sy+15) / 16));
+        
+        sGnd = false;
+        if (svy >= 0 && (tFoot === 'g' || tFoot === 'd')) {
+            sy = Math.floor((sy+15) / 16) * 16 - 16;
+            svy = 0;
+            sGnd = true;
+        }
+
+        // Death by falling
+        if (sy > mapH * 16) death();
+
+        // Entity Updates & Collisions
+        for (let i = 0; i < entities.length; i++) {
+            let e = entities.at(i);
+            if (!e.active) continue;
+
+            // Crabmeat movement
+            if (e.type === 'crab') {
+                e.x += 0.5 * e.dir;
+                if (timeFrames % 120 === 0) e.dir *= -1;
+            }
+
+            // AABB Collision with Sonic (16x16 approximate)
+            if (Math.abs(sx - e.x) < 14 && Math.abs(sy - e.y) < 14) {
+                if (e.type === 'ring') {
+                    e.active = false;
+                    rings++; score += 10;
+                } else if (e.type === 'goal') {
+                    return triggerFinish();
+                } else if (e.type === 'crab') {
+                    if (sRollState && svy > 0) { // Bouncing on enemy
+                        e.active = false;
+                        svy = -jmp * 0.8;
+                        score += 100;
+                    } else {
+                        if (rings > 0) { rings = 0; svy = -4; svx = -2 * Math.sign(svx||1); sGnd = false; }
+                        else death();
                     }
                 }
             }
-            return false;
         }
-        
-        function rotate(m) { 
-            let nm = new Array();
-            for(let i=0; i<m.at(0).length; i++) {
-                let row = new Array();
-                for(let j=m.length-1; j>=0; j--) row.push(m.at(j).at(i));
-                nm.push(row);
+
+        // Rendering
+        ctx.fillStyle = '#0060F8'; // Sky
+        ctx.fillRect(0, 0, 320, 224);
+
+        let camX = Math.floor(sx - 160);
+        let camY = Math.floor(sy - 112);
+        if (camX < 0) camX = 0;
+        if (camX > mapW*16 - 320) camX = mapW*16 - 320;
+        if (camY < 0) camY = 0;
+        if (camY > mapH*16 - 224) camY = mapH*16 - 224;
+
+        // Draw Map
+        let startCol = Math.floor(camX / 16);
+        let endCol = startCol + 21;
+        let startRow = Math.floor(camY / 16);
+        let endRow = startRow + 15;
+
+        for (let r = startRow; r <= endRow; r++) {
+            for (let c = startCol; c <= endCol; c++) {
+                let t = getT(c, r);
+                if (t === 'g') ctx.drawImage(sGrass, c*16 - camX, r*16 - camY);
+                if (t === 'd') ctx.drawImage(sDirt, c*16 - camX, r*16 - camY);
             }
-            if(!coll(0,0,nm)) p.m = nm; 
         }
+
+        // Draw Entities
+        for (let i = 0; i < entities.length; i++) {
+            let e = entities.at(i);
+            if (!e.active) continue;
+            let drawX = Math.floor(e.x - camX);
+            let drawY = Math.floor(e.y - camY);
+            if (drawX < -16 || drawX > 320 || drawY < -16 || drawY > 224) continue;
+
+            if (e.type === 'ring') ctx.drawImage(sRing, drawX, drawY);
+            if (e.type === 'crab') ctx.drawImage(sCrab, drawX, drawY);
+            if (e.type === 'goal') ctx.drawImage(sGoal, drawX, drawY);
+        }
+
+        // Draw Sonic
+        ctx.save();
+        ctx.translate(Math.floor(sx - camX + 8), Math.floor(sy - camY + 8));
+        if (svx < -0.1) ctx.scale(-1, 1); // Flip horizontally if moving left
         
-        function tick(time = 0) {
-            dropCounter += time - lastTime; 
-            lastTime = time;
-            
-            if(dropCounter > 1000) {
-                if(!coll(0,1,p.m)) p.y++;
-                else {
-                    for(let y=0; y<p.m.length; y++) {
-                        for(let x=0; x<p.m.at(y).length; x++) {
-                            if(p.m.at(y).at(x) !== 0) Reflect.set(bd.at(y + p.y), x + p.x, p.c);
-                        }
-                    }
-                    
-                    for(let y=R-1; y>=0; y--) {
-                        let isFull = true;
-                        for(let x=0; x<C; x++) if(bd.at(y).at(x) === 0) isFull = false;
-                        if(isFull) {
-                            bd.splice(y, 1);
-                            bd.unshift(Array.from({length:C}, () => 0));
-                            score += 100;
-                            document.getElementById('g-score').innerText = score;
-                            y++;
-                        }
-                    }
-                    p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
-                    if(coll(0,0,p.m)) return gameOver();
-                }
-                dropCounter = 0;
-            }
-            draw(); 
-            loop = requestAnimationFrame(tick);
-        }
-        tick();
+        if (sRollState) ctx.drawImage(sRoll, -8, -8);
+        else ctx.drawImage(sStand, -8, -8);
+        ctx.restore();
+
+        // Draw HUD
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '10px "Press Start 2P"';
+        ctx.fillText("SCORE  " + score, 10, 20);
+        ctx.fillText("TIME   " + Math.floor(timeFrames/60), 10, 35);
+        if (rings === 0 && Math.floor(timeFrames/15)%2 === 0) ctx.fillStyle = '#FF0000'; // Blink red
+        else ctx.fillStyle = '#FFFF00';
+        ctx.fillText("RINGS  " + rings, 10, 50);
+
+        loop = requestAnimationFrame(gameTick);
     }
 </script>
 </body>
