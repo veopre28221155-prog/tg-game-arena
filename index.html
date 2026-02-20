@@ -28,13 +28,7 @@
 
         h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
         
-        h1 { 
-            font-size: 1.6rem; 
-            color: var(--accent-neon); 
-            margin-top: 15px; 
-            line-height: 1.4;
-            text-shadow: 0 0 5px var(--accent-neon), 0 0 10px #0088ff;
-        }
+        h1 { font-size: 1.6rem; color: var(--accent-neon); margin-top: 15px; line-height: 1.4; text-shadow: 0 0 5px var(--accent-neon), 0 0 10px #0088ff; }
         
         .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
         
@@ -52,20 +46,7 @@
 
         select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; font-family: -apple-system, sans-serif;}
 
-        canvas { 
-            border: 4px solid var(--tg-text); 
-            border-radius: 4px; 
-            background: #000; 
-            width: 100%; 
-            max-width: 300px; 
-            height: auto; 
-            margin-bottom: 15px; 
-            flex-shrink: 0;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
+        canvas { border: 4px solid var(--tg-text); border-radius: 4px; background: #000; width: 100%; max-width: 300px; height: auto; margin-bottom: 15px; flex-shrink: 0; image-rendering: -moz-crisp-edges; image-rendering: -webkit-crisp-edges; image-rendering: pixelated; image-rendering: crisp-edges; }
 
         .game-ui-bottom { width: 100%; display: flex; justify-content: center; margin-top: 10px; padding-bottom: 20px; flex-shrink: 0; }
         .d-pad-container { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; }
@@ -79,7 +60,6 @@
         .tab-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center; flex-direction:column; overflow-y:auto; padding: 20px; font-family: -apple-system, sans-serif;}
-        
         .admin-row { font-size: 0.7rem; border-bottom: 1px solid #444; padding: 5px; display: flex; justify-content: space-between; }
         #admin-panel { display: none; border: 2px solid gold; }
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-family: var(--font-retro); font-size: 0.7rem; }
@@ -246,7 +226,6 @@
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
     
-    // STRICT Pixelated graphics rules
     ctx.imageSmoothingEnabled = false;
     
     const dpr = window.devicePixelRatio || 1;
@@ -440,15 +419,14 @@
         if (gameType === 'sonic' && (e.key === ' ' || e.key === 'ArrowUp')) window.gameAction();
     };
 
-    // --- SONIC 16-BIT RUNNER ---
     function runSonic() {
         let sonicY = 270;
         let sonicVy = 0;
         let isJumping = false;
         let frames = 0;
         let scrollSpeed = 6;
-        let enemies = [];
-        let rings =[];
+        let enemies = new Array();
+        let rings = new Array();
         let timeLeft = 60;
         let lastTime = Date.now();
         let gameActive = true;
@@ -473,10 +451,10 @@
         function drawSpriteStr(str, dx, dy, scale) {
             let rows = str.split('-');
             for (let r = 0; r < rows.length; r++) {
-                let rowStr = rows;
+                let rowStr = rows.at(r);
                 for (let c = 0; c < rowStr.length; c++) {
                     let char = rowStr.charAt(c);
-                    let color = colors;
+                    let color = Reflect.get(colors, char);
                     if (color) {
                         ctx.fillStyle = color;
                         ctx.fillRect(dx + c * scale, dy + r * scale, scale, scale);
@@ -532,9 +510,9 @@
                 }
             }
 
-            let nextRings =[];
+            let nextRings = new Array();
             for (let i = 0; i < rings.length; i++) {
-                let r = rings;
+                let r = rings.at(i);
                 r.x -= scrollSpeed;
                 if (r.x < 50 && r.x > 0 && sonicY < r.y + 20 && sonicY + 32 > r.y) {
                     score += 1; document.getElementById('g-score').innerText = score;
@@ -544,9 +522,9 @@
             }
             rings = nextRings;
 
-            let nextEnemies =[];
+            let nextEnemies = new Array();
             for (let i = 0; i < enemies.length; i++) {
-                let e = enemies;
+                let e = enemies.at(i);
                 e.x -= scrollSpeed;
                 if (e.x < 55 && e.x + 20 > 35 && sonicY + 30 > e.y + 10) {
                     gameActive = false; return gameOver();
@@ -595,21 +573,20 @@
             }
             
             drawSpriteStr(sonicSprite, 30, sonicY, 2);
-            enemies.forEach(e => drawSpriteStr(crabFrame, e.x, e.y, 2));
-            rings.forEach(r => drawSpriteStr(ringFrame, r.x, r.y, 2));
+            for (let i = 0; i < enemies.length; i++) drawSpriteStr(crabFrame, enemies.at(i).x, enemies.at(i).y, 2);
+            for (let i = 0; i < rings.length; i++) drawSpriteStr(ringFrame, rings.at(i).x, rings.at(i).y, 2);
 
             loop = requestAnimationFrame(upd);
         }
         upd();
     }
 
-    // --- SNAKE ---
     function runSnake() {
-        let s =, f = {x:2,y:2}, d = {x:0,y:0};
+        let s = Array.of({x:5, y:10}), f = {x:2,y:2}, d = {x:0,y:0};
         window.gameAction = function() {};
 
         function upd() {
-            let h = {x: s.x+d.x, y: s.y+d.y};
+            let h = {x: s.at(0).x+d.x, y: s.at(0).y+d.y};
             if(h.x<0||h.x>=12||h.y<0||h.y>=20||( (d.x||d.y) && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
             if(d.x||d.y) s.unshift(h);
             if(h.x===f.x && h.y===f.y) { score+=10; document.getElementById('g-score').innerText=score; f={x:Math.floor(Math.random()*12), y:Math.floor(Math.random()*20)}; }
@@ -630,21 +607,18 @@
         upd();
     }
 
-    // --- TETRIS ---
     function runTetris() {
         const R=20, C=12; 
         let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
-        const SH =],,],,],,],,],,],
-            [,]
-        ];
-        const CL =;
-        let p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
+        const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(str=>str.split('-').map(r=>r.split('').map(Number)));
+        const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
+        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
         window.gameAction = function() {};  
 
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect(x*20,y*20,19,19); }}));
-            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
+            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(v); ctx.fillRect(x*20,y*20,19,19); }}));
+            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(p.c); ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
         }
         
         function coll(ax, ay, m) { 
@@ -653,13 +627,15 @@
                 let nx = p.x + x + ax;
                 let ny = p.y + y + ay;
                 if (nx < 0 || nx >= C || ny >= R) return true;
-                if(!bd) return true;
-                return bd !== 0;
+                let targetRow = bd.at(ny);
+                if(!targetRow) return true;
+                let cell = targetRow.at(nx);
+                return cell !== 0;
             })); 
         }
         
         function rotate(m) { 
-            let nm = m.map((_,i) => m.map(r => r).reverse()); 
+            let nm = m.at(0).map((_,i) => m.map(r => r.at(i)).reverse()); 
             if(!coll(0,0,nm)) p.m=nm; 
         }
         
@@ -668,9 +644,9 @@
             if(dc > 1000) {
                 if(!coll(0,1,p.m)) p.y++;
                 else {
-                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) { bd = p.c; }}));
+                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) { let row = bd.at(y + p.y); Reflect.set(row, x + p.x, p.c); }}));
                     bd.forEach((r,y)=>{ if(r.every(v=>v!==0)){ bd.splice(y,1); bd.unshift(Array.from({length:C}, () => 0)); score+=100; document.getElementById('g-score').innerText=score; }});
-                    p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
+                    p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
                     if(coll(0,0,p.m)) return gameOver();
                 }
                 dc=0;
