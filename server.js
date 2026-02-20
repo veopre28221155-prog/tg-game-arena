@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema({
     highScores: { 
         snake: { type: Number, default: 0 }, 
         tetris: { type: Number, default: 0 },
-        sonic: { type: Number, default: 0 } // Добавлен Sonic Rush
+        sonic: { type: Number, default: 0 }
     },
     createdAt: { type: Date, default: Date.now }
 });
