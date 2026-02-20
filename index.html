@@ -262,7 +262,7 @@
         if(d.success) tg.showAlert("Updated!");
     }
 
-    // --- PAYMENTS (CRYPTOBOT) ---
+    // --- PAYMENTS ---
     async function depositCrypto(asset, cryptoAmount, starsAmount) {
         const r = await fetch(`${API}/api/deposit`, { 
             method: 'POST', 
@@ -314,7 +314,7 @@
     async function startMatchmaking() {
         const g = document.getElementById('search-game').value, b = parseInt(document.getElementById('search-bet').value);
         if (user.balance < b) return tg.showAlert("Insufficient Stars");
-        nav('search', document.querySelectorAll('.tab'));
+        nav('search', document.querySelector('.tab'));
         const r = await fetch(`${API}/api/search-match`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
         const d = await r.json();
         if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame(g, true); }
@@ -353,9 +353,9 @@
     function input(k, e) { e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' })); }
 
     function runSnake() {
-        let s =, f = {x:2,y:2}, d = {x:0,y:0};
+        let s = Array.of({x:5,y:10}), f = {x:2,y:2}, d = {x:0,y:0};
         function upd() {
-            let h = {x:s.x+d.x, y:s.y+d.y};
+            let h = {x: s.at(0).x+d.x, y: s.at(0).y+d.y};
             if(h.x<0||h.x>=12||h.y<0||h.y>=20||( (d.x||d.y) && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
             if(d.x||d.y) s.unshift(h);
             if(h.x===f.x && h.y===f.y) { score+=10; document.getElementById('g-score').innerText=score; f={x:Math.floor(Math.random()*12), y:Math.floor(Math.random()*20)}; }
@@ -377,28 +377,32 @@
 
     function runTetris() {
         const R=20, C=12; 
-        let bd = Array.from({length:R}, () => Array(C).fill(0));
+        let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
         
-        const SH =],,],,], 
-            [,],,],,],,]
-        ];
+        // Матрицы Тетриса, конвертированные через строки (чтобы не парсилось ошибочно)
+        const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(s=>s.split('-').map(r=>r.split('').map(Number)));
+        const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
         
-        const CL =;
-        
-        let p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
+        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
         
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect(x*20,y*20,19,19); }}));
-            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
+            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(v); ctx.fillRect(x*20,y*20,19,19); }}));
+            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(p.c); ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
         }
         
         function coll(ax, ay, m) { 
-            return m.some((r,y)=>r.some((v,x)=> v && (bd === undefined || bd === undefined || bd !== 0))); 
+            return m.some((r,y)=>r.some((v,x)=> {
+                if(!v) return false;
+                let targetRow = bd.at(y + p.y + ay);
+                if(!targetRow) return true;
+                let cell = targetRow.at(x + p.x + ax);
+                return cell === undefined || cell !== 0;
+            })); 
         }
         
         function rotate(m) { 
-            let nm=m.map((_,i)=>m.map(r=>r).reverse()); 
+            let nm = m.at(0).map((_,i) => m.map(r => r.at(i)).reverse()); 
             if(!coll(0,0,nm)) p.m=nm; 
         }
         
@@ -407,9 +411,12 @@
             if(dc > 1000) {
                 if(!coll(0,1,p.m)) p.y++;
                 else {
-                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) bd=p.c; }));
-                    bd.forEach((r,y)=>{ if(r.every(v=>v!==0)){ bd.splice(y,1); bd.unshift(Array(C).fill(0)); score+=100; document.getElementById('g-score').innerText=score; }});
-                    p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
+                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) {
+                        let row = bd.at(y + p.y);
+                        Reflect.set(row, x + p.x, p.c);
+                    }}));
+                    bd.forEach((r,y)=>{ if(r.every(v=>v!==0)){ bd.splice(y,1); bd.unshift(Array.from({length:C}, () => 0)); score+=100; document.getElementById('g-score').innerText=score; }});
+                    p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
                     if(coll(0,0,p.m)) return gameOver();
                 }
                 dc=0;
