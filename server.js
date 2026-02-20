@@ -203,7 +203,6 @@ app.post('/api/search-match', async (req, res) => {
         user.balance -= betAmount; 
         await user.save();
         
-        // Ищем оппонента (заявка не старше 30 секунд)
         const opponent = await MatchRequest.findOneAndDelete({ 
             gameType, 
             betAmount, 
@@ -235,7 +234,7 @@ app.post('/api/check-match-status', async (req, res) => {
         
         if (lobby) return res.json({ status: 'match_found', lobby });
         
-        // Heartbeat - обновляем время жизни заявки поиска
+        // Heartbeat заявки
         const r = await MatchRequest.findOneAndUpdate(
             { telegramId },
             { $set: { createdAt: new Date() } }
@@ -277,7 +276,6 @@ app.post('/api/cancel-match', async (req, res) => {
 app.post('/api/submit-score', async (req, res) => {
     const { telegramId, game, score, lobbyId } = req.body;
     try {
-        // Обновляем локальный рекорд в любом случае
         const scoreUpdate = { $max: {} };
         scoreUpdate.$max = score;
         await User.findOneAndUpdate({ telegramId }, scoreUpdate);
@@ -285,23 +283,20 @@ app.post('/api/submit-score', async (req, res) => {
         if (!lobbyId) return res.json({ success: true });
 
         const tempLobby = await Lobby.findOne({ lobbyId, status: 'active' });
-        if (!tempLobby) return res.json({ success: true }); // Лобби уже закрыто или не найдено
+        if (!tempLobby) return res.json({ success: true }); 
 
         let updateField = {};
         if (tempLobby.player1Id === telegramId) updateField = { "scores.player1": score };
         else if (tempLobby.player2Id === telegramId) updateField = { "scores.player2": score };
         else return res.json({ success: true });
 
-        // Атомарно сохраняем результат текущего игрока
         const lobby = await Lobby.findOneAndUpdate(
             { lobbyId, status: 'active' },
             { $set: updateField },
             { new: true }
         );
 
-        // Если оба игрока закончили
         if (lobby && lobby.scores.player1 !== -1 && lobby.scores.player2 !== -1) {
-            // Атомарно закрываем лобби (предотвращаем двойные выплаты)
             const finishLobby = await Lobby.findOneAndUpdate(
                 { lobbyId, status: 'active' },
                 { $set: { status: 'finished' } },
@@ -319,15 +314,12 @@ app.post('/api/submit-score', async (req, res) => {
                 if (finishLobby.scores.player1 > finishLobby.scores.player2) { winnerId = finishLobby.player1Id; loserId = finishLobby.player2Id; }
                 else if (finishLobby.scores.player2 > finishLobby.scores.player1) { winnerId = finishLobby.player2Id; loserId = finishLobby.player1Id; }
 
-                // Зачисляем комиссию админу
                 await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: fee, adminCommission: fee } }, { upsert: true });
 
                 if (winnerId) {
-                    // Выдаем приз
                     await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } });
                     await new MatchHistory({ winnerId, loserId, gameType: finishLobby.gameType, betAmount: finishLobby.betAmount, prize }).save();
                 } else {
-                    // Ничья - возврат ставок (без комиссии)
                     const refund = finishLobby.betAmount;
                     await User.findOneAndUpdate({ telegramId: finishLobby.player1Id }, { $inc: { balance: refund } });
                     await User.findOneAndUpdate({ telegramId: finishLobby.player2Id }, { $inc: { balance: refund } });
