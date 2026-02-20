@@ -18,9 +18,9 @@
             --font-retro: 'Press Start 2P', cursive;
         }
         * { box-sizing: border-box; }
-        body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: -apple-system, sans-serif; height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; -webkit-user-select: none; touch-action: none; }
+        body { margin: 0; background: var(--tg-bg); color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; position: relative; user-select: none; -webkit-user-select: none; touch-action: none; }
         
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; -webkit-overflow-scrolling: touch; }
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 70px); flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; -webkit-overflow-scrolling: touch; font-family: -apple-system, sans-serif; }
         .screen.active { display: flex; }
         
         .screen::-webkit-scrollbar { width: 5px; }
@@ -28,7 +28,6 @@
 
         h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-align: center; }
         
-        /* Классический 8-bit неоновый заголовок */
         h1 { 
             font-size: 1.6rem; 
             color: var(--accent-neon); 
@@ -48,8 +47,10 @@
         .btn-sm { width: auto; padding: 6px 12px; font-size: 0.7rem; margin-bottom: 0; }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
 
-        select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; }
+        select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; font-family: -apple-system, sans-serif;}
 
         canvas { 
             border: 4px solid var(--tg-text); 
@@ -68,19 +69,20 @@
 
         .game-ui-bottom { width: 100%; display: flex; justify-content: center; margin-top: 10px; padding-bottom: 20px; flex-shrink: 0; }
         .d-pad-container { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; }
-        .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; touch-action: manipulation; }
+        .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 2px solid var(--tg-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; touch-action: manipulation; font-family: -apple-system, sans-serif;}
         .ctrl-btn:active { background: var(--accent-neon); color: black; border-color: var(--accent-neon); }
         .btn-up { grid-area: up; } .btn-left { grid-area: left; } .btn-down { grid-area: down; } .btn-right { grid-area: right; }
 
-        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--tg-sec-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: 10px; }
-        .tab { display: flex; flex-direction: column; align-items: center; color: var(--tg-text); opacity: 0.5; font-size: 0.7rem; cursor: pointer; width: 100%; }
+        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: var(--tg-sec-bg); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; padding-bottom: 10px; font-family: -apple-system, sans-serif;}
+        .tab { display: flex; flex-direction: column; align-items: center; color: var(--tg-text); opacity: 0.5; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; }
         .tab.active { opacity: 1; color: var(--accent-neon); }
         .tab-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center; flex-direction:column; overflow-y:auto; padding: 20px; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center; flex-direction:column; overflow-y:auto; padding: 20px; font-family: -apple-system, sans-serif;}
         
         .admin-row { font-size: 0.7rem; border-bottom: 1px solid #444; padding: 5px; display: flex; justify-content: space-between; }
         #admin-panel { display: none; border: 2px solid gold; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-family: var(--font-retro); font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -91,10 +93,10 @@
         <h1>RETRO BATTLE<br>ARENA</h1>
 
         <div class="card" style="border: 2px solid var(--accent-neon); box-shadow: 0 0 15px rgba(0,240,255,0.2);">
-            <h2 style="color: var(--accent-neon);">Ranked Match 1v1</h2>
+            <h2 style="color: var(--accent-neon); font-size: 1.1rem;">Ranked Match 1v1</h2>
             <select id="search-game">
-                <option value="sonic">🦔 Sonic Rush (16-bit)</option>
-                <option value="snake">🐍 Snake Classic</option>
+                <option value="sonic">🦔 Sonic Rush</option>
+                <option value="snake">🐍 Snake Retro</option>
                 <option value="tetris">🧱 Tetris Retro</option>
             </select>
             <select id="search-bet">
@@ -107,21 +109,23 @@
         </div>
 
         <div class="card">
-            <h2>Solo Training</h2>
+            <h2 style="font-size: 1rem;">Solo Training</h2>
+            <p style="font-size:0.7rem; text-align:center; opacity:0.7; font-family: var(--font-retro); margin-top: 0;">(FREE PLAY)</p>
             <button class="btn btn-outline" onclick="launchGame('sonic', false)">🦔 Sonic Rush</button>
             <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Snake</button>
             <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Tetris</button>
         </div>
         
         <div class="card">
-            <h2>Friend Match</h2>
+            <h2 style="font-size: 1rem;">Play with Friend</h2>
             <button class="btn btn-outline" onclick="openFriendModal()">🔗 СОЗДАТЬ ССЫЛКУ</button>
         </div>
     </div>
 
     <!-- SEARCH -->
     <div id="s-search" class="screen" style="justify-content: center;">
-        <h1 class="blink">ПОИСК ВРАГА...</h1>
+        <h1 class="blink" style="color: #ff8800;">ПОИСК ВРАГА...</h1>
+        <p style="text-align: center; opacity: 0.7; margin-bottom: 30px;">Ожидание соперника</p>
         <button class="btn btn-danger" onclick="cancelMatchmaking()">ОТМЕНА</button>
     </div>
 
@@ -130,43 +134,43 @@
         <h1>PROFILE</h1>
         
         <div class="card" style="text-align: center;">
-            <div style="font-size: 3rem; font-family: var(--font-retro); color: gold;">
-                <span id="p-bal">0</span>
+            <div style="font-size: 2.5rem; font-family: var(--font-retro); color: gold; text-shadow: 2px 2px 0 #000;">
+                <span id="p-bal">0</span> ★
             </div>
-            <div style="opacity: 0.7;">VIRTUAL STARS BALANCE</div>
+            <div style="opacity: 0.7; font-size: 0.8rem; margin-top: 10px; font-weight: bold;">VIRTUAL STARS</div>
         </div>
 
         <div class="card">
-            <h2>Stats</h2>
+            <h2 style="font-size: 1rem;">High Scores</h2>
             <div class="stat-row"><span>ID:</span> <span id="p-id">...</span></div>
-            <div class="stat-row"><span>Best Sonic:</span> <span id="p-sonic" style="color:#00f0ff;">0</span></div>
-            <div class="stat-row"><span>Best Snake:</span> <span id="p-snake">0</span></div>
-            <div class="stat-row"><span>Best Tetris:</span> <span id="p-tetris">0</span></div>
+            <div class="stat-row"><span>Sonic:</span> <span id="p-sonic" style="color:#00f0ff;">0</span></div>
+            <div class="stat-row"><span>Snake:</span> <span id="p-snake" style="color:#00ff00;">0</span></div>
+            <div class="stat-row"><span>Tetris:</span> <span id="p-tetris" style="color:#ff0055;">0</span></div>
         </div>
 
         <!-- ADMIN PANEL -->
         <div id="admin-panel" class="card">
-            <h2 style="color: gold;">ADMIN PANEL</h2>
+            <h2 style="color: gold; font-size: 1rem;">ADMIN PANEL</h2>
             <div class="admin-row" style="margin-bottom: 10px; font-size: 0.9rem;">
                 <span style="font-weight: bold;">Total Commission:</span> 
                 <span id="adm-commission" style="color:var(--accent-neon); font-weight:bold;">0★</span>
             </div>
             <button class="btn btn-sm" onclick="loadAdminData()">REFRESH DATA</button>
-            <br><br>
+            <br>
             <div style="text-align: left;">
-                <h4 style="margin: 5px 0;">Withdrawal Requests:</h4>
-                <div id="adm-withdrawals" style="max-height: 150px; overflow-y: auto; background: #000; padding: 5px;"></div>
-                <h4 style="margin: 10px 0 5px;">Recent Matches:</h4>
-                <div id="adm-matches" style="max-height: 150px; overflow-y: auto; background: #000; padding: 5px;"></div>
+                <h4 style="margin: 5px 0;">Withdrawals:</h4>
+                <div id="adm-withdrawals" style="max-height: 100px; overflow-y: auto; background: #000; padding: 5px;"></div>
+                <h4 style="margin: 10px 0 5px;">Matches:</h4>
+                <div id="adm-matches" style="max-height: 100px; overflow-y: auto; background: #000; padding: 5px;"></div>
                 <h4 style="margin: 10px 0 5px;">Manual Balance:</h4>
                 <input type="number" id="adm-target-id" placeholder="User ID">
                 <input type="number" id="adm-new-bal" placeholder="New Balance">
-                <button class="btn btn-danger btn-sm" onclick="adminSetBalance()">SET BALANCE</button>
+                <button class="btn btn-danger btn-sm" onclick="adminSetBalance()">SET</button>
             </div>
         </div>
 
         <div class="card">
-            <h2>Deposit (CryptoBot)</h2>
+            <h2 style="font-size: 1rem;">Deposit (Crypto)</h2>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button class="btn btn-crypto" onclick="depositCrypto('USDT', 1, 100)">1 USDT (+100★)</button>
                 <button class="btn btn-crypto" onclick="depositCrypto('TON', 1, 500)">1 TON (+500★)</button>
@@ -178,14 +182,15 @@
     </div>
 
     <!-- GAME -->
-    <div id="s-game" class="screen" style="padding-top: 10px;">
-        <div class="game-header">
+    <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0; height: 100%;">
+        <div style="width: 100%; max-width: 300px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="display: flex; gap: 5px;">
                 <button class="btn btn-danger btn-sm" onclick="quitGame()">EXIT</button>
                 <button class="btn btn-outline btn-sm" onclick="restartGame()" id="btn-restart-header" style="display:none;">↻</button>
             </div>
-            <div style="font-family: var(--font-retro); color: gold; font-size: 0.8rem;">
-                SCORE: <span id="g-score">0</span> <span id="g-time-box" style="display:none; color:white; margin-left: 10px;">🕒 <span id="g-time">60</span></span>
+            <div style="font-family: var(--font-retro); color: gold; font-size: 0.8rem; text-shadow: 1px 1px 0 #000;">
+                SCORE: <span id="g-score">0</span> 
+                <span id="g-time-box" style="display:none; color:white; margin-left: 10px;">🕒 <span id="g-time">60</span></span>
             </div>
         </div>
         <canvas id="gameCanvas" ontouchstart="triggerGameAction(event)" onmousedown="triggerGameAction(event)"></canvas>
@@ -212,16 +217,16 @@
 
 <!-- MODALS -->
 <div id="modal-over" class="modal">
-    <h1 style="color:red; font-size:3rem; text-align: center;">GAME<br>OVER</h1>
-    <h2 id="end-score" style="color:white;">0</h2>
-    <p id="end-msg" style="color:gold;"></p>
+    <h1 style="color:red; font-size:3rem; text-align: center; margin-bottom: 10px;">GAME<br>OVER</h1>
+    <h2 id="end-score" style="color:white; font-size: 2rem;">0</h2>
+    <p id="end-msg" style="color:gold; font-family: var(--font-retro); font-size: 0.8rem; text-align: center; line-height: 1.5; margin-bottom: 20px;"></p>
     <button class="btn btn-duel" style="width:240px;" onclick="restartGameFromModal()">ИГРАТЬ СНОВА</button>
     <button class="btn btn-outline" style="width:240px; margin-top: 10px;" onclick="location.reload()">В МЕНЮ</button>
 </div>
 
 <div id="modal-friend" class="modal">
-    <div class="card" style="width: 85%;">
-        <h2>Invite Friend</h2>
+    <div class="card" style="width: 90%; max-width: 320px;">
+        <h2 style="font-size: 1rem;">Invite Friend</h2>
         <select id="f-game">
             <option value="sonic">Sonic Rush</option>
             <option value="snake">Snake</option>
@@ -241,6 +246,7 @@
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
     
+    // STRICT Pixelated graphics rules
     ctx.imageSmoothingEnabled = false;
     
     const dpr = window.devicePixelRatio || 1;
@@ -303,7 +309,7 @@
 
     async function depositCrypto(asset, cryptoAmount, starsAmount) {
         const r = await fetch(`${API}/api/deposit`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, asset, amount: cryptoAmount, stars: starsAmount }) });
-        const d = await r.json(); 
+        const d = await r.json();
         if (d.payUrl) {
             tg.openTelegramLink(d.payUrl);
             let checkingTimer = setInterval(async () => {
@@ -317,9 +323,7 @@
                 }
             }, 3000);
             setTimeout(() => clearInterval(checkingTimer), 300000);
-        } else {
-            tg.showAlert("Ошибка при создании счета");
-        }
+        } else { tg.showAlert("Ошибка при создании счета"); }
     }
 
     function withdraw() {
@@ -353,10 +357,13 @@
         const r = await fetch(`${API}/api/search-match`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
         const d = await r.json();
         if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame(g, true); }
-        else { poll = setInterval(async () => {
-            const cr = await fetch(`${API}/api/check-match-status`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
-            const cd = await cr.json(); if (cd.status === 'match_found') { clearInterval(poll); lobby = cd.lobby; launchGame(lobby.gameType, true); }
-        }, 3000); }
+        else { 
+            poll = setInterval(async () => {
+                const cr = await fetch(`${API}/api/check-match-status`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId }) });
+                const cd = await cr.json(); 
+                if (cd.status === 'match_found') { clearInterval(poll); lobby = cd.lobby; launchGame(lobby.gameType, true); }
+            }, 3000); 
+        }
     }
 
     async function cancelMatchmaking() {
@@ -386,14 +393,14 @@
         }
     }
 
-    function quitGame() { 
+    function quitGame() {
         tg.showConfirm("Завершить игру и выйти в меню?", function(confirmed) {
             if(confirmed) location.reload();
         });
     }
 
-    function restartGame() { 
-        if(loop) cancelAnimationFrame(loop); clearTimeout(loop); score=0; document.getElementById('g-score').innerText=0; 
+    function restartGame() {
+        if(loop) cancelAnimationFrame(loop); clearTimeout(loop); score=0; document.getElementById('g-score').innerText=0;
         if(gameType==='snake') runSnake(); else if(gameType==='tetris') runTetris(); else runSonic(); 
     }
     
@@ -401,14 +408,28 @@
 
     async function gameOver() {
         if(loop) cancelAnimationFrame(loop); clearTimeout(loop);
-        document.getElementById('modal-over').style.display='flex';
+        document.getElementById('modal-over').style.display = 'flex';
         document.getElementById('end-score').innerText = score;
-        await fetch(`${API}/api/submit-score`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score, lobbyId: lobby ? lobby.lobbyId : null }) });
+        
+        // ПРЯЧЕМ кнопку "Играть снова" если это дуэль
+        if (lobby) {
+            document.querySelector('#modal-over .btn-duel').style.display = 'none';
+            document.getElementById('end-msg').innerText = "Ожидание результата\nсоперника...";
+        } else {
+            document.querySelector('#modal-over .btn-duel').style.display = 'block';
+            document.getElementById('end-msg').innerText = "";
+        }
+
+        await fetch(`${API}/api/submit-score`, { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ telegramId: user.telegramId, game: gameType, score, lobbyId: lobby ? lobby.lobbyId : null }) 
+        });
     }
 
-    function input(k, e) { 
-        if(e) e.preventDefault(); 
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' })); 
+    function input(k, e) {
+        if(e) e.preventDefault();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' }));
     }
 
     function triggerGameAction(e) {
@@ -420,15 +441,15 @@
         if (gameType === 'sonic' && (e.key === ' ' || e.key === 'ArrowUp')) window.gameAction();
     };
 
-    // --- SONIC 16-BIT RUNNER (Full Parallax, No brackets) ---
+    // --- SONIC 16-BIT RUNNER (Full Parallax, No arcs, Pixel Art ONLY) ---
     function runSonic() {
         let sonicY = 270;
         let sonicVy = 0;
         let isJumping = false;
         let frames = 0;
         let scrollSpeed = 6;
-        let enemies = Array.of();
-        let rings = Array.of();
+        let enemies = [];
+        let rings =[];
         let timeLeft = 60;
         let lastTime = Date.now();
         let gameActive = true;
@@ -450,13 +471,14 @@
             'R': '#E00000', 'S': '#FFCC99', 'G': '#FFD700', 'C': '#FF2600'
         };
 
+        // Custom string-to-pixels rendering function
         function drawSpriteStr(str, dx, dy, scale) {
             let rows = str.split('-');
             for (let r = 0; r < rows.length; r++) {
-                let rowStr = rows.at(r);
+                let rowStr = rows;
                 for (let c = 0; c < rowStr.length; c++) {
                     let char = rowStr.charAt(c);
-                    let color = Reflect.get(colors, char);
+                    let color = colors;
                     if (color) {
                         ctx.fillStyle = color;
                         ctx.fillRect(dx + c * scale, dy + r * scale, scale, scale);
@@ -466,7 +488,6 @@
         }
 
         function drawPalm(px, py) {
-            // Ствол
             ctx.fillStyle = '#8B4513';
             ctx.fillRect(px + 12, py, 6, 80);
             ctx.fillRect(px + 10, py + 10, 10, 5);
@@ -474,7 +495,6 @@
             ctx.fillRect(px + 10, py + 50, 10, 5);
             ctx.fillRect(px + 10, py + 70, 10, 5);
             
-            // Листья
             ctx.fillStyle = '#228B22';
             ctx.fillRect(px, py - 10, 30, 10);
             ctx.fillRect(px - 10, py - 4, 50, 6);
@@ -508,17 +528,15 @@
 
             if (frames % 40 === 0) {
                 if (Math.random() > 0.6) {
-                    let obj = { x: 240, y: 286, type: 'crab' };
-                    enemies.push(obj);
+                    enemies.push({ x: 240, y: 286, type: 'crab' });
                 } else {
-                    let obj = { x: 240, y: 180 + Math.random() * 60, type: 'ring' };
-                    rings.push(obj);
+                    rings.push({ x: 240, y: 180 + Math.random() * 60, type: 'ring' });
                 }
             }
 
-            let nextRings = Array.of();
+            let nextRings =[];
             for (let i = 0; i < rings.length; i++) {
-                let r = rings.at(i);
+                let r = rings;
                 r.x -= scrollSpeed;
                 if (r.x < 50 && r.x > 0 && sonicY < r.y + 20 && sonicY + 32 > r.y) {
                     score += 1; document.getElementById('g-score').innerText = score;
@@ -528,9 +546,9 @@
             }
             rings = nextRings;
 
-            let nextEnemies = Array.of();
+            let nextEnemies =[];
             for (let i = 0; i < enemies.length; i++) {
-                let e = enemies.at(i);
+                let e = enemies;
                 e.x -= scrollSpeed;
                 if (e.x < 55 && e.x + 20 > 35 && sonicY + 30 > e.y + 10) {
                     gameActive = false; return gameOver();
@@ -541,26 +559,26 @@
             }
             enemies = nextEnemies;
 
-            // --- ПАРАЛЛАКС ФОН (GREEN HILL) ---
+            // --- ПАРАЛЛАКС ФОН (GREEN HILL PIXEL ART) ---
             
             // 1. Небо
             ctx.fillStyle = '#2452FF'; 
             ctx.fillRect(0, 0, 240, 400);
-
+            
             // 2. Медленные облака (Parallax 1)
             let cloudOffset = (frames * 0.5) % 240;
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(30 - cloudOffset, 30, 50, 15);
-            ctx.fillRect(270 - cloudOffset, 30, 50, 15); // Бесшовность
+            ctx.fillRect(270 - cloudOffset, 30, 50, 15);
             ctx.fillRect(140 - cloudOffset, 60, 40, 10);
-            ctx.fillRect(380 - cloudOffset, 60, 40, 10); // Бесшовность
+            ctx.fillRect(380 - cloudOffset, 60, 40, 10);
 
             // 3. Средние пальмы (Parallax 2)
             let palmOffset = (frames * 2) % 240;
             drawPalm(60 - palmOffset, 220);
-            drawPalm(300 - palmOffset, 220); // Бесшовность
+            drawPalm(300 - palmOffset, 220);
             drawPalm(180 - palmOffset, 220);
-            drawPalm(420 - palmOffset, 220); // Бесшовность
+            drawPalm(420 - palmOffset, 220);
 
             // 4. Океан
             ctx.fillStyle = '#0028A8'; ctx.fillRect(0, 150, 240, 150);
@@ -598,25 +616,27 @@
 
     // --- SNAKE ---
     function runSnake() {
-        let s = Array.of({x:5,y:10}), f = {x:2,y:2}, d = {x:0,y:0};
-        window.gameAction = function() {}; 
+        let s =, f = {x:2,y:2}, d = {x:0,y:0};
+        window.gameAction = function() {};
+
         function upd() {
-            let h = {x: s.at(0).x+d.x, y: s.at(0).y+d.y};
+            let h = {x: s.x+d.x, y: s.y+d.y};
             if(h.x<0||h.x>=12||h.y<0||h.y>=20||( (d.x||d.y) && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
             if(d.x||d.y) s.unshift(h);
             if(h.x===f.x && h.y===f.y) { score+=10; document.getElementById('g-score').innerText=score; f={x:Math.floor(Math.random()*12), y:Math.floor(Math.random()*20)}; }
             else if(d.x||d.y) s.pop();
+            
             ctx.fillStyle='#000'; ctx.fillRect(0,0,240,400);
             ctx.fillStyle='#ff0055'; ctx.fillRect(f.x*20, f.y*20, 18, 18);
             ctx.fillStyle='#00f0ff'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
             loop = setTimeout(() => requestAnimationFrame(upd), 150);
         }
-        document.onkeydown = e => { 
-             if(e.key==='ArrowLeft'&&d.x!==1) d={x:-1,y:0}; 
-             if(e.key==='ArrowRight'&&d.x!==-1) d={x:1,y:0}; 
-             if(e.key==='ArrowUp'&&d.y!==1) d={x:0,y:-1}; 
-             if(e.key==='ArrowDown'&&d.y!==-1) d={x:0,y:1}; 
-             if(!d.x && !d.y) d={x:0,y:1};
+        document.onkeydown = e => {  
+              if(e.key==='ArrowLeft'&&d.x!==1) d={x:-1,y:0};
+              if(e.key==='ArrowRight'&&d.x!==-1) d={x:1,y:0};
+              if(e.key==='ArrowUp'&&d.y!==1) d={x:0,y:-1};
+              if(e.key==='ArrowDown'&&d.y!==-1) d={x:0,y:1};
+              if(!d.x && !d.y) d={x:0,y:1};
         };
         upd();
     }
@@ -627,13 +647,13 @@
         let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
         const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(str=>str.split('-').map(r=>r.split('').map(Number)));
         const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
-        let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
-        window.gameAction = function() {}; 
+        let p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
+        window.gameAction = function() {};  
 
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
-            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(v); ctx.fillRect(x*20,y*20,19,19); }}));
-            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(p.c); ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
+            bd.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect(x*20,y*20,19,19); }}));
+            p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL; ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
         }
         
         function coll(ax, ay, m) { 
@@ -642,15 +662,15 @@
                 let nx = p.x + x + ax;
                 let ny = p.y + y + ay;
                 if (nx < 0 || nx >= C || ny >= R) return true;
-                let targetRow = bd.at(ny);
+                let targetRow = bd;
                 if(!targetRow) return true;
-                let cell = targetRow.at(nx);
+                let cell = targetRow;
                 return cell !== 0;
             })); 
         }
         
         function rotate(m) { 
-            let nm = m.at(0).map((_,i) => m.map(r => r.at(i)).reverse()); 
+            let nm = m.map((_,i) => m.map(r => r).reverse()); 
             if(!coll(0,0,nm)) p.m=nm; 
         }
         
@@ -659,9 +679,9 @@
             if(dc > 1000) {
                 if(!coll(0,1,p.m)) p.y++;
                 else {
-                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) { let row = bd.at(y + p.y); Reflect.set(row, x + p.x, p.c); }}));
+                    p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v) { bd = p.c; }}));
                     bd.forEach((r,y)=>{ if(r.every(v=>v!==0)){ bd.splice(y,1); bd.unshift(Array.from({length:C}, () => 0)); score+=100; document.getElementById('g-score').innerText=score; }});
-                    p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
+                    p = { m: SH, c: Math.floor(Math.random()*7)+1, x: 4, y: 0 };
                     if(coll(0,0,p.m)) return gameOver();
                 }
                 dc=0;
