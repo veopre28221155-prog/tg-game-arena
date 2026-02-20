@@ -227,7 +227,6 @@
         document.getElementById('p-tetris').innerText = user.highScores.tetris;
     }
 
-    // --- ADMIN FUNCTIONS ---
     async function loadAdminData() {
         const r = await fetch(`${API}/api/admin/data`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId }) });
         const d = await r.json();
@@ -262,7 +261,6 @@
         if(d.success) tg.showAlert("Updated!");
     }
 
-    // --- PAYMENTS ---
     async function depositCrypto(asset, cryptoAmount, starsAmount) {
         const r = await fetch(`${API}/api/deposit`, { 
             method: 'POST', 
@@ -289,17 +287,21 @@
         }
     }
 
-    async function withdraw() {
-        if(user.balance <= 0) return tg.showAlert("Empty balance");
-        if(!confirm(`Send withdrawal request for ${user.balance} Stars?`)) return;
-        const r = await fetch(`${API}/api/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
-        const d = await r.json();
-        if (d.success) { user.balance = d.newBalance; updateUI(); tg.showAlert("Request Sent!"); }
-        else tg.showAlert(d.error);
+    function withdraw() {
+        if(user.balance <= 0) return tg.showAlert("Баланс пуст");
+        
+        // Используем нативное красивое окно Telegram
+        tg.showConfirm("Вывести " + user.balance + " Stars?", async function(confirmed) {
+            if(!confirmed) return;
+            const r = await fetch(`${API}/api/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, amount: user.balance }) });
+            const d = await r.json();
+            if (d.success) { user.balance = d.newBalance; updateUI(); tg.showAlert("Заявка отправлена!"); }
+            else tg.showAlert(d.error);
+        });
     }
 
-    // --- GAME & LOGIC ---
     function openFriendModal() { document.getElementById('modal-friend').style.display='flex'; }
+    
     async function submitFriendLobby() {
         const g = document.getElementById('f-game').value, b = parseInt(document.getElementById('f-bet').value);
         if (user.balance < b) return tg.showAlert("Insufficient Stars");
@@ -339,8 +341,15 @@
         if (t === 'snake') runSnake(); else runTetris();
     }
 
-    function quitGame() { if(confirm("Quit?")) location.reload(); }
+    // ИСПРАВЛЕНИЕ: Выход из игры через нативное окно Telegram
+    function quitGame() { 
+        tg.showConfirm("Завершить игру и выйти в меню?", function(confirmed) {
+            if(confirmed) location.reload();
+        });
+    }
+
     function restartGame() { if(loop) cancelAnimationFrame(loop); clearTimeout(loop); score=0; document.getElementById('g-score').innerText=0; if(gameType==='snake') runSnake(); else runTetris(); }
+    
     function restartGameFromModal() { document.getElementById('modal-over').style.display='none'; restartGame(); }
 
     async function gameOver() {
@@ -379,7 +388,6 @@
         const R=20, C=12; 
         let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
         
-        // Матрицы Тетриса, конвертированные через строки (чтобы не парсилось ошибочно)
         const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(s=>s.split('-').map(r=>r.split('').map(Number)));
         const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
         
@@ -391,13 +399,21 @@
             p.m.forEach((r,y)=>r.forEach((v,x)=>{ if(v){ ctx.fillStyle=CL.at(p.c); ctx.fillRect((p.x+x)*20,(p.y+y)*20,19,19); }}));
         }
         
+        // ИСПРАВЛЕНИЕ: Жесткая проверка границ поля, чтобы блоки не уходили за край экрана
         function coll(ax, ay, m) { 
             return m.some((r,y)=>r.some((v,x)=> {
                 if(!v) return false;
-                let targetRow = bd.at(y + p.y + ay);
+                
+                let nx = p.x + x + ax;
+                let ny = p.y + y + ay;
+                
+                // Проверка на стенки (левая, правая, пол)
+                if (nx < 0 || nx >= C || ny >= R) return true;
+                
+                let targetRow = bd.at(ny);
                 if(!targetRow) return true;
-                let cell = targetRow.at(x + p.x + ax);
-                return cell === undefined || cell !== 0;
+                let cell = targetRow.at(nx);
+                return cell !== 0;
             })); 
         }
         
