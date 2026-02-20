@@ -24,21 +24,40 @@
         .screen::-webkit-scrollbar { width: 5px; }
         .screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 
-        h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 20px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); text-align: center; }
-        h1 { font-size: 1.5rem; color: var(--accent-neon); margin-top: 10px; }
+        h1, h2 { font-family: var(--font-retro); text-transform: uppercase; margin-bottom: 10px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); text-align: center; }
+        h1 { font-size: 1.4rem; color: var(--accent-neon); margin-top: 10px; line-height: 1.4; }
         
+        .hero-text { font-size: 0.65rem; text-align: center; color: #ccc; margin-bottom: 20px; line-height: 1.5; font-family: sans-serif; }
+
         .card { background: var(--tg-sec-bg); border-radius: 12px; padding: 16px; width: 100%; max-width: 350px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
         
         .btn { background: var(--tg-btn); color: var(--tg-btn-text); border: none; border-radius: 8px; padding: 14px; width: 100%; font-size: 0.8rem; font-weight: bold; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-outline { background: transparent; border: 2px solid var(--tg-btn); color: var(--tg-btn); }
         .btn-danger { background: var(--accent-pink); color: white; }
+        .btn-duel { background: linear-gradient(45deg, #ff0055, #ff8800); color: white; font-size: 1rem; padding: 18px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(255,0,85,0.5); animation: pulse 2s infinite; }
         .btn-crypto { background: #2AABEE; color: white; border: none; }
         .btn-sm { width: auto; padding: 6px 12px; font-size: 0.7rem; margin-bottom: 0; }
 
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
         select, input { background: var(--tg-bg); color: var(--tg-text); border: 1px solid var(--tg-btn); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; font-size: 1rem; }
 
-        canvas { border: 4px solid var(--tg-text); border-radius: 4px; background: #000; image-rendering: pixelated; width: 100%; max-width: 300px; height: auto; margin-bottom: 15px; flex-shrink: 0; }
+        /* ИСПРАВЛЕНИЕ: ЖЕСТКИЙ ЗАПРЕТ СГЛАЖИВАНИЯ ДЛЯ 16-BIT ГРАФИКИ */
+        canvas { 
+            border: 4px solid var(--tg-text); 
+            border-radius: 4px; 
+            background: #000; 
+            width: 100%; 
+            max-width: 300px; 
+            height: auto; 
+            margin-bottom: 15px; 
+            flex-shrink: 0;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
 
         .game-ui-bottom { width: 100%; display: flex; justify-content: center; margin-top: 10px; padding-bottom: 20px; flex-shrink: 0; }
         .d-pad-container { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; }
@@ -60,35 +79,47 @@
 <body>
 
 <div id="app">
-    <!-- PLAY -->
+    <!-- PLAY MENU -->
     <div id="s-play" class="screen active">
-        <h1>RETRO ARENA</h1>
+        <h1>ТВОЙ СКИЛЛ —<br>ТВОЙ КАПИТАЛ</h1>
+        <div class="hero-text">
+            Не нужен киберспорт, чтобы зарабатывать.<br>
+            Раскатай соперника 1 на 1 на миду и забери банк!
+        </div>
+
+        <div class="card" style="border: 2px solid var(--accent-neon); box-shadow: 0 0 15px rgba(0,240,255,0.2);">
+            <h2 style="color: var(--accent-neon);">Ranked Match</h2>
+            <select id="search-game">
+                <option value="sonic">🦔 Sonic Rush (16-bit)</option>
+                <option value="snake">🐍 Snake Classic</option>
+                <option value="tetris">🧱 Tetris Retro</option>
+            </select>
+            <select id="search-bet">
+                <option value="10">Ставка: 10 ⭐️</option>
+                <option value="50">Ставка: 50 ⭐️</option>
+                <option value="100">Ставка: 100 ⭐️</option>
+                <option value="500">Ставка: 500 ⭐️</option>
+            </select>
+            <button class="btn btn-duel" onclick="startMatchmaking()">⚔️ ДУЭЛЬ 1x1 ⚔️</button>
+        </div>
+
         <div class="card">
             <h2>Solo Training</h2>
-            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Snake</button>
-            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Tetris</button>
-            <button class="btn btn-outline" onclick="launchGame('sonic', false)">🦔 Sonic Rush</button>
+            <button class="btn btn-outline" onclick="launchGame('sonic', false)">🦔 Тренировка Sonic</button>
+            <button class="btn btn-outline" onclick="launchGame('snake', false)">🐍 Тренировка Snake</button>
+            <button class="btn btn-outline" onclick="launchGame('tetris', false)">🧱 Тренировка Tetris</button>
         </div>
-        <div class="card" style="border: 2px solid var(--accent-neon);">
-            <h2>Ranked Match</h2>
-            <select id="search-game">
-                <option value="snake">Snake</option>
-                <option value="tetris">Tetris</option>
-                <option value="sonic">Sonic Rush</option>
-            </select>
-            <select id="search-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option><option value="100">100 ⭐️</option><option value="500">500 ⭐️</option></select>
-            <button class="btn" onclick="startMatchmaking()">🔍 FIND MATCH</button>
-        </div>
+        
         <div class="card">
             <h2>Friend Match</h2>
-            <button class="btn btn-outline" onclick="openFriendModal()">🔗 CREATE LINK</button>
+            <button class="btn btn-outline" onclick="openFriendModal()">🔗 СОЗДАТЬ ССЫЛКУ</button>
         </div>
     </div>
 
     <!-- SEARCH -->
     <div id="s-search" class="screen" style="justify-content: center;">
-        <h1>SEARCHING...</h1>
-        <button class="btn btn-danger" onclick="cancelMatchmaking()">CANCEL</button>
+        <h1 class="blink">ПОИСК ВРАГА...</h1>
+        <button class="btn btn-danger" onclick="cancelMatchmaking()">ОТМЕНА</button>
     </div>
 
     <!-- PROFILE -->
@@ -105,9 +136,9 @@
         <div class="card">
             <h2>Stats</h2>
             <div class="stat-row"><span>ID:</span> <span id="p-id">...</span></div>
+            <div class="stat-row"><span>Best Sonic:</span> <span id="p-sonic" style="color:#00f0ff;">0</span></div>
             <div class="stat-row"><span>Best Snake:</span> <span id="p-snake">0</span></div>
             <div class="stat-row"><span>Best Tetris:</span> <span id="p-tetris">0</span></div>
-            <div class="stat-row"><span>Best Sonic:</span> <span id="p-sonic">0</span></div>
         </div>
 
         <!-- ADMIN PANEL -->
@@ -154,9 +185,14 @@
                 SCORE: <span id="g-score">0</span> <span id="g-time-box" style="display:none; color:white; margin-left: 10px;">🕒 <span id="g-time">60</span></span>
             </div>
         </div>
-        <canvas id="gameCanvas" ontouchstart="triggerGameAction(event)"></canvas>
-        <div class="game-ui-bottom">
-            <div class="d-pad-container" id="d-pad-ui">
+        <canvas id="gameCanvas" ontouchstart="triggerGameAction(event)" onmousedown="triggerGameAction(event)"></canvas>
+        
+        <div class="game-ui-bottom" id="sonic-ui" style="display:none;">
+            <button class="btn btn-duel" style="width: 200px; height: 80px; font-size: 1.5rem;" ontouchstart="triggerGameAction(event)" onmousedown="triggerGameAction(event)">JUMP</button>
+        </div>
+
+        <div class="game-ui-bottom" id="d-pad-ui">
+            <div class="d-pad-container">
                 <div class="ctrl-btn btn-up" ontouchstart="input('up', event)">▲</div>
                 <div class="ctrl-btn btn-left" ontouchstart="input('left', event)">◀</div>
                 <div class="ctrl-btn btn-down" ontouchstart="input('down', event)">▼</div>
@@ -176,17 +212,17 @@
     <h1 style="color:red; font-size:3rem; text-align: center;">GAME<br>OVER</h1>
     <h2 id="end-score" style="color:white;">0</h2>
     <p id="end-msg" style="color:gold;"></p>
-    <button class="btn" style="width:240px;" onclick="restartGameFromModal()">PLAY AGAIN</button>
-    <button class="btn btn-outline" style="width:240px;" onclick="location.reload()">MENU</button>
+    <button class="btn btn-duel" style="width:240px;" onclick="restartGameFromModal()">ИГРАТЬ СНОВА</button>
+    <button class="btn btn-outline" style="width:240px; margin-top: 10px;" onclick="location.reload()">В МЕНЮ</button>
 </div>
 
 <div id="modal-friend" class="modal">
     <div class="card" style="width: 85%;">
         <h2>Invite Friend</h2>
         <select id="f-game">
+            <option value="sonic">Sonic Rush</option>
             <option value="snake">Snake</option>
             <option value="tetris">Tetris</option>
-            <option value="sonic">Sonic Rush</option>
         </select>
         <select id="f-bet"><option value="10">10 ⭐️</option><option value="50">50 ⭐️</option><option value="100">100 ⭐️</option><option value="500">500 ⭐️</option></select>
         <button class="btn" onclick="submitFriendLobby()">GENERATE LINK</button>
@@ -201,11 +237,14 @@
     
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0;
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+    
+    // Отключение сглаживания Canvas на уровне JS для 16-bit стиля
+    ctx.imageSmoothingEnabled = false;
+    
     const dpr = window.devicePixelRatio || 1;
     canvas.width = 240 * dpr; canvas.height = 400 * dpr; ctx.scale(dpr, dpr);
     canvas.style.width = '240px'; canvas.style.height = '400px';
 
-    // Global action for single button games (Sonic)
     window.gameAction = function() {};
 
     async function init() {
@@ -230,7 +269,7 @@
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`s-${id}`).classList.add('active');
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
+        if(el) el.classList.add('active');
     }
 
     function updateUI() {
@@ -296,7 +335,7 @@
     
     async function submitFriendLobby() {
         const g = document.getElementById('f-game').value, b = parseInt(document.getElementById('f-bet').value);
-        if (user.balance < b) return tg.showAlert("Insufficient Stars");
+        if (user.balance < b) return tg.showAlert("Недостаточно средств");
         const r = await fetch(`${API}/api/create-lobby-friend`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
         const d = await r.json();
         if (d.success) {
@@ -307,8 +346,8 @@
 
     async function startMatchmaking() {
         const g = document.getElementById('search-game').value, b = parseInt(document.getElementById('search-bet').value);
-        if (user.balance < b) return tg.showAlert("Insufficient Stars");
-        nav('search', document.querySelector('.tab'));
+        if (user.balance < b) return tg.showAlert("Недостаточно средств");
+        nav('search');
         const r = await fetch(`${API}/api/search-match`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ telegramId: user.telegramId, gameType: g, betAmount: b }) });
         const d = await r.json();
         if (d.status === 'match_found') { lobby = { lobbyId: d.lobbyId, betAmount: b }; launchGame(g, true); }
@@ -332,11 +371,17 @@
         gameType = t; score = 0; document.getElementById('g-score').innerText = 0;
         
         document.getElementById('g-time-box').style.display = 'none';
-        document.getElementById('d-pad-ui').style.display = (t === 'sonic') ? 'none' : 'grid';
-
-        if (t === 'snake') runSnake(); 
-        else if (t === 'tetris') runTetris();
-        else if (t === 'sonic') runSonic();
+        
+        if (t === 'sonic') {
+            document.getElementById('d-pad-ui').style.display = 'none';
+            document.getElementById('sonic-ui').style.display = 'flex';
+            runSonic();
+        } else {
+            document.getElementById('sonic-ui').style.display = 'none';
+            document.getElementById('d-pad-ui').style.display = 'grid';
+            if (t === 'snake') runSnake(); 
+            else if (t === 'tetris') runTetris();
+        }
     }
 
     function quitGame() { 
@@ -361,8 +406,7 @@
 
     function input(k, e) { 
         if(e) e.preventDefault(); 
-        if(gameType === 'sonic' && k === 'up') window.gameAction();
-        else document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' })); 
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: k==='up'?'ArrowUp':k==='down'?'ArrowDown':k==='left'?'ArrowLeft':'ArrowRight' })); 
     }
 
     function triggerGameAction(e) {
@@ -374,16 +418,15 @@
         if (gameType === 'sonic' && (e.key === ' ' || e.key === 'ArrowUp')) window.gameAction();
     };
 
-    // --- SONIC RUSH (16-bit Runner) ---
+    // --- SONIC 16-BIT RUNNER (No brackets code) ---
     function runSonic() {
-        let sonicY = 290;
+        let sonicY = 270;
         let sonicVy = 0;
         let isJumping = false;
         let frames = 0;
-        let scrollSpeed = 5;
-        let enemies = new Array();
-        let rings = new Array();
-        
+        let scrollSpeed = 6;
+        let enemies = Array.of();
+        let rings = Array.of();
         let timeLeft = 60;
         let lastTime = Date.now();
         let gameActive = true;
@@ -395,24 +438,40 @@
 
         window.gameAction = function() {
             if (!isJumping && gameActive) {
-                sonicVy = -13.5;
+                sonicVy = -13;
                 isJumping = true;
             }
         };
 
-        function drawSonic(x, y) {
-            ctx.fillStyle = '#0026FF'; ctx.fillRect(x, y, 22, 28);
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x-12, y+10); ctx.lineTo(x, y+20); ctx.fill();
-            ctx.fillStyle = '#FF0000'; ctx.fillRect(x, y+24, 26, 6);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+12, y+6, 8, 8);
-            ctx.fillStyle = '#000'; ctx.fillRect(x+16, y+8, 4, 4);
+        // 16-bit Palette
+        const colors = { 
+            '.': null, 'B': '#000000', 'U': '#2039FF', 'W': '#FFFFFF', 
+            'R': '#E00000', 'S': '#FFCC99', 'G': '#FFD700', 'C': '#FF2600'
+        };
+
+        // Compact Sprite Engine
+        function drawSpriteStr(str, dx, dy, scale) {
+            let rows = str.split('-');
+            for (let r = 0; r < rows.length; r++) {
+                let rowStr = rows.at(r);
+                for (let c = 0; c < rowStr.length; c++) {
+                    let char = rowStr.charAt(c);
+                    let color = Reflect.get(colors, char);
+                    if (color) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(dx + c * scale, dy + r * scale, scale, scale);
+                    }
+                }
+            }
         }
 
-        function drawCrab(x, y) {
-            ctx.fillStyle = '#FF2600'; ctx.fillRect(x, y, 24, 16);
-            ctx.fillRect(x-6, y-8, 8, 8); ctx.fillRect(x+22, y-8, 8, 8);
-            ctx.fillStyle = '#FFF'; ctx.fillRect(x+4, y+4, 4, 4); ctx.fillRect(x+16, y+4, 4, 4);
-        }
+        // Sonic Run Frames (16x16 encoded)
+        const frame1 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-....W.WW.W......-...RR.RR.RR.....-...RR.RR.RR.....-...RR.RR.RR.....";
+        const frame2 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-......WW........-.....RRRR.......-......RR........-......RR........";
+        const frame3 = "......UUUU......-....UUUUUUU.....-...UUUUUUUUU....-...UUUUSSS......-...UUUUSBS......-...UUUUSSS......-....UUUSSS......-.....UUUU.......-....SUUUUS......-...SSUUUUSS.....-....SUUUUS......-.....WWWW.......-....W....W......-...RR....RR.....-...RR....RR.....-...RR....RR.....";
+        const jumpFrame = "......UUUU......-....UUUUUUUU....-...UUUUUUUUU....-..UUUUUUUUUUU...-.UUUUUUUUUUUUU..-.UUUWUWWUWUUUU..-.UUWWWWWWWWUUU..-.UUWWWWWWWWUUU..-.UUUWUWWUWUUUU..-.UUUUUUUUUUUUU..-..UUUUUUUUUUU...-...UUUUUUUUU....-....UUUUUUUU....-......UUUU......-................-................";
+        const crabFrame = "................-................-................-....C......C....-...CC......CC...-..CCC......CCC..-.C.CCC....CCC.C.-C..CC.CCCC.CC..C-...CCCCCCCCCC...-...C.B.CC.B.C...-...C.W.CC.W.C...-..CCCCCCCCCCCC..-..CC.CCCCCC.CC..-..CC........CC..-..CC........CC..-..CC........CC..";
+        const ringFrame = "......GGGG......-....GG....GG....-...GG......GG...-..GG........GG..-..GG........GG..-.GG..........GG.-.GG..........GG.-.GG..........GG.-.GG..........GG.-..GG........GG..-..GG........GG..-...GG......GG...-....GG....GG....-......GGGG......-................-................";
 
         function upd() {
             if (!gameActive) return;
@@ -430,55 +489,79 @@
             frames++;
             sonicVy += 0.8; 
             sonicY += sonicVy;
-            if (sonicY >= 290) { sonicY = 290; sonicVy = 0; isJumping = false; }
+            if (sonicY >= 270) { sonicY = 270; sonicVy = 0; isJumping = false; }
 
-            if (frames % 45 === 0) {
+            // Спавн
+            if (frames % 40 === 0) {
                 if (Math.random() > 0.6) {
-                    enemies.push({ x: 240, y: 304, w: 24, h: 16 });
+                    let obj = { x: 240, y: 286, type: 'crab' };
+                    enemies.push(obj);
                 } else {
-                    let ry = 200 + Math.random() * 50;
-                    rings.push({ x: 240, y: ry, w: 16, h: 16 });
+                    let obj = { x: 240, y: 180 + Math.random() * 60, type: 'ring' };
+                    rings.push(obj);
                 }
             }
 
-            let newRings = new Array();
+            // Логика колец
+            let nextRings = Array.of();
             for (let i = 0; i < rings.length; i++) {
                 let r = rings.at(i);
                 r.x -= scrollSpeed;
-                if (r.x < 50 && r.x > 10 && sonicY < r.y + r.h && sonicY + 28 > r.y) {
+                // Collision Hitbox: Sonic (30, sonicY, 32, 32) vs Ring (r.x, r.y, 32, 32)
+                if (r.x < 50 && r.x > 0 && sonicY < r.y + 20 && sonicY + 32 > r.y) {
                     score += 1; document.getElementById('g-score').innerText = score;
-                } else if (r.x > -20) { newRings.push(r); }
+                } else if (r.x > -40) {
+                    nextRings.push(r);
+                }
             }
-            rings = newRings;
+            rings = nextRings;
 
-            let newEnemies = new Array();
+            // Логика врагов (Крабы)
+            let nextEnemies = Array.of();
             for (let i = 0; i < enemies.length; i++) {
                 let e = enemies.at(i);
                 e.x -= scrollSpeed;
-                if (e.x < 50 && e.x + e.w > 30 && sonicY + 28 > e.y + 4) {
+                // Более точный хитбокс, чтобы было честно
+                if (e.x < 55 && e.x + 20 > 35 && sonicY + 30 > e.y + 10) {
                     gameActive = false; return gameOver();
                 }
-                if (e.x > -30) { newEnemies.push(e); }
+                if (e.x > -40) {
+                    nextEnemies.push(e);
+                }
             }
-            enemies = newEnemies;
+            enemies = nextEnemies;
 
-            ctx.fillStyle = '#1052B5'; ctx.fillRect(0, 0, 240, 400);
+            // --- ОТРИСОВКА PARALLAX БЕКГРАУНДА (GREEN HILL) ---
+            ctx.fillStyle = '#2452FF'; // Sky
+            ctx.fillRect(0, 0, 240, 400);
+
+            // Океан
+            ctx.fillStyle = '#0028A8'; ctx.fillRect(0, 150, 240, 150);
+            ctx.fillStyle = '#0060F8'; ctx.fillRect(0, 160, 240, 140);
             
-            let offset = frames % 40;
-            for(let i = 0; i < 7; i++) {
-                ctx.fillStyle = (i % 2 === 0) ? '#B56200' : '#8C4200';
-                ctx.fillRect((i * 40) - offset, 318, 40, 82);
+            // Шахматный пол (Green Hill)
+            let floorOffset = (frames * scrollSpeed) % 40;
+            for(let i = -1; i < 7; i++) {
+                let px = (i * 40) - floorOffset;
+                ctx.fillStyle = (i % 2 === 0) ? '#E89000' : '#783800';
+                ctx.fillRect(px, 300, 40, 100);
             }
-            ctx.fillStyle = '#21E700'; ctx.fillRect(0, 318, 240, 14);
+            // Трава сверху
+            ctx.fillStyle = '#21E700'; ctx.fillRect(0, 300, 240, 15);
+            ctx.fillStyle = '#10A000'; ctx.fillRect(0, 315, 240, 5);
 
-            drawSonic(30, sonicY);
+            // --- ОТРИСОВКА СПРАЙТОВ ---
+            let sonicSprite = jumpFrame;
+            if (!isJumping) {
+                let animCycle = Math.floor(frames / 4) % 3;
+                if (animCycle === 0) sonicSprite = frame1;
+                else if (animCycle === 1) sonicSprite = frame2;
+                else sonicSprite = frame3;
+            }
             
-            enemies.forEach(e => drawCrab(e.x, e.y));
-
-            rings.forEach(r => {
-                ctx.beginPath(); ctx.arc(r.x + 8, r.y + 8, 8, 0, Math.PI * 2);
-                ctx.lineWidth = 3; ctx.strokeStyle = '#FFD700'; ctx.stroke();
-            });
+            drawSpriteStr(sonicSprite, 30, sonicY, 2);
+            enemies.forEach(e => drawSpriteStr(crabFrame, e.x, e.y, 2));
+            rings.forEach(r => drawSpriteStr(ringFrame, r.x, r.y, 2));
 
             loop = requestAnimationFrame(upd);
         }
@@ -488,7 +571,7 @@
     // --- SNAKE ---
     function runSnake() {
         let s = Array.of({x:5,y:10}), f = {x:2,y:2}, d = {x:0,y:0};
-        window.gameAction = function() {}; // Unused here
+        window.gameAction = function() {}; 
         function upd() {
             let h = {x: s.at(0).x+d.x, y: s.at(0).y+d.y};
             if(h.x<0||h.x>=12||h.y<0||h.y>=20||( (d.x||d.y) && s.some(p=>p.x===h.x&&p.y===h.y))) return gameOver();
@@ -514,10 +597,10 @@
     function runTetris() {
         const R=20, C=12; 
         let bd = Array.from({length:R}, () => Array.from({length:C}, () => 0));
-        const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(s=>s.split('-').map(r=>r.split('').map(Number)));
+        const SH = "1111,111-010,11-11,110-011,011-110,111-100,111-001".split(',').map(str=>str.split('-').map(r=>r.split('').map(Number)));
         const CL = ",#00f0ff,#bc13fe,#ffff00,#ff0055,#00ff00,#ff8800,#0000ff".split(',');
         let p = { m: SH.at(Math.floor(Math.random()*7)), c: Math.floor(Math.random()*7)+1, x: 4, y: 0 }, dc=0, lt=0;
-        window.gameAction = function() {}; // Unused here
+        window.gameAction = function() {}; 
 
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0,0,240,400);
