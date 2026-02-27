@@ -53,7 +53,7 @@ const Lobby = mongoose.model('Lobby', LobbySchema);
 const MatchHistory = mongoose.model('MatchHistory', MatchHistorySchema);
 
 
-// ================= ПЛАТЕЖИ: TELEGRAM STARS И CRYPTO =================
+// ================= ПЛАТЕЖИ =================
 app.post('/api/buy-stars', async (req, res) => {
     try {
         const { telegramId, amount } = req.body;
@@ -143,12 +143,11 @@ app.post('/api/submit-score', async (req, res) => {
     try {
         const { telegramId, game, score, lobbyId } = req.body;
         
-        if(game === 'sonic') {
-            await User.findOneAndUpdate({ telegramId, "highScores.sonic": { $gt: score } }, { $set: { "highScores.sonic": score } });
-        } else {
-            const scoreUpdate = { $max: {} }; Reflect.set(scoreUpdate.$max, 'highScores.' + game, score);
-            await User.findOneAndUpdate({ telegramId }, scoreUpdate);
-        }
+        // В Сонике рекорд - это МЕНЬШЕЕ время ($min). В остальных - БОЛЬШЕЕ количество очков ($max).
+        const scoreUpdate = {};
+        if (game === 'sonic') { scoreUpdate.$min = { [`highScores.${game}`]: score }; } 
+        else { scoreUpdate.$max = { [`highScores.${game}`]: score }; }
+        await User.findOneAndUpdate({ telegramId }, scoreUpdate);
         
         if (!lobbyId) return res.json({ success: true });
         
@@ -159,14 +158,12 @@ app.post('/api/submit-score', async (req, res) => {
         else if (lobby.player2Id === telegramId) lobby.scores.player2 = score;
         await lobby.save();
         
-        // Оба завершили
         if (lobby.scores.player1 !== -1 && lobby.scores.player2 !== -1) {
             lobby.status = 'finished'; await lobby.save();
             if (lobby.betAmount > 0) {
                 const pool = lobby.betAmount * 2; const fee = Math.floor(pool * 0.1); const prize = pool - fee;
                 let winnerId = null, loserId = null;
                 
-                // ЛОГИКА ПОБЕДЫ (Соник - кто быстрее, Тетрис и др. - у кого больше очков)
                 if (game === 'sonic') {
                     if (lobby.scores.player1 < lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; }
                     else if (lobby.scores.player2 < lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; }
