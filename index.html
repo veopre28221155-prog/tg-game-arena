@@ -1,111 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Arena</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        :root { --neon: #00f0ff; --pink: #ff0055; }
-        body { margin: 0; background: #050505; color: white; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; }
-        .active { display: flex; }
-        .btn-pixel { background: #1a1a1a; color: var(--neon); border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-size: 0.6rem; margin-bottom: 10px; font-family: inherit; }
-        canvas, #sonic-emulator { border: 4px solid #222; background: #000; width: 100% !important; max-width: 300px; height: 350px; }
-        .controls { display: flex; width: 100%; max-width: 300px; justify-content: space-between; margin-top: 10px; }
-        .d-pad { display: grid; grid-template-areas: ". u ." "l . r" ". d ."; gap: 5px; }
-        .ctrl-btn { width: 45px; height: 45px; background: #222; color: white; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
-    </style>
-</head>
-<body>
-<div id="app">
-    <div id="s-main" class="screen active">
-        <h1 style="color:var(--neon)">RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="navScreen('s-games')">🕹 ИГРАТЬ</button>
-        <button class="btn-pixel" onclick="openTournaments()">⚔️ ТУРНИРЫ</button>
-        <div style="margin-top:20px;">БАЛАНС: <span id="p-bal" style="color:gold">0</span> ★</div>
-    </div>
+function launchGame(t) {
+    gameType = t;
+    score = 0;
+    navScreen('s-game');
+    
+    // Очистка старого эмулятора, если он был
+    const oldEmu = document.getElementById('sonic-emulator');
+    if (oldEmu) oldEmu.remove();
+    
+    const canvas = document.getElementById('gameCanvas');
+    const controls = document.getElementById('game-controls');
 
-    <div id="s-games" class="screen">
-        <h2>ИГРЫ</h2>
-        <button class="btn-pixel" onclick="launchGame('sonic')">🦔 SONIC 16-BIT</button>
-        <button class="btn-pixel" onclick="launchGame('snake')">🐍 SNAKE</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
-    </div>
+    if (t === 'sonic') {
+        canvas.style.display = 'none';
+        controls.style.display = 'none'; // У эмулятора свои кнопки
 
-    <div id="s-game" class="screen">
-        <div style="width:100%; max-width:300px; display:flex; justify-content:space-between; font-size:0.5rem; margin-bottom:5px;">
-            <button onclick="location.reload()" style="background:red; color:white; border:none;">ВЫХОД</button>
-            <div id="g-score">0</div>
-        </div>
-        <canvas id="gameCanvas" width="240" height="350"></canvas>
-        <div id="game-controls" class="controls">
-            <div class="d-pad">
-                <div class="ctrl-btn" style="grid-area:u" ontouchstart="press('up',true)" ontouchend="press('up',false)">▲</div>
-                <div class="ctrl-btn" style="grid-area:l" ontouchstart="press('left',true)" ontouchend="press('left',false)">◀</div>
-                <div class="ctrl-btn" style="grid-area:r" ontouchstart="press('right',true)" ontouchend="press('right',false)">▶</div>
-                <div class="ctrl-btn" style="grid-area:d" ontouchstart="press('down',true)" ontouchend="press('down',false)">▼</div>
-            </div>
-            <div class="ctrl-btn" style="width:70px; height:70px; border-radius:50%; background:red;" ontouchstart="press('action',true)" ontouchend="press('action',false)">A</div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const tg = window.Telegram.WebApp;
-    const API = ""; // Оставьте пустым, если index.html и server.js на одном сервере
-    let user, lobby, gameType, score, loop, sonicStartTime, keys = {};
-
-    function navScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-    function press(k,v) { keys[k]=v; if(v && window.onInput) window.onInput(k); }
-
-    async function init() {
-        tg.ready(); tg.expand();
-        const r = await fetch('/api/user-data', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({initData:tg.initData}) });
-        user = await r.json();
-        document.getElementById('p-bal').innerText = user.balance;
-    }
-
-    function launchGame(t) {
-        gameType = t; score = 0; navScreen('s-game');
-        const emu = document.getElementById('sonic-emulator'); if(emu) emu.remove();
+        const ifr = document.createElement('iframe');
+        ifr.id = 'sonic-emulator';
+        ifr.allow = 'autoplay; fullscreen';
         
-        if(t === 'sonic') {
-            document.getElementById('gameCanvas').style.display='none';
-            document.getElementById('game-controls').style.display='none';
-            const ifr = document.createElement('iframe');
-            ifr.id = 'sonic-emulator'; ifr.allow = 'autoplay; fullscreen';
-            ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(window.location.origin+'/roms/sonic.bin')}&core=genesis`;
-            document.getElementById('gameCanvas').parentNode.insertBefore(ifr, document.getElementById('gameCanvas').nextSibling);
-            sonicStartTime = Date.now();
-            loop = setInterval(() => { score = Date.now()-sonicStartTime; document.getElementById('g-score').innerText = score; }, 100);
-        } else {
-            document.getElementById('gameCanvas').style.display='block';
-            document.getElementById('game-controls').style.display='flex';
-            if(t === 'snake') runSnake();
-        }
+        // Формируем АБСОЛЮТНЫЙ путь к рому
+        const romUrl = window.location.origin + '/roms/sonic.bin';
+        
+        // Используем официальный загрузчик EmulatorJS
+        ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
+        
+        // Вставляем фрейм
+        canvas.parentNode.insertBefore(ifr, canvas.nextSibling);
+        
+        sonicStartTime = Date.now();
+        if(loop) clearInterval(loop);
+        loop = setInterval(() => {
+            score = Date.now() - sonicStartTime;
+            document.getElementById('g-score').innerText = score + " ms";
+        }, 100);
+        
+    } else {
+        canvas.style.display = 'block';
+        controls.style.display = 'flex';
+        // Тут запуск змейки или других игр
+        runSnake();
     }
-
-    function runSnake() {
-        let s = [{x:10,y:10}], dx=0, dy=-1, f={x:5,y:5}, fr=0;
-        window.onInput = k => { if(k==='left') {dx=-1;dy=0} if(k==='right') {dx=1;dy=0} if(k==='up') {dx=0;dy=-1} if(k==='down') {dx=0;dy=1} };
-        const c = document.getElementById('gameCanvas'), x = c.getContext('2d');
-        function tick() {
-            if(++fr%10===0) {
-                let h = {x:s[0].x+dx, y:s[0].y+dy};
-                if(h.x<0||h.x>11||h.y<0||h.y>17) { location.reload(); return; }
-                s.unshift(h); if(h.x===f.x && h.y===f.y) { score+=10; f={x:Math.floor(Math.random()*12),y:Math.floor(Math.random()*18)}; } else s.pop();
-            }
-            x.fillStyle='black'; x.fillRect(0,0,240,350);
-            x.fillStyle='red'; x.fillRect(f.x*20, f.y*20, 18, 18);
-            x.fillStyle='cyan'; s.forEach(p=>x.fillRect(p.x*20, p.y*20, 18, 18));
-            document.getElementById('g-score').innerText = score;
-            loop = requestAnimationFrame(tick);
-        }
-        tick();
-    }
-    init();
-</script>
-</body>
-</html>
+}
