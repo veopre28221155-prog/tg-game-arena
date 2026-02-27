@@ -3,105 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Battle Arena</title>
+    <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --tg-bg: #050505; --tg-text: #ffffff;
-            --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700;
-            --font-retro: 'Press Start 2P', cursive;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: #050505; color: white; font-family: var(--font-retro); overflow: hidden; touch-action: none; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; overflow-y: auto; }
-        .screen.active { display: flex; }
-        h1 { font-size: 1.2rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon); margin: 10px 0; }
-        
-        .btn-pixel {
-            background: #1a1a1a; color: var(--accent-neon); border: 4px solid #000;
-            padding: 15px; width: 100%; max-width: 300px; font-size: 0.65rem; font-family: var(--font-retro);
-            cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0,240,255,0.2), 4px 4px 0 #000;
-        }
-        .btn-pixel:active { transform: translate(2px, 2px); box-shadow: none; }
-        .btn-gold { color: var(--accent-gold); } .btn-pink { color: var(--accent-pink); }
-
-        canvas, #sonic-emulator { 
-            border: 4px solid #222; background: #000; width: 100% !important; 
-            max-width: 300px; height: 380px; image-rendering: pixelated; 
-        }
-
-        .controls { display: flex; width: 100%; max-width: 320px; justify-content: space-between; margin-top: 10px; }
+        :root { --neon: #00f0ff; --pink: #ff0055; }
+        body { margin: 0; background: #050505; color: white; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; }
+        .active { display: flex; }
+        .btn-pixel { background: #1a1a1a; color: var(--neon); border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-size: 0.6rem; margin-bottom: 10px; font-family: inherit; }
+        canvas, #sonic-emulator { border: 4px solid #222; background: #000; width: 100% !important; max-width: 300px; height: 350px; }
+        .controls { display: flex; width: 100%; max-width: 300px; justify-content: space-between; margin-top: 10px; }
         .d-pad { display: grid; grid-template-areas: ". u ." "l . r" ". d ."; gap: 5px; }
-        .ctrl-btn { width: 50px; height: 50px; background: #222; border: 2px solid #444; color: white; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
-        .btn-action { width: 70px; height: 70px; background: #800; border-radius: 50%; color: white; font-size: 1.2rem; }
-        
-        .pixel-panel { background: rgba(0,0,0,0.8); border: 2px solid var(--accent-neon); padding: 10px; width: 100%; max-width: 300px; margin-bottom: 10px; font-size: 0.6rem; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px dashed #333; }
-        select { background: #000; color: white; padding: 10px; width: 100%; border: 2px solid #444; margin-bottom: 10px; font-family: var(--font-retro); font-size: 0.6rem; }
+        .ctrl-btn { width: 45px; height: 45px; background: #222; color: white; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
     </style>
 </head>
 <body>
 <div id="app">
-    <!-- Главное меню -->
     <div id="s-main" class="screen active">
-        <h1>RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="navScreen('s-single')">🕹 ОДИНОЧНАЯ</button>
-        <button class="btn-pixel btn-gold" onclick="openTournaments()">⚔️ ТУРНИРЫ</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
+        <h1 style="color:var(--neon)">RETRO ARENA</h1>
+        <button class="btn-pixel" onclick="navScreen('s-games')">🕹 ИГРАТЬ</button>
+        <button class="btn-pixel" onclick="openTournaments()">⚔️ ТУРНИРЫ</button>
+        <div style="margin-top:20px;">БАЛАНС: <span id="p-bal" style="color:gold">0</span> ★</div>
     </div>
 
-    <!-- Список одиночных игр -->
-    <div id="s-single" class="screen">
+    <div id="s-games" class="screen">
         <h2>ИГРЫ</h2>
-        <button class="btn-pixel" onclick="launchGame('sonic', false)">🦔 SONIC 16-BIT</button>
-        <button class="btn-pixel" onclick="launchGame('tetris', false)">🧱 TETRIS</button>
-        <button class="btn-pixel" onclick="launchGame('snake', false)">🐍 SNAKE</button>
-        <button class="btn-pixel" onclick="launchGame('bomber', false)">💣 BOMBER</button>
-        <button class="btn-pixel" onclick="launchGame('gold', false)">⚓ GOLD MINER</button>
-        <button class="btn-pixel" onclick="launchGame('battleCity', false)">🚜 ТАНЧИКИ</button>
+        <button class="btn-pixel" onclick="launchGame('sonic')">🦔 SONIC 16-BIT</button>
+        <button class="btn-pixel" onclick="launchGame('snake')">🐍 SNAKE</button>
         <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- Профиль -->
-    <div id="s-profile" class="screen">
-        <h2>ПРОФИЛЬ</h2>
-        <div class="pixel-panel">БАЛАНС: <span id="p-bal" style="color:gold">0</span> ★</div>
-        <div id="records-list" class="pixel-panel"></div>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
-    </div>
-
-    <!-- Турниры -->
-    <div id="s-tournaments" class="screen">
-        <h2>ТУРНИРЫ</h2>
-        <button class="btn-pixel btn-gold" onclick="navScreen('s-create-lobby')">+ СОЗДАТЬ</button>
-        <div id="lobby-list" style="width:100%; max-width:300px;"></div>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
-    </div>
-
-    <!-- Создание лобби -->
-    <div id="s-create-lobby" class="screen">
-        <h2>НОВОЕ ЛОББИ</h2>
-        <select id="lobby-game">
-            <option value="sonic">Sonic (на время)</option>
-            <option value="tetris">Tetris</option>
-            <option value="snake">Snake</option>
-        </select>
-        <select id="lobby-bet">
-            <option value="10">10 ★</option>
-            <option value="50">50 ★</option>
-        </select>
-        <button class="btn-pixel btn-gold" onclick="createLobby()">СОЗДАТЬ</button>
-        <button class="btn-pixel" onclick="navScreen('s-tournaments')">ОТМЕНА</button>
-    </div>
-
-    <!-- Игровой экран -->
-    <div id="s-game" class="screen" style="padding: 10px;">
-        <div style="display:flex; justify-content:space-between; width:100%; max-width:300px; font-size:0.6rem;">
-            <button onclick="quitGame()" style="background:red; color:white; border:none; padding:5px;">ВЫХОД</button>
-            <div><span id="g-label">SCORE:</span> <span id="g-score">0</span></div>
+    <div id="s-game" class="screen">
+        <div style="width:100%; max-width:300px; display:flex; justify-content:space-between; font-size:0.5rem; margin-bottom:5px;">
+            <button onclick="location.reload()" style="background:red; color:white; border:none;">ВЫХОД</button>
+            <div id="g-score">0</div>
         </div>
-        <canvas id="gameCanvas" width="240" height="380"></canvas>
+        <canvas id="gameCanvas" width="240" height="350"></canvas>
         <div id="game-controls" class="controls">
             <div class="d-pad">
                 <div class="ctrl-btn" style="grid-area:u" ontouchstart="press('up',true)" ontouchend="press('up',false)">▲</div>
@@ -109,191 +47,64 @@
                 <div class="ctrl-btn" style="grid-area:r" ontouchstart="press('right',true)" ontouchend="press('right',false)">▶</div>
                 <div class="ctrl-btn" style="grid-area:d" ontouchstart="press('down',true)" ontouchend="press('down',false)">▼</div>
             </div>
-            <div class="btn-action" ontouchstart="press('action',true)" ontouchend="press('action',false)">A</div>
+            <div class="ctrl-btn" style="width:70px; height:70px; border-radius:50%; background:red;" ontouchstart="press('action',true)" ontouchend="press('action',false)">A</div>
         </div>
     </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    const API = "https://tg-game-arena.onrender.com"; // ЗАМЕНИТЕ НА ВАШ URL
-    let user = null, lobby = null, gameType = '', score = 0, loop = null, sonicStartTime = 0;
-    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
-    const keys = {up:false, down:false, left:false, right:false, action:false};
+    const API = ""; // Оставьте пустым, если index.html и server.js на одном сервере
+    let user, lobby, gameType, score, loop, sonicStartTime, keys = {};
 
-    function navScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-
-    function press(k, v) { keys[k] = v; if(v && window.onInput) window.onInput(k); }
+    function navScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function press(k,v) { keys[k]=v; if(v && window.onInput) window.onInput(k); }
 
     async function init() {
         tg.ready(); tg.expand();
-        const r = await fetch(API+'/api/user-data', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({initData:tg.initData})
-        });
+        const r = await fetch('/api/user-data', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({initData:tg.initData}) });
         user = await r.json();
-        updateUI();
-    }
-
-    function updateUI() {
         document.getElementById('p-bal').innerText = user.balance;
-        let html = '';
-        for(let g in user.highScores) {
-            let val = user.highScores[g];
-            if(g === 'sonic' && val === 999999) val = 0;
-            html += `<div class="stat-row"><span>${g.toUpperCase()}:</span><span>${val}</span></div>`;
-        }
-        document.getElementById('records-list').innerHTML = html;
     }
 
-    // ================= РОУТЕР ИГР =================
-    function launchGame(t, isPvP) {
-        gameType = t; score = 0;
-        document.getElementById('g-label').innerText = t === 'sonic' ? "MS:" : "SCORE:";
-        navScreen('s-game');
+    function launchGame(t) {
+        gameType = t; score = 0; navScreen('s-game');
+        const emu = document.getElementById('sonic-emulator'); if(emu) emu.remove();
         
-        const controls = document.getElementById('game-controls');
-        const oldEmu = document.getElementById('sonic-emulator');
-        if(oldEmu) oldEmu.remove();
-
-        if (t === 'sonic') {
-            canvas.style.display = 'none';
-            controls.style.display = 'none';
-            const iframe = document.createElement('iframe');
-            iframe.id = 'sonic-emulator';
-            iframe.allow = 'autoplay; fullscreen';
-            // ROM должен лежать по адресу https://ваш-сайт/roms/sonic.bin
-            const romUrl = encodeURIComponent(window.location.origin + '/roms/sonic.bin');
-            iframe.src = `https://emulatorjs.org/emu/index.html?game=${romUrl}&core=genesis`;
-            canvas.parentNode.insertBefore(iframe, canvas.nextSibling);
-            
+        if(t === 'sonic') {
+            document.getElementById('gameCanvas').style.display='none';
+            document.getElementById('game-controls').style.display='none';
+            const ifr = document.createElement('iframe');
+            ifr.id = 'sonic-emulator'; ifr.allow = 'autoplay; fullscreen';
+            ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(window.location.origin+'/roms/sonic.bin')}&core=genesis`;
+            document.getElementById('gameCanvas').parentNode.insertBefore(ifr, document.getElementById('gameCanvas').nextSibling);
             sonicStartTime = Date.now();
-            function updateSonic() {
-                if(gameType !== 'sonic') return;
-                score = Date.now() - sonicStartTime;
-                document.getElementById('g-score').innerText = score;
-                loop = requestAnimationFrame(updateSonic);
-            }
-            updateSonic();
+            loop = setInterval(() => { score = Date.now()-sonicStartTime; document.getElementById('g-score').innerText = score; }, 100);
         } else {
-            canvas.style.display = 'block';
-            controls.style.display = 'flex';
-            startMiniGame(t);
+            document.getElementById('gameCanvas').style.display='block';
+            document.getElementById('game-controls').style.display='flex';
+            if(t === 'snake') runSnake();
         }
-    }
-
-    function quitGame() {
-        tg.showConfirm("Выйти?", async (ok) => {
-            if(!ok) return;
-            const emu = document.getElementById('sonic-emulator');
-            if(emu) emu.remove();
-            if(loop) cancelAnimationFrame(loop);
-            
-            // Отправляем счет
-            await fetch(API+'/api/submit-score', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({telegramId:user.telegramId, game:gameType, score:score, lobbyId:lobby?.lobbyId})
-            });
-            location.reload();
-        });
-    }
-
-    // ================= МИНИ-ИГРЫ =================
-    function startMiniGame(t) {
-        if(t === 'snake') runSnake();
-        if(t === 'tetris') runTetris();
-        if(t === 'bomber') runBomber();
-        // Добавьте остальные аналогично...
     }
 
     function runSnake() {
-        let s = [{x:10,y:10}], f = {x:5,y:5}, dx=0, dy=-1, fr=0;
-        window.onInput = k => {
-            if(k==='left'&&dx===0){dx=-1;dy=0}
-            if(k==='right'&&dx===0){dx=1;dy=0}
-            if(k==='up'&&dy===0){dx=0;dy=-1}
-            if(k==='down'&&dy===0){dx=0;dy=1}
-        };
+        let s = [{x:10,y:10}], dx=0, dy=-1, f={x:5,y:5}, fr=0;
+        window.onInput = k => { if(k==='left') {dx=-1;dy=0} if(k==='right') {dx=1;dy=0} if(k==='up') {dx=0;dy=-1} if(k==='down') {dx=0;dy=1} };
+        const c = document.getElementById('gameCanvas'), x = c.getContext('2d');
         function tick() {
             if(++fr%10===0) {
                 let h = {x:s[0].x+dx, y:s[0].y+dy};
-                if(h.x<0||h.x>=12||h.y<0||h.y>=19||s.find(p=>p.x===h.x&&p.y===h.y)) return quitGame();
-                s.unshift(h);
-                if(h.x===f.x&&h.y===f.y) { score+=10; document.getElementById('g-score').innerText=score; f={x:Math.floor(Math.random()*12),y:Math.floor(Math.random()*19)}; }
-                else s.pop();
+                if(h.x<0||h.x>11||h.y<0||h.y>17) { location.reload(); return; }
+                s.unshift(h); if(h.x===f.x && h.y===f.y) { score+=10; f={x:Math.floor(Math.random()*12),y:Math.floor(Math.random()*18)}; } else s.pop();
             }
-            ctx.fillStyle='#000'; ctx.fillRect(0,0,240,380);
-            ctx.fillStyle='red'; ctx.fillRect(f.x*20, f.y*20, 18, 18);
-            ctx.fillStyle='cyan'; s.forEach(p=>ctx.fillRect(p.x*20, p.y*20, 18, 18));
+            x.fillStyle='black'; x.fillRect(0,0,240,350);
+            x.fillStyle='red'; x.fillRect(f.x*20, f.y*20, 18, 18);
+            x.fillStyle='cyan'; s.forEach(p=>x.fillRect(p.x*20, p.y*20, 18, 18));
+            document.getElementById('g-score').innerText = score;
             loop = requestAnimationFrame(tick);
         }
         tick();
     }
-
-    function runTetris() {
-        const C=10, R=18, SQ=20;
-        let board = Array.from({length:R},()=>Array(C).fill(0));
-        let p = {x:3, y:0, m:[[1,1,1,1]]}, fr=0;
-        function tick() {
-            if(++fr%30===0) { p.y++; if(p.y>=R) { p.y=0; score+=100; document.getElementById('g-score').innerText=score; } }
-            ctx.fillStyle='#000'; ctx.fillRect(0,0,240,380);
-            ctx.fillStyle='orange'; p.m[0].forEach((_,i)=>ctx.fillRect((p.x+i)*SQ, p.y*SQ, 18, 18));
-            loop = requestAnimationFrame(tick);
-        }
-        tick();
-    }
-
-    // ================= PVP ЛОГИКА =================
-    async function openTournaments() {
-        navScreen('s-tournaments');
-        const r = await fetch(API+'/api/lobbies');
-        const list = await r.json();
-        document.getElementById('lobby-list').innerHTML = list.map(l => `
-            <div class="pixel-panel" style="display:flex; justify-content:space-between;">
-                <span>${l.gameType} | ${l.betAmount}★</span>
-                <button onclick="joinLobby('${l.lobbyId}')">ВСТУПИТЬ</button>
-            </div>
-        `).join('');
-    }
-
-    async function createLobby() {
-        const game = document.getElementById('lobby-game').value;
-        const bet = document.getElementById('lobby-bet').value;
-        const r = await fetch(API+'/api/lobby/create', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({telegramId:user.telegramId, gameType:game, betAmount:bet})
-        });
-        const res = await r.json();
-        if(res.success) {
-            lobby = res.lobby;
-            alert("Лобби создано! Ждем игрока...");
-            pollStatus();
-        }
-    }
-
-    async function joinLobby(id) {
-        const r = await fetch(API+'/api/lobby/join', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({telegramId:user.telegramId, lobbyId:id})
-        });
-        const res = await r.json();
-        if(res.success) { lobby = res.lobby; launchGame(lobby.gameType, true); }
-    }
-
-    function pollStatus() {
-        const timer = setInterval(async () => {
-            const r = await fetch(API+'/api/lobby/status', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({lobbyId:lobby.lobbyId})
-            });
-            const res = await r.json();
-            if(res.lobby.status === 'playing') { clearInterval(timer); launchGame(lobby.gameType, true); }
-        }, 2000);
-    }
-
     init();
 </script>
 </body>
