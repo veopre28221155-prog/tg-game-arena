@@ -1,6 +1,7 @@
 {
-  "name": "retro-arena-api",
+  "name": "tg-game-arena",
   "version": "1.0.0",
+  "description": "Retro Arena Game Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,6 +10,6 @@
     "express": "^4.18.2",
     "mongoose": "^7.0.0",
     "cors": "^2.8.5",
-    "axios": "^1.3.0"
+    "axios": "^1.3.4"
   }
 }
