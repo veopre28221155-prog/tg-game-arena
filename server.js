@@ -9,8 +9,8 @@ app.use(cors());
 
 // КОНФИГУРАЦИЯ
 const CONFIG = {
-    TELEGRAM_BOT_TOKEN: "7593728405:AAEcp0It8ovT3P_dyugpaIujGXr6s5AQqH8", // ВАШ ТОКЕН БОТА
-    CRYPTO_BOT_TOKEN: "535127:AAviaEd5s4fdrTrHuHpXARM04OXIa7XsEjV", // Токен Crypto Pay
+    TELEGRAM_BOT_TOKEN: "7593728405:AAEcp0It8ovT3P_dyugpaIujGXr6s5AQqH8", 
+    CRYPTO_BOT_TOKEN: "535127:AAviaEd5s4fdrTrHuHpXARM04OXIa7XsEjV", 
     MONGO_URI: "mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.net/retro_arena?retryWrites=true&w=majority",
     ADMIN_ID: 1463465416,
     PORT: process.env.PORT || 3000
@@ -21,7 +21,17 @@ mongoose.connect(CONFIG.MONGO_URI).then(() => console.log('✅ MongoDB Connected
 const UserSchema = new mongoose.Schema({
     telegramId: { type: Number, required: true, unique: true },
     balance: { type: Number, default: 0 },
-    highScores: { sonic: { type: Number, default: 999999 }, tetris: { type: Number, default: 0 }, snake: { type: Number, default: 0 }, battleCity: { type: Number, default: 0 } },
+    highScores: { 
+        sonic: { type: Number, default: 999999 }, 
+        tetris: { type: Number, default: 0 }, 
+        snake: { type: Number, default: 0 }, 
+        battleCity: { type: Number, default: 0 },
+        bomber: { type: Number, default: 0 },
+        gold: { type: Number, default: 0 },
+        roadFighter: { type: Number, default: 0 },
+        spaceInvaders: { type: Number, default: 0 },
+        airHockey: { type: Number, default: 0 }
+    },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -133,7 +143,6 @@ app.post('/api/submit-score', async (req, res) => {
     try {
         const { telegramId, game, score, lobbyId } = req.body;
         
-        // В Сонике рекорд - это МЕНЬШЕЕ время. В остальных - БОЛЬШЕЕ количество очков.
         if(game === 'sonic') {
             await User.findOneAndUpdate({ telegramId, "highScores.sonic": { $gt: score } }, { $set: { "highScores.sonic": score } });
         } else {
@@ -157,7 +166,7 @@ app.post('/api/submit-score', async (req, res) => {
                 const pool = lobby.betAmount * 2; const fee = Math.floor(pool * 0.1); const prize = pool - fee;
                 let winnerId = null, loserId = null;
                 
-                // ЛОГИКА ПОБЕДЫ (Соник - кто быстрее, Тетрис - у кого больше очков)
+                // ЛОГИКА ПОБЕДЫ (Соник - кто быстрее, Тетрис и др. - у кого больше очков)
                 if (game === 'sonic') {
                     if (lobby.scores.player1 < lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; }
                     else if (lobby.scores.player2 < lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; }
