@@ -3,120 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neural Arena v5</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <title>Neural SEGA Emulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/ai-engine.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        #ai-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #game-ui { position: fixed; top: 15px; left: 15px; z-index: 100; font-size: 8px; color: #00f0ff; pointer-events: none; display: none; line-height: 1.5; text-shadow: 2px 2px #000; }
-        #warning { position: fixed; top: 50px; right: 15px; color: red; font-size: 10px; display: none; animation: blink 0.5s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: monospace; }
+        
+        /* Экран загрузки ИИ */
+        #ai-boot { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #0f0; z-index: 9999; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .log { margin-bottom: 5px; font-size: 12px; }
+        
+        /* Контейнер эмулятора */
+        #game-container { width: 100%; height: 100%; display: none; }
     </style>
 </head>
 <body>
 
-<div id="ai-overlay">
-    <div style="color:#0f0; margin-bottom:20px;">> DEPLOYING AUTONOMOUS AI...</div>
-    <div id="status-log" style="font-size:10px; color:#fff; width:80%;"></div>
+<!-- AI BOOT SEQUENCE -->
+<div id="ai-boot">
+    <div class="log">> INITIALIZING MOTOROLA 68000 VIRTUAL CPU...</div>
+    <div class="log" id="log2" style="display:none;">> COMPILING WEBASSEMBLY CORE...</div>
+    <div class="log" id="log3" style="display:none;">> LOADING ROM: /public/sonic.bin</div>
+    <div class="log" id="log4" style="display:none;">> VIRTUAL SEGA GENESIS READY.</div>
 </div>
 
-<div id="game-ui">
-    PLAYER: <span id="sonic-status" style="color:white">OK</span><br>
-    HUNTER_AI: <span id="ai-status" style="color:#ff0055">ONLINE</span>
-</div>
-<div id="warning">! THREAT DETECTED !</div>
-
-<div id="game-view"></div>
+<!-- ЗДЕСЬ БУДЕТ РАБОТАТЬ НАСТОЯЩАЯ СЕГА -->
+<div id="game-container"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-    const log = (t) => { document.getElementById('status-log').innerHTML += `> ${t}<br>`; };
 
+    // Имитация загрузки нейро-эмулятора
+    setTimeout(() => document.getElementById('log2').style.display = 'block', 800);
+    setTimeout(() => document.getElementById('log3').style.display = 'block', 1600);
     setTimeout(() => {
-        log("Bot Brain compiled...");
-        setTimeout(() => {
-            document.getElementById('ai-overlay').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-            initPhaser();
-        }, 1000);
-    }, 500);
+        document.getElementById('log4').style.display = 'block';
+        setTimeout(startEmulator, 1000);
+    }, 2500);
 
-    let sonic, hunterBot, engine, move = {L: false, R: false, J: false};
+    // ЗАПУСК АППАРАТНОГО ЭМУЛЯТОРА
+    function startEmulator() {
+        document.getElementById('ai-boot').style.display = 'none';
+        document.getElementById('game-container').style.display = 'block';
 
-    function initPhaser() {
-        const config = {
-            type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight,
-            parent: 'game-view', backgroundColor: '#112244', // Темное небо
-            physics: { default: 'arcade', arcade: { gravity: { y: 1800 } } },
-            scene: { preload: function() {
-                engine = new NeuralSonicEngine(this);
-                engine.generateTextures();
-            }, create: create, update: update }
-        };
-        new Phaser.Game(config);
-    }
-
-    function create() {
-        const platforms = this.physics.add.staticGroup();
-        const groundY = window.innerHeight - 32;
-        for(let i=0; i<100; i++) platforms.create(i * 64, groundY, 'tile_v4');
-
-        // ИГРОК
-        sonic = this.physics.add.sprite(100, groundY - 100, 'sonic_v4');
-        sonic.setScale(1.2).setCollideWorldBounds(true).setDragX(600);
+        // Настройки виртуальной машины
+        window.EJS_player = '#game-container';
+        window.EJS_core = 'sega'; // Указываем ядро: SEGA Genesis / Megadrive
+        window.EJS_gameUrl = '/sonic.bin'; // Путь к твоему НАСТОЯЩЕМУ ROM файлу
+        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/'; // Облачные ядра
         
-        // ИИ-ОХОТНИК (Появляется дальше на карте)
-        hunterBot = this.physics.add.sprite(600, groundY - 100, 'hunter_bot');
-        hunterBot.setScale(1.2).setCollideWorldBounds(true).setBounce(0.2);
+        // Включаем виртуальный джойстик для телефона
+        window.EJS_virtualGamepad = true; 
 
-        this.physics.add.collider(sonic, platforms);
-        this.physics.add.collider(hunterBot, platforms);
-        
-        // Если бот догнал игрока
-        this.physics.add.overlap(sonic, hunterBot, () => {
-            sonic.setTint(0xff0000); // Соник краснеет от урона
-        }, null, this);
-
-        this.cameras.main.startFollow(sonic, true, 0.1, 0.1);
-
-        // КНОПКИ
-        const h = window.innerHeight, w = window.innerWidth;
-        const addB = (x, y, r, act, col) => {
-            let b = this.add.circle(x, y, r, col, 0.3).setInteractive().setScrollFactor(0);
-            b.on('pointerdown', () => move[act] = true); b.on('pointerup', () => move[act] = false);
-        };
-        addB(60, h-80, 45, 'L', 0x00f0ff);
-        addB(160, h-80, 45, 'R', 0x00f0ff);
-        addB(w-80, h-80, 55, 'J', 0xff0055);
-    }
-
-    function update() {
-        // УПРАВЛЕНИЕ ИГРОКОМ
-        const acc = 450;
-        if (move.L) { sonic.setVelocityX(-acc); sonic.flipX = true; sonic.setAngle(-10); sonic.clearTint(); }
-        else if (move.R) { sonic.setVelocityX(acc); sonic.flipX = false; sonic.setAngle(10); sonic.clearTint(); }
-        else { sonic.setAngle(0); }
-        if (move.J && sonic.body.touching.down) sonic.setVelocityY(-850);
-        
-        if (!sonic.body.touching.down) sonic.setAngularVelocity(move.R ? 500 : (move.L ? -500 : 0)); 
-        else sonic.setAngularVelocity(0);
-
-        // --- ПЕРЕДАЕМ УПРАВЛЕНИЕ БОТОМ ДВИЖКУ ИИ ---
-        engine.processHunterAI(hunterBot, sonic);
-
-        // UI Логика
-        const dist = Phaser.Math.Distance.Between(hunterBot.x, hunterBot.y, sonic.x, sonic.y);
-        document.getElementById('sonic-status').innerText = engine.getVelocityData(sonic.body.velocity.x);
-        document.getElementById('warning').style.display = (dist < 300) ? 'block' : 'none';
-        
-        // Поворот бота в сторону игрока
-        if (hunterBot.body.velocity.x > 0) hunterBot.flipX = false;
-        else if (hunterBot.body.velocity.x < 0) hunterBot.flipX = true;
+        // Загружаем движок (он сам создаст экран и кнопки)
+        const script = document.createElement('script');
+        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+        document.body.appendChild(script);
     }
 </script>
+
 </body>
 </html>
