@@ -16,27 +16,26 @@
         .btn-pixel { background: #222; color: #fff; border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-family: var(--font-retro); margin-bottom: 15px; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
         .btn-pixel:active { transform: translateY(2px); background: #333; }
         
-        /* КОНСОЛЬ ОШИБОК */
+        /* КОНСОЛЬ (оставим на всякий случай, но сделаем поменьше) */
         #debug-log {
             width: 100%;
             max-width: 800px;
-            background: rgba(50, 0, 0, 0.9);
-            border: 2px solid red;
-            color: #ffaaaa;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #555;
+            color: #aaa;
             font-family: monospace;
-            font-size: 10px;
-            padding: 10px;
-            margin-top: 10px;
-            min-height: 50px;
-            white-space: pre-wrap;
-            display: none; /* Скрыта по умолчанию */
+            font-size: 8px;
+            padding: 5px;
+            margin-top: 5px;
+            display: none; 
         }
 
         #emulator-container {
             width: 100%;
-            height: 60vh;
+            height: 65vh; /* Чуть больше экран */
             background: #000;
             border: 2px solid var(--accent-neon);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
         }
     </style>
 </head>
@@ -46,7 +45,7 @@
     <!-- МЕНЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1 style="color:var(--accent-neon); text-align:center;">RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="launchSega('sonic.bin')">🎮 SONIC 1 (TEST)</button>
+        <button class="btn-pixel" onclick="launchSega('sonic.bin')">🎮 SONIC THE HEDGEHOG</button>
     </div>
 
     <!-- ЭКРАН ИГРЫ -->
@@ -59,7 +58,6 @@
         <!-- Сюда встраивается эмулятор -->
         <div id="emulator-container"></div>
         
-        <!-- Сюда будем писать ошибки -->
         <div id="debug-log"></div>
     </div>
 </div>
@@ -75,62 +73,57 @@
         document.getElementById(id).classList.add('active'); 
     }
 
-    // Функция для записи ошибок на экран
     function logError(msg) {
         const box = document.getElementById('debug-log');
         box.style.display = 'block';
-        box.innerText += `[LOG] ${msg}\n`;
+        box.innerText += `> ${msg}\n`;
         console.log(msg);
     }
 
     async function launchSega(romName) {
         navScreen('s-game');
-        const box = document.getElementById('debug-log');
-        box.innerText = "Инициализация...\n";
-        
-        // 1. Проверяем, доступен ли сервер
-        logError("1. Проверка файла: " + romName);
-        
-        try {
-            // Пытаемся просто скачать файл, чтобы проверить, существует ли он
-            const response = await fetch('/' + romName, { method: 'HEAD' });
-            
-            if (response.ok) {
-                logError(`✅ Файл найден! Статус: ${response.status}`);
-                logError(`Размер файла: ${response.headers.get('content-length')} байт`);
-                startEmulator(romName);
-            } else {
-                logError(`❌ ОШИБКА: Сервер ответил ${response.status}`);
-                logError(`❌ Файл не найден. Проверь имя файла в папке public!`);
-                logError(`Запрашиваемый URL: ${window.location.origin}/${romName}`);
-            }
-        } catch (e) {
-            logError(`❌ СЕТЕВАЯ ОШИБКА: ${e.message}`);
-        }
-    }
+        document.getElementById('emulator-container').innerHTML = ''; // Очистка перед запуском
+        logError("Загрузка...");
 
-    function startEmulator(romName) {
-        logError("2. Запуск эмулятора...");
-        
+        const romUrl = window.location.origin + '/' + romName;
+
+        // === ГЛАВНЫЕ ИСПРАВЛЕНИЯ ЗДЕСЬ ===
         window.EJS_player = '#emulator-container'; 
-        window.EJS_core = 'sega'; 
-        window.EJS_gameUrl = window.location.origin + '/' + romName; 
+        
+        // 1. Меняем ядро на segaMD (специально для Mega Drive/Genesis)
+        window.EJS_core = 'segaMD'; 
+        
+        // 2. Указываем путь к файлу
+        window.EJS_gameUrl = romUrl; 
+        
+        // 3. Откуда качать движок
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/'; 
         
-        window.EJS_onGameStart = function() {
-            logError("✅ Ядро запущено. Игра должна появиться.");
+        // 4. АВТОСТАРТ (Очень важно! Иначе будет черный экран паузы)
+        window.EJS_startOnLoaded = true;
+        
+        // 5. Настройки интерфейса
+        window.EJS_Buttons = {
+            playPause: false,
+            restart: true,
+            mute: true,
+            settings: true,
+            fullscreen: true,
+            saveState: true,
+            loadState: true
         };
 
-        const script = document.createElement('script');
-        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-        script.onerror = () => logError("❌ Не удалось загрузить скрипт эмулятора (CDN ошибка)");
-        document.body.appendChild(script);
+        logError("Конфигурация создана. Подключение ядра...");
+
+        // Небольшая задержка, чтобы экран успел отрисоваться перед стартом тяжелого скрипта
+        setTimeout(() => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+            script.onload = () => logError("Ядро загружено! Жди заставку SEGA.");
+            script.onerror = () => logError("Ошибка CDN EmulatorJS");
+            document.body.appendChild(script);
+        }, 100);
     }
-    
-    // Перехват глобальных ошибок JS
-    window.onerror = function(message, source, lineno, colno, error) {
-        logError(`💀 JS Error: ${message}`);
-    };
 </script>
 </body>
 </html>
