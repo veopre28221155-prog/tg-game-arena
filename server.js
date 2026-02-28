@@ -3,19 +3,21 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
+
+// Разрешаем CORS для всех запросов
 app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 
-// Разрешаем серверу отдавать файлы из папки public и из корня
-const publicPath = __dirname;
+// Настройка папки для статики (и корень, и папка public)
+const publicPath = __dirname; 
+
 app.use(express.static(publicPath, {
     setHeaders: (res, filePath) => {
-        res.set('Access-Control-Allow-Origin', '*');
-        // Помогаем телефону понять типы файлов эмулятора
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
         if (filePath.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
         if (filePath.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
-        if (filePath.endsWith('.js')) res.set('Content-Type', 'application/javascript');
     }
 }));
 
