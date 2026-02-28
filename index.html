@@ -8,23 +8,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root { --tg-bg: #050505; --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive; }
-        
-        /* Убрал touch-action: none, чтобы клики работали везде */
         body { margin: 0; background: #000; color: #fff; font-family: var(--font-retro); height: 100vh; overflow: hidden; text-align: center; }
         
-        /* Добавил z-index, чтобы экраны точно были поверх фона */
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; z-index: 10; }
         .screen.active { display: flex; }
         
         h1 { color: var(--accent-neon); font-size: 20px; text-shadow: 0 0 10px var(--accent-neon); margin-top: 30px; margin-bottom: 40px; line-height: 1.5; }
         
-        /* Сделал кнопку крупнее и надежнее для кликов */
         .btn-pixel { background: #111; color: #fff; border: 4px solid #444; padding: 20px; font-family: var(--font-retro); font-size: 14px; cursor: pointer; width: 100%; max-width: 320px; display: block; position: relative; z-index: 50; transition: 0.1s; }
         .btn-pixel:active { background: #333; transform: scale(0.95); }
         .btn-sega { border-color: #0055ff; color: #00aaff; box-shadow: 0 0 15px rgba(0,85,255,0.4); }
         .btn-danger { border-color: var(--accent-pink); color: var(--accent-pink); }
         
-        #emulator-container { width: 100%; height: 50vh; background: #000; border: 2px solid var(--accent-neon); position: relative; margin-top: 10px; }
+        #emulator-container { width: 100%; height: 55vh; background: #000; border: 2px solid var(--accent-neon); position: relative; margin-top: 10px; }
         
         #start-emu-button {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -34,28 +30,23 @@
         
         #loading-status { font-size: 10px; color: #aaa; margin-top: 15px; line-height: 1.5; }
         
-        /* ГЛОБАЛЬНЫЙ РАДАР ОШИБОК (Поверх всего) */
         #global-debug {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 150px; background: rgba(50,0,0,0.95);
-            border-top: 3px solid red; color: #ffaaaa; font-family: monospace; font-size: 10px;
-            text-align: left; overflow-y: auto; padding: 10px; box-sizing: border-box; z-index: 9999; display: none;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 100px; background: rgba(50,0,0,0.9);
+            border-top: 2px solid red; color: #ffaaaa; font-family: monospace; font-size: 9px;
+            text-align: left; overflow-y: auto; padding: 10px; z-index: 9999; display: none;
         }
     </style>
 </head>
 <body>
 
-<!-- Глобальная консоль ошибок -->
 <div id="global-debug"></div>
 
 <div id="app">
-    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active">
         <h1>RETRO ARENA<br><span style="font-size: 12px; color: gold;">SEGA</span></h1>
-        
         <button id="btn-sonic" class="btn-pixel btn-sega" onclick="launchGame('sonic.bin', 'segaMD')">🦔 SONIC 1</button>
     </div>
 
-    <!-- ЭКРАН ИГРЫ -->
     <div id="s-game" class="screen">
         <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
             <button class="btn-pixel btn-danger" style="padding: 10px; font-size: 10px; width: auto;" onclick="location.reload()">НАЗАД</button>
@@ -72,29 +63,18 @@
 </div>
 
 <script>
-    // Настраиваем глобальный перехват ошибок до выполнения любого другого кода
     function logDebug(msg) {
         const dbg = document.getElementById('global-debug');
         dbg.style.display = 'block';
-        dbg.innerHTML += msg + '<br>';
+        dbg.innerHTML += '> ' + msg + '<br>';
         console.log(msg);
     }
+    
+    window.onerror = function(msg) { logDebug(`ERROR: ${msg}`); return false; };
 
-    window.onerror = function(msg, url, line) {
-        logDebug(`💀 Сбой JS: ${msg} (строка: ${line})`);
-        return false;
-    };
-
-    // Подключаем Telegram Web App аккуратно
-    try {
-        const tg = window.Telegram.WebApp;
-        tg.ready(); 
-        tg.expand();
-        if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-        logDebug('✅ Telegram Web App загружен');
-    } catch(e) {
-        logDebug(`⚠️ Ошибка Telegram API: ${e.message}`);
-    }
+    const tg = window.Telegram.WebApp;
+    tg.ready(); tg.expand();
+    if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
     function navScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -109,52 +89,48 @@
     }
 
     function launchGame(romFileName, coreName) {
-        // Меняем текст кнопки для обратной связи
         const btn = document.getElementById('btn-sonic');
-        btn.innerText = '⏳ ЗАГРУЗКА...';
-        btn.style.borderColor = 'gold';
+        btn.innerText = 'ЗАГРУЗКА...';
         btn.style.color = 'gold';
 
-        logDebug(`🎮 Нажата кнопка запуска. Файл: ${romFileName}`);
-
-        // Даем браузеру 50мс на отрисовку нового текста кнопки, затем запускаем тяжелый код
         setTimeout(() => {
-            try {
-                navScreen('s-game');
-                
-                const baseUrl = window.location.origin;
-                logDebug(`🔗 Адрес сервера: ${baseUrl}`);
+            navScreen('s-game');
+            
+            // 1. Формируем АБСОЛЮТНУЮ ссылку на игру (с твоего сервера)
+            // Добавляем ?t=... чтобы телефон не брал старую версию из кэша
+            const romUrl = window.location.origin + '/' + romFileName + '?t=' + Date.now();
+            
+            logDebug(`Игра: ${romUrl}`);
 
-                window.EJS_pathtodata = baseUrl + '/data/'; 
-                window.EJS_gameUrl = baseUrl + '/' + romFileName;
-                
-                window.EJS_player = '#emulator-container';
-                window.EJS_core = coreName;
-                window.EJS_startOnLoaded = false;
-                window.EJS_lightSync = true;
-                
-                window.EJS_Buttons = {
-                    playPause: false, restart: true, mute: true, settings: true,
-                    fullscreen: true, saveState: true, loadState: true 
-                };
+            // 2. Указываем путь к ОФИЦИАЛЬНОМУ CDN (там точно есть legacy файлы!)
+            window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+            
+            window.EJS_gameUrl = romUrl;
+            window.EJS_player = '#emulator-container';
+            window.EJS_core = coreName;
+            window.EJS_startOnLoaded = false;
+            
+            // Важная настройка для телефонов
+            window.EJS_lightSync = true;
 
-                window.EJS_onGameLoaded = function() {
-                    logDebug('✅ Игра успешно загружена в память!');
-                    document.getElementById('loading-status').innerText = 'Готово! Нажми СТАРТ';
-                    document.getElementById('start-emu-button').style.display = 'block';
-                };
+            window.EJS_Buttons = {
+                playPause: false, restart: true, mute: true, settings: true,
+                fullscreen: true, saveState: true, loadState: true 
+            };
 
-                const scriptUrl = baseUrl + '/data/loader.js';
-                logDebug(`⏳ Скачиваем движок эмулятора: ${scriptUrl}`);
-                
-                const script = document.createElement('script');
-                script.src = scriptUrl;
-                script.onerror = () => logDebug(`❌ ОШИБКА: Не удалось скачать файл loader.js!`);
-                document.body.appendChild(script);
-            } catch(err) {
-                logDebug(`❌ Критическая ошибка при запуске: ${err.message}`);
-            }
-        }, 50);
+            window.EJS_onGameLoaded = function() {
+                logDebug('Игра скачана!');
+                document.getElementById('loading-status').innerText = 'Готово! Жми СТАРТ';
+                document.getElementById('start-emu-button').style.display = 'block';
+            };
+
+            // 3. Грузим скрипт тоже с CDN
+            const script = document.createElement('script');
+            script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+            script.onerror = () => logDebug('Ошибка загрузки CDN loader.js');
+            document.body.appendChild(script);
+
+        }, 100);
     }
 </script>
 </body>
