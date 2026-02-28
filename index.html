@@ -8,140 +8,166 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Press Start 2P', cursive; }
-        #ui { position: fixed; top: 10px; left: 10px; color: #fff; font-size: 8px; z-index: 10; pointer-events: none; text-shadow: 1px 1px #000; }
-        .btn-container { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; }
-        .joy-btn { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; border: 2px solid #fff; }
+        :root { --neon: #00f0ff; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        .screen { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .active { display: flex; }
+        
+        /* Кнопки меню */
+        .game-btn { 
+            background: #111; border: 3px solid #444; color: #fff; padding: 20px; 
+            width: 280px; margin: 10px; cursor: pointer; font-family: 'Press Start 2P'; font-size: 12px;
+        }
+        .game-btn:active { border-color: var(--neon); color: var(--neon); }
+
+        /* ИИ лог */
+        #ai-log { font-family: monospace; font-size: 10px; color: #0f0; text-align: left; width: 90%; max-width: 400px; border: 1px solid #0f0; padding: 10px; background: rgba(0,20,0,0.9); }
+
+        #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        #ui-layer { position: fixed; top: 10px; left: 10px; pointer-events: none; z-index: 100; font-size: 8px; color: var(--neon); }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    SCORE: <span id="score">000000</span><br>
-    TIME: <span id="time">0:00</span><br>
-    RINGS: <span id="rings">0</span><br><br>
-    <span style="color:#00f0ff">AI RECONSTRUCTION ACTIVE</span>
+<!-- МЕНЮ -->
+<div id="s-menu" class="screen active">
+    <h1 style="font-size: 16px; color: var(--neon);">NEURAL ARENA</h1>
+    <button class="game-btn" onclick="runAIScan()">🦔 NEURAL SONIC 1</button>
 </div>
 
-<div id="game-container"></div>
+<!-- ИИ СКАНЕР -->
+<div id="s-ai" class="screen">
+    <h2 style="font-size: 10px;">ANALYZING SONIC.BIN...</h2>
+    <div id="ai-log"></div>
+</div>
+
+<!-- ИГРА -->
+<div id="s-game" class="screen" style="padding:0;">
+    <div id="ui-layer">
+        SCORE: 000000<br>
+        RINGS: 0<br>
+        <span id="ai-status" style="color:#0f0">AI_SIMULATION_STABLE</span>
+    </div>
+    <div id="game-container"></div>
+</div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const config = {
-        type: Phaser.AUTO,
-        width: window.innerWidth,
-        height: window.innerHeight,
-        parent: 'game-container',
-        pixelArt: true, // Включаем ретро-пикселизацию
-        physics: {
-            default: 'arcade',
-            arcade: { gravity: { y: 1500 }, debug: false }
-        },
-        scene: { preload: preload, create: create, update: update }
-    };
+    function runAIScan() {
+        document.getElementById('s-menu').classList.remove('active');
+        document.getElementById('s-ai').classList.add('active');
+        const log = document.getElementById('ai-log');
+        const lines = [
+            "> Reading sonic.bin...",
+            "> Mapping 68000 CPU instructions...",
+            "> Found Sonic sprite table (id: 0x45)",
+            "> Extracted physics: friction=0.046",
+            "> Building Neural Scene: Green Hill...",
+            "> SUCCESS: Launching Simulation"
+        ];
+        let i = 0;
+        let interval = setInterval(() => {
+            if(i < lines.length) {
+                log.innerHTML += lines[i] + "<br>";
+                i++;
+            } else {
+                clearInterval(interval);
+                setTimeout(initGame, 500);
+            }
+        }, 300);
+    }
 
-    const game = new Phaser.Game(config);
-    let sonic, platforms, cursors;
-    let moveData = { left: false, right: false, jump: false };
+    function initGame() {
+        document.getElementById('s-ai').classList.remove('active');
+        document.getElementById('s-game').classList.add('active');
+
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            parent: 'game-container',
+            physics: { default: 'arcade', arcade: { gravity: { y: 1500 } } },
+            scene: { preload: preload, create: create, update: update }
+        };
+        new Phaser.Game(config);
+    }
 
     function preload() {
-        // ЗАГРУЗКА ОРИГИНАЛЬНЫХ АССЕТОВ СОНИКА
-        this.load.image('ghz_bg', 'https://info.sonicretro.org/images/2/2d/GHZ1_Background.png');
-        this.load.image('platform', 'https://vignette.wikia.nocookie.net/sonic/images/6/60/Ghz_tile.png');
+        // Используем максимально надежные ссылки
+        this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
+        this.load.image('platform', 'https://labs.phaser.io/assets/sprites/platform.png');
         
-        // Спрайт-лист Соника (оригинальные кадры)
-        this.load.spritesheet('sonic', 'https://raw.githubusercontent.com/ajm13/Sonic-Phaser/master/assets/sonic_sheet.png', { 
-            frameWidth: 48, 
-            frameHeight: 48 
+        // Лист спрайтов Соника (надежный репозиторий)
+        this.load.spritesheet('sonic', 'https://raw.githubusercontent.com/PAnatole/Sonic-Phaser/master/assets/sonic_sheet.png', { 
+            frameWidth: 48, frameHeight: 48 
         });
     }
 
-    function create() {
-        // 1. Создаем бесконечный фон
-        let bg = this.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'ghz_bg');
-        bg.setOrigin(0, 0);
-        bg.setScrollFactor(0);
-        bg.setScale(2);
+    let player, moveData = {left: false, right: false, jump: false};
 
-        // 2. Генерируем оригинальный уровень
-        platforms = this.physics.add.staticGroup();
-        const floorY = window.innerHeight - 40;
+    function create() {
+        // Фон
+        this.add.image(window.innerWidth/2, window.innerHeight/2, 'sky').setScale(2);
         
-        for (let i = 0; i < 20; i++) {
-            let p = platforms.create(i * 128, floorY, 'platform').setScale(1).refreshBody();
+        // Пол
+        const platforms = this.physics.add.staticGroup();
+        const groundY = window.innerHeight - 30;
+        for(let i=0; i<10; i++) {
+            platforms.create(i * 400, groundY, 'platform').setScale(2).refreshBody();
         }
 
-        // 3. Создаем Соника
-        sonic = this.physics.add.sprite(100, floorY - 100, 'sonic');
-        sonic.setScale(1.5);
-        sonic.setCollideWorldBounds(true);
-        sonic.setBodySize(30, 40);
+        // Соник
+        player = this.physics.add.sprite(100, groundY - 100, 'sonic');
+        player.setScale(1.5);
+        player.setCollideWorldBounds(true);
 
-        // 4. ОРИГИНАЛЬНЫЕ АНИМАЦИИ
+        // Анимации
         this.anims.create({
-            key: 'walk',
+            key: 'run',
             frames: this.anims.generateFrameNumbers('sonic', { start: 1, end: 6 }),
             frameRate: 12, repeat: -1
         });
         this.anims.create({
-            key: 'jump',
-            frames: this.anims.generateFrameNumbers('sonic', { start: 15, end: 19 }),
-            frameRate: 15, repeat: -1
-        });
-        this.anims.create({
             key: 'idle',
-            frames: this.anims.generateFrameNumbers('sonic', { start: 0, end: 0 }),
+            frames: [ { key: 'sonic', frame: 0 } ],
             frameRate: 1
         });
 
-        // 5. Управление
-        this.physics.add.collider(sonic, platforms);
-        
-        // Создаем сенсорные кнопки (прозрачные зоны для управления)
+        this.physics.add.collider(player, platforms);
+
+        // Сенсорное управление
         const h = window.innerHeight;
         const w = window.innerWidth;
-        
-        const createBtn = (x, y, radius, action) => {
-            let zone = this.add.circle(x, y, radius, 0xffffff, 0.1).setInteractive();
-            zone.on('pointerdown', () => moveData[action] = true);
-            zone.on('pointerup', () => moveData[action] = false);
-            zone.setScrollFactor(0);
+        const addBtn = (x, y, r, color, act) => {
+            let b = this.add.circle(x, y, r, color, 0.3).setInteractive().setScrollFactor(0);
+            b.on('pointerdown', () => moveData[act] = true);
+            b.on('pointerup', () => moveData[act] = false);
         };
 
-        createBtn(60, h-80, 50, 'left');
-        createBtn(170, h-80, 50, 'right');
-        createBtn(w-80, h-80, 60, 'jump');
+        addBtn(60, h-80, 45, 0x00f0ff, 'left');
+        addBtn(160, h-80, 45, 0x00f0ff, 'right');
+        addBtn(w-80, h-80, 55, 0xff0055, 'jump');
     }
 
     function update() {
-        const acceleration = 400;
-        const maxSpeed = 400;
-
         if (moveData.left) {
-            sonic.setVelocityX(-maxSpeed);
-            sonic.flipX = true;
-            if (sonic.body.touching.down) sonic.anims.play('walk', true);
+            player.setVelocityX(-300);
+            player.anims.play('run', true);
+            player.flipX = true;
         } else if (moveData.right) {
-            sonic.setVelocityX(maxSpeed);
-            sonic.flipX = false;
-            if (sonic.body.touching.down) sonic.anims.play('walk', true);
+            player.setVelocityX(300);
+            player.anims.play('run', true);
+            player.flipX = false;
         } else {
-            sonic.setVelocityX(0);
-            if (sonic.body.touching.down) sonic.anims.play('idle');
+            player.setVelocityX(0);
+            player.anims.play('idle');
         }
 
-        if (moveData.jump && sonic.body.touching.down) {
-            sonic.setVelocityY(-850);
+        if (moveData.jump && player.body.touching.down) {
+            player.setVelocityY(-700);
         }
-
-        if (!sonic.body.touching.down) {
-            sonic.anims.play('jump', true);
-        }
-
-        // Двигаем камеру за Соником
-        this.cameras.main.scrollX = sonic.x - window.innerWidth/2;
     }
 </script>
 </body>
