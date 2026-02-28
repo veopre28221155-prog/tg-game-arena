@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonic AI Ultra</title>
+    <title>Sonic AI Ultra Fix</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; touch-action: none; font-family: 'Press Start 2P', cursive; }
-        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
-        #ui { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; align-items: center; z-index: 10; pointer-events: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #stats { position: fixed; top: 15px; left: 15px; color: #ffff00; font-size: 10px; z-index: 10; text-shadow: 2px 2px #000; line-height: 1.5; }
+        #ui { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; z-index: 10; pointer-events: none; }
         .btn { 
-            width: 80px; height: 80px; background: rgba(0, 240, 255, 0.2); 
-            border: 4px solid #00f0ff; border-radius: 50%; color: #fff; 
+            width: 70px; height: 70px; background: rgba(0, 0, 0, 0.6); 
+            border: 3px solid #00f0ff; border-radius: 50%; color: #fff; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 10px; pointer-events: auto; user-select: none;
-            box-shadow: 0 0 15px #00f0ff;
+            font-size: 8px; pointer-events: auto; user-select: none;
+            box-shadow: 0 0 10px #00f0ff;
         }
-        .btn:active { background: #00f0ff; color: #000; transform: scale(0.9); }
-        #stats { position: fixed; top: 20px; left: 20px; color: #fff; font-size: 12px; text-shadow: 3px 3px #000; z-index: 5; }
+        .btn:active { background: #00f0ff; color: #000; }
+        #btnJump { border-color: #ff0000; box-shadow: 0 0 10px #ff0000; }
     </style>
 </head>
 <body>
@@ -27,11 +28,11 @@
     <canvas id="game"></canvas>
 
     <div id="ui">
-        <div id="controls-left" style="display:flex; gap: 20px;">
+        <div style="display:flex; gap: 15px;">
             <div class="btn" id="btnLeft">◀</div>
             <div class="btn" id="btnRight">▶</div>
         </div>
-        <div class="btn" id="btnJump" style="background: rgba(255, 0, 0, 0.2); border-color: #ff0000; box-shadow: 0 0 15px #ff0000;">JUMP</div>
+        <div class="btn" id="btnJump">JUMP</div>
     </div>
 
 <script>
@@ -41,7 +42,6 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
-    // Настройка размеров под любой экран
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -49,46 +49,102 @@
     window.addEventListener('resize', resize);
     resize();
 
-    let score = 0;
-    let rings = 0;
     let worldX = 0;
-
     let player = {
         x: 100, y: 0,
         vx: 0, vy: 0,
-        w: 40, h: 40,
-        speed: 6,
-        jump: -14,
+        w: 30, h: 30,
+        speed: 5,
+        jump: -12,
         onGround: false,
-        animFrame: 0,
-        rotation: 0
+        angle: 0
     };
 
     let keys = { left: false, right: false };
 
-    // Управление
-    const setupBtn = (id, key) => {
-        const el = document.getElementById(id);
-        el.onmousedown = el.ontouchstart = (e) => { e.preventDefault(); if(key === 'jump') { if(player.onGround) player.vy = player.jump; } else { keys[key] = true; } };
-        el.onmouseup = el.ontouchend = () => { if(key !== 'jump') keys[key] = false; };
+    // Обработка кнопок
+    const setup = (id, k) => {
+        const e = document.getElementById(id);
+        const start = (ev) => { ev.preventDefault(); if(k==='j'){if(player.onGround) player.vy=player.jump;} else keys[k]=true; };
+        const end = () => { if(k!=='j') keys[k]=false; };
+        e.onmousedown = e.ontouchstart = start;
+        window.onmouseup = window.ontouchend = end;
     };
-    setupBtn('btnLeft', 'left');
-    setupBtn('btnRight', 'right');
-    setupBtn('btnJump', 'jump');
+    setup('btnLeft', 'left'); setup('btnRight', 'right'); setup('btnJump', 'j');
+
+    function draw() {
+        // Принудительный ресайз если экран черный
+        if(canvas.width === 0) resize();
+
+        // 1. НЕБО (Ярко-синее)
+        ctx.fillStyle = '#00aaff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 2. ЗЕМЛЯ (Green Hill)
+        const groundY = canvas.height - 80;
+        ctx.fillStyle = '#8b4513'; // Коричневая почва
+        ctx.fillRect(0, groundY, canvas.width, 80);
+        
+        ctx.fillStyle = '#22cc22'; // Яркая трава
+        ctx.fillRect(0, groundY, canvas.width, 15);
+
+        // Клетчатый узор земли (как в Сеге)
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        for(let i=0; i<canvas.width; i+=40) {
+            ctx.fillRect(i - (worldX % 40), groundY + 20, 20, 20);
+        }
+
+        // 3. ПАРАЛЛАКС ГОРЫ
+        ctx.fillStyle = '#0088dd';
+        for(let i=0; i<4; i++) {
+            let x = i*400 - (worldX * 0.3 % 400);
+            ctx.beginPath();
+            ctx.moveTo(x, groundY);
+            ctx.lineTo(x + 200, groundY - 150);
+            ctx.lineTo(x + 400, groundY);
+            ctx.fill();
+        }
+
+        // 4. СОНИК
+        ctx.save();
+        // Рисуем игрока относительно экрана
+        let screenX = player.x - worldX;
+        let screenY = player.y;
+
+        ctx.translate(screenX + 15, screenY + 15);
+        if(!player.onGround || Math.abs(player.vx) > 1) {
+            player.angle += player.vx * 0.1;
+            ctx.rotate(player.angle);
+        }
+
+        // Синее тело
+        ctx.fillStyle = '#0000ff';
+        ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+        // Иголки
+        ctx.beginPath(); ctx.moveTo(-12, -5); ctx.lineTo(-25, -15); ctx.lineTo(-12, 5); ctx.fill();
+        // Лицо
+        ctx.fillStyle = '#ffdbac';
+        ctx.beginPath(); ctx.arc(8, 2, 10, 0, Math.PI*2); ctx.fill();
+        // Глаз
+        ctx.fillStyle = '#000'; ctx.fillRect(10, -3, 3, 6);
+        // Кеды
+        ctx.fillStyle = '#ff0000'; ctx.fillRect(-10, 12, 20, 7);
+
+        ctx.restore();
+    }
 
     function update() {
         if (keys.left) player.vx = -player.speed;
         else if (keys.right) player.vx = player.speed;
-        else player.vx *= 0.8;
+        else player.vx *= 0.85;
 
-        player.vy += 0.8; // Гравитация
+        player.vy += 0.7; // Гравитация
         player.x += player.vx;
         player.y += player.vy;
 
-        // Пол
-        const groundY = canvas.height - 100;
-        if (player.y > groundY - player.h) {
-            player.y = groundY - player.h;
+        const groundY = canvas.height - 80;
+        if (player.y > groundY - 30) {
+            player.y = groundY - 30;
             player.vy = 0;
             player.onGround = true;
         } else {
@@ -96,60 +152,15 @@
         }
 
         worldX = player.x - 100;
-        score = Math.floor(player.x);
-        document.getElementById('stats').innerHTML = `SCORE: ${score.toString().padStart(6, '0')}<br>RINGS: ${rings}`;
+        document.getElementById('stats').innerHTML = `SCORE: ${Math.floor(player.x).toString().padStart(6, '0')}<br>RINGS: 0`;
     }
 
-    function draw() {
-        // 1. Небо
-        ctx.fillStyle = '#0077ff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 2. Дальние горы (Параллакс)
-        ctx.fillStyle = '#0055aa';
-        for(let i=0; i<5; i++) {
-            ctx.beginPath();
-            ctx.moveTo(i*300 - (worldX*0.2 % 300), canvas.height);
-            ctx.lineTo(i*300 + 150 - (worldX*0.2 % 300), canvas.height-200);
-            ctx.lineTo(i*300 + 300 - (worldX*0.2 % 300), canvas.height);
-            ctx.fill();
-        }
-
-        // 3. Трава и земля (Зигзаг Green Hill)
-        const groundY = canvas.height - 100;
-        ctx.fillStyle = '#8b4513'; // Земля
-        ctx.fillRect(0, groundY, canvas.width, 100);
-        
-        ctx.fillStyle = '#228b22'; // Трава
-        for(let i=-2; i<canvas.width/40 + 2; i++) {
-            ctx.fillRect(i*40 - (worldX % 40), groundY, 41, 15);
-        }
-
-        // 4. Рисуем Соника
-        ctx.save();
-        ctx.translate(player.x - worldX + player.w/2, player.y + player.h/2);
-        
-        if (!player.onGround) {
-            player.rotation += player.vx * 0.1;
-            ctx.rotate(player.rotation);
-        } else if (Math.abs(player.vx) > 1) {
-            ctx.rotate(Math.sin(Date.now()*0.02) * 0.1); // Покачивание при беге
-        }
-
-        // Тело (Синий ёж)
-        ctx.fillStyle = '#0000ff';
-        // Иголки
-        ctx.beginPath();
-        ctx.moveTo(-20, 0); ctx.lineTo(-35, -10); ctx.lineTo(-20, 10); ctx.fill();
-        // Шар
-        ctx.beginPath();
-        ctx.arc(0, 0, 20, 0, Math.PI*2);
-        ctx.fill();
-        // Лицо
-        ctx.fillStyle = '#ffdbac';
-        ctx.beginPath(); ctx.arc(10, 5, 12, 0, Math.PI*2); ctx.fill();
-        // Глаза
-        ctx.fillStyle = '#000';
-        ctx.fillRect(12, -5, 4, 8);
-        // Ботинки
-        ctx.fillSty
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+    loop();
+</script>
+</body>
+</html>
