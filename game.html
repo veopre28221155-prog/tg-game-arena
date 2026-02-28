@@ -3,37 +3,35 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sega Engine</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        #boot-btn { 
-            padding: 20px; background: #00f0ff; color: #000; border: none; 
-            font-family: sans-serif; font-weight: bold; cursor: pointer; border-radius: 5px;
-            box-shadow: 0 0 20px #00f0ff; z-index: 10;
-        }
-        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; color: #fff; font-family: sans-serif; }
+        #game { width: 100vw; height: 100vh; }
+        #status { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
     </style>
 </head>
 <body>
 
-    <!-- Кнопка принудительной активации (решает проблему зависания) -->
-    <button id="boot-btn" onclick="boot()">НАЖМИ ДЛЯ ЗАПУСКА SEGA</button>
-    
-    <iframe id="emu-frame" allow="autoplay; fullscreen; gamepad"></iframe>
+    <div id="status">Загрузка ядра Сега...<br><small>(может занять 10-15 сек)</small></div>
+    <div id="game"></div>
 
     <script>
-        function boot() {
-            const btn = document.getElementById('boot-btn');
-            const ifr = document.getElementById('emu-frame');
-            
-            btn.style.display = 'none';
-            ifr.style.display = 'block';
-
-            // Используем прямой URL эмулятора (это работает стабильнее всего)
-            const romUrl = window.location.origin + "/roms/sonic.bin";
-            const emuUrl = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
-            
-            ifr.src = emuUrl;
-        }
+        // Настройки эмулятора
+        window.EmuJS = {
+            // Берем файлы движка из CDN, который разрешает встраивание
+            dataUrl: "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/",
+            gameUrl: window.location.origin + "/roms/sonic.bin",
+            core: "genesis",
+            autoStart: true,
+            container: "#game",
+            onStart: function() {
+                document.getElementById('status').style.display = 'none';
+            }
+        };
     </script>
+    
+    <!-- Загружаем сам скрипт эмулятора напрямую в наш файл -->
+    <script src="https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js"></script>
+
 </body>
 </html>
