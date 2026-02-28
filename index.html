@@ -3,64 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neural Arena v4</title>
+    <title>Neural Arena v5</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/ai-engine.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        #ai-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(0,20,40,1) 0%, #000 100%); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .scan-line { width: 100%; height: 2px; background: rgba(0,255,255,0.2); position: absolute; animation: scan 3s linear infinite; }
-        @keyframes scan { from { top: 0; } to { top: 100%; } }
-        #game-ui { position: fixed; top: 15px; left: 15px; z-index: 100; font-size: 7px; color: #00f0ff; pointer-events: none; display: none; line-height: 1.5; }
+        #ai-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #game-ui { position: fixed; top: 15px; left: 15px; z-index: 100; font-size: 8px; color: #00f0ff; pointer-events: none; display: none; line-height: 1.5; text-shadow: 2px 2px #000; }
+        #warning { position: fixed; top: 50px; right: 15px; color: red; font-size: 10px; display: none; animation: blink 0.5s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
 <div id="ai-overlay">
-    <div class="scan-line"></div>
-    <div style="color:#00f0ff; margin-bottom:20px;">> NEURAL CORE BOOTING...</div>
-    <div id="status-log" style="font-size:9px; color:#0f0; width:80%;"></div>
+    <div style="color:#0f0; margin-bottom:20px;">> DEPLOYING AUTONOMOUS AI...</div>
+    <div id="status-log" style="font-size:10px; color:#fff; width:80%;"></div>
 </div>
 
 <div id="game-ui">
-    SYSTEM: AI_RECONSTRUCTION_MODE<br>
-    ENGINE: PHASER_NATIVE_V4<br>
-    STATUS: <span id="sonic-status" style="color:white">CALIBRATING</span><br>
-    COORDS: <span id="sonic-pos" style="color:white">0.0</span>
+    PLAYER: <span id="sonic-status" style="color:white">OK</span><br>
+    HUNTER_AI: <span id="ai-status" style="color:#ff0055">ONLINE</span>
 </div>
+<div id="warning">! THREAT DETECTED !</div>
 
 <div id="game-view"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-
     const log = (t) => { document.getElementById('status-log').innerHTML += `> ${t}<br>`; };
 
-    async function startSystem() {
-        log("Accessing public/ai-engine.js...");
-        await new Promise(r => setTimeout(r, 800));
-        log("Neural Core initialized.");
-        log("Reading sonic.bin byte-stream...");
-        await new Promise(r => setTimeout(r, 1000));
-        log("Reconstructing Sonic sprites via AI-Canvas...");
-        log("Compiling Green Hill environment...");
-        
+    setTimeout(() => {
+        log("Bot Brain compiled...");
         setTimeout(() => {
             document.getElementById('ai-overlay').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             initPhaser();
-        }, 1500);
-    }
+        }, 1000);
+    }, 500);
 
-    let sonic, engine, move = {L: false, R: false, J: false};
+    let sonic, hunterBot, engine, move = {L: false, R: false, J: false};
 
     function initPhaser() {
         const config = {
             type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight,
-            parent: 'game-view', backgroundColor: '#204090',
+            parent: 'game-view', backgroundColor: '#112244', // Темное небо
             physics: { default: 'arcade', arcade: { gravity: { y: 1800 } } },
             scene: { preload: function() {
                 engine = new NeuralSonicEngine(this);
@@ -73,11 +63,24 @@
     function create() {
         const platforms = this.physics.add.staticGroup();
         const groundY = window.innerHeight - 32;
-        for(let i=0; i<50; i++) platforms.create(i * 64, groundY, 'tile_v4');
+        for(let i=0; i<100; i++) platforms.create(i * 64, groundY, 'tile_v4');
 
+        // ИГРОК
         sonic = this.physics.add.sprite(100, groundY - 100, 'sonic_v4');
         sonic.setScale(1.2).setCollideWorldBounds(true).setDragX(600);
+        
+        // ИИ-ОХОТНИК (Появляется дальше на карте)
+        hunterBot = this.physics.add.sprite(600, groundY - 100, 'hunter_bot');
+        hunterBot.setScale(1.2).setCollideWorldBounds(true).setBounce(0.2);
+
         this.physics.add.collider(sonic, platforms);
+        this.physics.add.collider(hunterBot, platforms);
+        
+        // Если бот догнал игрока
+        this.physics.add.overlap(sonic, hunterBot, () => {
+            sonic.setTint(0xff0000); // Соник краснеет от урона
+        }, null, this);
+
         this.cameras.main.startFollow(sonic, true, 0.1, 0.1);
 
         // КНОПКИ
@@ -92,25 +95,28 @@
     }
 
     function update() {
+        // УПРАВЛЕНИЕ ИГРОКОМ
         const acc = 450;
-        if (move.L) { sonic.setVelocityX(-acc); sonic.flipX = true; sonic.setAngle(-10); }
-        else if (move.R) { sonic.setVelocityX(acc); sonic.flipX = false; sonic.setAngle(10); }
+        if (move.L) { sonic.setVelocityX(-acc); sonic.flipX = true; sonic.setAngle(-10); sonic.clearTint(); }
+        else if (move.R) { sonic.setVelocityX(acc); sonic.flipX = false; sonic.setAngle(10); sonic.clearTint(); }
         else { sonic.setAngle(0); }
-        
         if (move.J && sonic.body.touching.down) sonic.setVelocityY(-850);
         
-        if (!sonic.body.touching.down) {
-            sonic.setAngularVelocity(move.R ? 500 : -500); // Крутится в прыжке!
-        } else {
-            sonic.setAngularVelocity(0);
-        }
+        if (!sonic.body.touching.down) sonic.setAngularVelocity(move.R ? 500 : (move.L ? -500 : 0)); 
+        else sonic.setAngularVelocity(0);
 
-        // Обновляем HUD
+        // --- ПЕРЕДАЕМ УПРАВЛЕНИЕ БОТОМ ДВИЖКУ ИИ ---
+        engine.processHunterAI(hunterBot, sonic);
+
+        // UI Логика
+        const dist = Phaser.Math.Distance.Between(hunterBot.x, hunterBot.y, sonic.x, sonic.y);
         document.getElementById('sonic-status').innerText = engine.getVelocityData(sonic.body.velocity.x);
-        document.getElementById('sonic-pos').innerText = Math.round(sonic.x);
+        document.getElementById('warning').style.display = (dist < 300) ? 'block' : 'none';
+        
+        // Поворот бота в сторону игрока
+        if (hunterBot.body.velocity.x > 0) hunterBot.flipX = false;
+        else if (hunterBot.body.velocity.x < 0) hunterBot.flipX = true;
     }
-
-    startSystem();
 </script>
 </body>
 </html>
