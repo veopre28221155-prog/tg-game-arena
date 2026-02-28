@@ -7,58 +7,60 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --tg-bg: #050505; --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; --btn-base: #1a1a1a; --btn-border: #000000; }
-        body { margin: 0; background: #000; color: var(--tg-text); font-family: var(--font-retro); height: 100vh; overflow: hidden; touch-action: none; }
+        :root { --tg-bg: #050505; --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive; }
+        body { margin: 0; background: #000; color: #fff; font-family: var(--font-retro); height: 100vh; overflow: hidden; touch-action: none; }
         
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; }
         .screen.active { display: flex; }
         
-        h1 { color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon); margin-top: 20px; text-align: center; line-height: 1.5; }
-        
         .btn-pixel { background: #222; color: #fff; border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-family: var(--font-retro); margin-bottom: 15px; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
         .btn-pixel:active { transform: translateY(2px); background: #333; }
-        .btn-pink { border-color: var(--accent-pink); color: var(--accent-pink); }
         
-        /* Контейнер эмулятора */
+        /* КОНСОЛЬ ОШИБОК */
+        #debug-log {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(50, 0, 0, 0.9);
+            border: 2px solid red;
+            color: #ffaaaa;
+            font-family: monospace;
+            font-size: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            min-height: 50px;
+            white-space: pre-wrap;
+            display: none; /* Скрыта по умолчанию */
+        }
+
         #emulator-container {
             width: 100%;
-            height: 100%;
-            max-width: 800px;
-            max-height: 60vh;
+            height: 60vh;
             background: #000;
             border: 2px solid var(--accent-neon);
-            margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- ГЛАВНОЕ МЕНЮ -->
+    <!-- МЕНЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
-        <h1>RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="navScreen('s-single')">🎮 ИГРАТЬ (SEGA)</button>
-        <button class="btn-pixel" onclick="alert('Скоро!')">👤 ПРОФИЛЬ</button>
-    </div>
-
-    <!-- МЕНЮ ВЫБОРА -->
-    <div id="s-single" class="screen">
-        <h1>ВЫБЕРИ ИГРУ</h1>
-        <button class="btn-pixel" onclick="launchSega('sonic.bin')">🦔 SONIC 1</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
+        <h1 style="color:var(--accent-neon); text-align:center;">RETRO ARENA</h1>
+        <button class="btn-pixel" onclick="launchSega('sonic.bin')">🎮 SONIC 1 (TEST)</button>
     </div>
 
     <!-- ЭКРАН ИГРЫ -->
     <div id="s-game" class="screen" style="padding: 10px;">
         <div style="width: 100%; display: flex; justify-content: space-between;">
-            <button class="btn-pixel btn-pink" style="width: auto; padding: 10px; font-size: 10px;" onclick="location.reload()">❌ ВЫЙТИ</button>
-            <div style="color: gold; font-size: 10px; padding-top: 10px;">SEGA GENESIS</div>
+            <button class="btn-pixel" style="width:auto; padding:8px; font-size:10px; border-color:var(--accent-pink);" onclick="location.reload()">❌ ВЫЙТИ</button>
+            <div style="color:gold; font-size:10px; padding-top:10px;">SEGA GENESIS</div>
         </div>
-        
-        <!-- Сюда встраивается игра -->
+
+        <!-- Сюда встраивается эмулятор -->
         <div id="emulator-container"></div>
         
-        <div id="loading-text" style="color: gray; font-size: 10px; margin-top: 10px;">Загрузка ядра эмулятора...</div>
+        <!-- Сюда будем писать ошибки -->
+        <div id="debug-log"></div>
     </div>
 </div>
 
@@ -73,30 +75,62 @@
         document.getElementById(id).classList.add('active'); 
     }
 
-    function launchSega(romFile) {
+    // Функция для записи ошибок на экран
+    function logError(msg) {
+        const box = document.getElementById('debug-log');
+        box.style.display = 'block';
+        box.innerText += `[LOG] ${msg}\n`;
+        console.log(msg);
+    }
+
+    async function launchSega(romName) {
         navScreen('s-game');
-        document.getElementById('loading-text').innerText = "Скачивание " + romFile + "...";
+        const box = document.getElementById('debug-log');
+        box.innerText = "Инициализация...\n";
+        
+        // 1. Проверяем, доступен ли сервер
+        logError("1. Проверка файла: " + romName);
+        
+        try {
+            // Пытаемся просто скачать файл, чтобы проверить, существует ли он
+            const response = await fetch('/' + romName, { method: 'HEAD' });
+            
+            if (response.ok) {
+                logError(`✅ Файл найден! Статус: ${response.status}`);
+                logError(`Размер файла: ${response.headers.get('content-length')} байт`);
+                startEmulator(romName);
+            } else {
+                logError(`❌ ОШИБКА: Сервер ответил ${response.status}`);
+                logError(`❌ Файл не найден. Проверь имя файла в папке public!`);
+                logError(`Запрашиваемый URL: ${window.location.origin}/${romName}`);
+            }
+        } catch (e) {
+            logError(`❌ СЕТЕВАЯ ОШИБКА: ${e.message}`);
+        }
+    }
 
-        // === ГЛАВНОЕ ИСПРАВЛЕНИЕ: ПОЛНЫЙ ПУТЬ ===
-        // Мы берем текущий адрес сайта (https://tg-game-arena.onrender.com) и добавляем имя файла
-        const fullRomUrl = window.location.origin + '/' + romFile;
-        console.log("Запуск игры по ссылке:", fullRomUrl);
-
-        // Настройки EmulatorJS
+    function startEmulator(romName) {
+        logError("2. Запуск эмулятора...");
+        
         window.EJS_player = '#emulator-container'; 
         window.EJS_core = 'sega'; 
-        window.EJS_gameUrl = fullRomUrl; // Используем полный путь!
+        window.EJS_gameUrl = window.location.origin + '/' + romName; 
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/'; 
         
         window.EJS_onGameStart = function() {
-            document.getElementById('loading-text').innerText = "Игра запущена! Жми START";
+            logError("✅ Ядро запущено. Игра должна появиться.");
         };
 
-        // Подгружаем скрипт
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+        script.onerror = () => logError("❌ Не удалось загрузить скрипт эмулятора (CDN ошибка)");
         document.body.appendChild(script);
     }
+    
+    // Перехват глобальных ошибок JS
+    window.onerror = function(message, source, lineno, colno, error) {
+        logError(`💀 JS Error: ${message}`);
+    };
 </script>
 </body>
 </html>
