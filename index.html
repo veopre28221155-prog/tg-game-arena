@@ -35,6 +35,21 @@
         .lobby-item { background: #111; border: 2px dashed var(--accent-neon); padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center; flex-direction:column; padding: 20px; }
         .blink { animation: blinker 1s linear infinite; } @keyframes blinker { 50% { opacity: 0; } }
+
+        /* СТИЛИ ДЛЯ ТЕСТОВОГО МОНИТОРА СТРИМА */
+        #ai-engine-view {
+            display: none; 
+            position: absolute; 
+            top: 50px; 
+            left: 20px; 
+            width: 40px; 
+            height: 40px; 
+            border: 2px solid #00f0ff; 
+            border-radius: 4px; 
+            z-index: 100; 
+            box-shadow: 0 0 10px rgba(0,240,255,0.6);
+            background: #000;
+        }
     </style>
 </head>
 <body>
@@ -104,20 +119,22 @@
         <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0;">
+    <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0; position: relative;">
         <div style="width: 100%; max-width: 300px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; z-index: 10;">
             <button class="btn-pixel btn-pink" style="margin:0; padding:8px; width:auto; font-size:0.6rem;" onclick="quitGame()">ВЫЙТИ</button>
-            <div id="ai-status" style="font-size: 8px; color: #ff0000; font-family: var(--font-retro); text-align: center;">NATIVE FALLBACK</div>
+            <div id="ai-status" style="font-size: 8px; color: #ff0000; font-family: var(--font-retro); text-align: center;">LOCAL MODE</div>
             <div style="font-family: var(--font-retro); color: var(--accent-gold); font-size: 0.7rem; text-align:right;">
                 <span id="g-score-label">SCORE:</span> <span id="g-score">0</span><br>
                 <span id="g-time-box" style="display:none; color:white; font-size:0.6rem; margin-top:5px;">🕒 <span id="g-time">60</span></span>
             </div>
         </div>
 
-        <div id="ai-engine-view" style="display: none; width: 100%; max-width: 300px; height: auto; aspect-ratio: 240/400; border: 6px solid #00f0ff; border-radius: 4px; margin-bottom: 15px; flex-shrink: 0; box-shadow: 0 0 20px rgba(0,240,255,0.6);">
-            <img id="ai-frame" style="width: 100%; height: 100%; object-fit: fill; image-rendering: pixelated;" src="" />
+        <!-- МАЛЕНЬКИЙ МОНИТОР СТРИМА (Тестовый режим) -->
+        <div id="ai-engine-view">
+            <img id="ai-frame" style="width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated;" src="" />
         </div>
 
+        <!-- ИГРА (Теперь она не скрывается) -->
         <canvas id="gameCanvas" width="240" height="400"></canvas>
         
         <div class="controls" style="z-index: 10;">
@@ -147,7 +164,7 @@
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0, isRanked = false, timeLeft = 0, matchTimer = 0;
     
-    // --- WEBSOCKET ИИ-ДВИЖОК ---
+    // --- WEBSOCKET ИИ-ДВИЖОК (ТЕСТОВЫЙ РЕЖИМ) ---
     const keys = {left:false, right:false, up:false, down:false, action:false};
     let aiSocket = null;
     let isAiActive = false;
@@ -161,10 +178,11 @@
             aiSocket = new WebSocket(WS_URL);
             aiSocket.onopen = () => {
                 isAiActive = true;
-                document.getElementById('ai-status').innerText = "AI ENGINE ACTIVE";
+                // ВАЖНО: Мы показываем И стрим (маленький квадрат), И игру!
+                document.getElementById('ai-status').innerText = "AI STREAM: ON";
                 document.getElementById('ai-status').style.color = "#00ff00";
                 document.getElementById('ai-engine-view').style.display = 'block';
-                document.getElementById('gameCanvas').style.display = 'none';
+                document.getElementById('gameCanvas').style.display = 'block'; 
             };
             aiSocket.onmessage = (event) => { document.getElementById('ai-frame').src = event.data; };
             aiSocket.onclose = () => triggerFallback();
@@ -173,9 +191,8 @@
     }
 
     function triggerFallback() {
-        if (!isAiActive) return;
         isAiActive = false;
-        document.getElementById('ai-status').innerText = "NATIVE FALLBACK";
+        document.getElementById('ai-status').innerText = "LOCAL MODE";
         document.getElementById('ai-status').style.color = "#ff0000";
         document.getElementById('ai-engine-view').style.display = 'none';
         document.getElementById('gameCanvas').style.display = 'block';
@@ -183,9 +200,11 @@
 
     window.press = (k, state) => { 
         Reflect.set(keys, k, state); 
+        // Отправляем пакет на сервер
         if (isAiActive && aiSocket && aiSocket.readyState === WebSocket.OPEN) {
             aiSocket.send(JSON.stringify({ game: gameType, input: k, action: state ? "press" : "release" }));
         }
+        // Управляем локальным холстом игры
         if(state && window.onInput) window.onInput(k); 
     };
 
