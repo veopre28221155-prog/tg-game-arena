@@ -2,61 +2,40 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sega Final Build</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; color: #00f0ff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #game { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
-        #loader { z-index: 10; text-align: center; background: #000; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .spin { border: 3px solid rgba(0,240,255,0.2); border-left-color: #00f0ff; border-radius: 50%; width: 30px; height: 30px; animation: s 1s linear infinite; }
-        @keyframes s { to { transform: rotate(360deg); } }
-        #start-btn { display: none; margin-top: 20px; padding: 15px 30px; background: #00f0ff; color: #000; border: none; font-weight: bold; cursor: pointer; z-index: 100; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #start-area { text-align: center; color: #00f0ff; font-family: sans-serif; z-index: 10; }
+        .start-btn { 
+            padding: 20px 40px; background: #00f0ff; color: #000; border: none; 
+            font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 5px;
+            box-shadow: 0 0 20px #00f0ff;
+        }
+        #emu-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="spin"></div>
-        <p id="status">СОЕДИНЕНИЕ С ОБЛАКОМ SEGA...</p>
-        <!-- Кнопка появится, если автозапуск не сработает -->
-        <button id="start-btn" onclick="forceStart()">ЗАПУСТИТЬ ВРУЧНУЮ</button>
+    <div id="start-area">
+        <button class="start-btn" onclick="run()">ЗАПУСТИТЬ SEGA</button>
+        <p><small>Нажмите для активации звука и видео</small></p>
     </div>
 
-    <div id="game"></div>
+    <iframe id="emu-view" allow="autoplay; fullscreen; gamepad"></iframe>
 
     <script>
-        // Принудительный запуск, если система "зависла"
-        function forceStart() {
-            document.getElementById('loader').style.display = 'none';
-            if (window.EmuJS && window.EmuJS.start) window.EmuJS.start();
+        function run() {
+            const btn = document.getElementById('start-area');
+            const ifr = document.getElementById('emu-view');
+            
+            btn.style.display = 'none';
+            ifr.style.display = 'block';
+
+            // Формируем ссылку для эмулятора
+            const romUrl = window.location.origin + "/roms/sonic.bin";
+            // Используем официальный плеер-посредник (он самый стабильный)
+            ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
         }
-
-        window.EmuJS = {
-            // Используем максимально стабильное зеркало jsDelivr
-            dataUrl: "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/",
-            gameUrl: window.location.origin + "/roms/sonic.bin",
-            core: "genesis",
-            autoStart: true,
-            container: "#game",
-            onProgress: function(p) {
-                document.getElementById('status').innerText = "ЗАГРУЗКА ДАННЫХ: " + Math.round(p) + "%";
-                // Если загрузка пошла, показываем кнопку ручного пуска на всякий случай
-                if (p > 10) document.getElementById('start-btn').style.display = 'block';
-            },
-            onStart: function() {
-                document.getElementById('loader').style.display = 'none';
-            }
-        };
-
-        // Ловим ошибки загрузки
-        window.onerror = function(m) {
-            document.getElementById('status').innerHTML = "ОШИБКА СЕТИ.<br>Попробуйте включить VPN или сменить интернет.";
-            document.getElementById('status').style.color = "red";
-        };
     </script>
-    
-    <!-- Загружаем движок -->
-    <script src="https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js"></script>
-
 </body>
 </html>
