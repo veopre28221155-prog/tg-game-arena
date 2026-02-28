@@ -2,18 +2,28 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
-const http = require('http'); // ДОБАВЛЕНО: для создания единого сервера
-const WebSocket = require('ws'); // ДОБАВЛЕНО: для Neural Stream
+const http = require('http'); 
+const WebSocket = require('ws'); 
+
+// --- ПЕРЕХВАТ КРИТИЧЕСКИХ ОШИБОК (чтобы сервер не падал) ---
+process.on('uncaughtException', (err) => console.error('Критическая ошибка:', err));
+process.on('unhandledRejection', (reason, promise) => console.error('Необработанный промис:', reason));
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// СОЗДАЕМ ЕДИНЫЙ СЕРВЕР HTTP + WEBSOCKET
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 
-// КОНФИГУРАЦИЯ
+// Инициализируем WebSocket, обернув в try/catch на всякий случай
+let wss;
+try {
+    wss = new WebSocket.Server({ server });
+    console.log('✅ WebSocket сервер успешно инициализирован');
+} catch (e) {
+    console.error('❌ Ошибка инициализации WebSocket:', e);
+}
+
 const CONFIG = {
     TELEGRAM_BOT_TOKEN: "7593728405:AAEcp0It8ovT3P_dyugpaIujGXr6s5AQqH8", 
     CRYPTO_BOT_TOKEN: "535127:AAviaEd5s4fdrTrHuHpXARM04OXIa7XsEjV", 
@@ -22,71 +32,49 @@ const CONFIG = {
     PORT: process.env.PORT || 3000
 };
 
-mongoose.connect(CONFIG.MONGO_URI).then(() => console.log('✅ MongoDB Connected')).catch(e => console.error(e));
+// Подключение к БД
+mongoose.connect(CONFIG.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('✅ MongoDB Connected'))
+    .catch(e => console.error('❌ MongoDB Connection Error:', e));
 
-const UserSchema = new mongoose.Schema({
-    telegramId: { type: Number, required: true, unique: true },
-    balance: { type: Number, default: 0 },
-    highScores: { 
-        sonic: { type: Number, default: 999999 }, 
-        tetris: { type: Number, default: 0 }, 
-        snake: { type: Number, default: 0 }, 
-        battleCity: { type: Number, default: 0 },
-        bomber: { type: Number, default: 0 },
-        gold: { type: Number, default: 0 },
-        roadFighter: { type: Number, default: 0 },
-        spaceInvaders: { type: Number, default: 0 },
-        airHockey: { type: Number, default: 0 }
-    },
-    createdAt: { type: Date, default: Date.now }
-});
-
-const LobbySchema = new mongoose.Schema({
-    lobbyId: { type: String, required: true, unique: true },
-    creatorId: { type: Number, required: true },
-    player1Id: Number, player2Id: Number, 
-    gameType: String, betAmount: { type: Number, default: 0 }, 
-    isPrivate: { type: Boolean, default: false }, 
-    status: { type: String, default: 'waiting' },
-    scores: { player1: { type: Number, default: -1 }, player2: { type: Number, default: -1 } },
-    createdAt: { type: Date, default: Date.now }
-});
-
+// Схемы
+const UserSchema = new mongoose.Schema({ telegramId: { type: Number, required: true, unique: true }, balance: { type: Number, default: 0 }, highScores: { sonic: { type: Number, default: 999999 }, tetris: { type: Number, default: 0 }, snake: { type: Number, default: 0 }, battleCity: { type: Number, default: 0 }, bomber: { type: Number, default: 0 }, gold: { type: Number, default: 0 }, roadFighter: { type: Number, default: 0 }, spaceInvaders: { type: Number, default: 0 }, airHockey: { type: Number, default: 0 } }, createdAt: { type: Date, default: Date.now } });
+const LobbySchema = new mongoose.Schema({ lobbyId: { type: String, required: true, unique: true }, creatorId: { type: Number, required: true }, player1Id: Number, player2Id: Number, gameType: String, betAmount: { type: Number, default: 0 }, isPrivate: { type: Boolean, default: false }, status: { type: String, default: 'waiting' }, scores: { player1: { type: Number, default: -1 }, player2: { type: Number, default: -1 } }, createdAt: { type: Date, default: Date.now } });
 const MatchHistorySchema = new mongoose.Schema({ winnerId: Number, loserId: Number, gameType: String, betAmount: Number, prize: Number, date: { type: Date, default: Date.now } });
 
 const User = mongoose.model('User', UserSchema);
 const Lobby = mongoose.model('Lobby', LobbySchema);
 const MatchHistory = mongoose.model('MatchHistory', MatchHistorySchema);
 
-
 // =========================================================
 // 🚀 NEURAL ENGINE: WEBSOCKET СЕРВЕР (ИИ-ДВИЖОК)
 // =========================================================
-wss.on('connection', function connection(ws) {
-  console.log('🎮 [AI ENGINE] Игрок подключился к потоку!');
+if (wss) {
+    wss.on('connection', function connection(ws) {
+        console.log('🎮 [AI ENGINE] Игрок подключился к потоку!');
 
-  ws.on('message', function incoming(message) {
-    // Сюда прилетают пакеты от кнопок в TG: {"game":"sonic","input":"jump","action":"press"}
-    console.log('[AI ENGINE] Ввод от игрока:', message.toString());
-  });
+        ws.on('error', console.error); // Защита от отключений
 
-  // Отправляем фейковый кадр (заглушка) каждые 100мс
-  // Когда прикрутишь ИИ, он будет присылать сюда реальные картинки игры
-  const interval = setInterval(() => {
-    const dummyFrame = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-    if (ws.readyState === WebSocket.OPEN) {
-        ws.send(dummyFrame);
-    }
-  }, 100);
+        ws.on('message', function incoming(message) {
+            console.log('[AI ENGINE] Ввод от игрока:', message.toString());
+        });
 
-  ws.on('close', () => {
-    console.log('❌ [AI ENGINE] Игрок отключился от потока');
-    clearInterval(interval);
-  });
-});
+        // Отправляем фейковый кадр (заглушка) каждые 100мс
+        const interval = setInterval(() => {
+            const dummyFrame = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(dummyFrame);
+            }
+        }, 100);
 
+        ws.on('close', () => {
+            console.log('❌ [AI ENGINE] Игрок отключился от потока');
+            clearInterval(interval);
+        });
+    });
+}
 
-// ================= ПЛАТЕЖИ: TELEGRAM STARS И CRYPTO =================
+// ================= ПЛАТЕЖИ И API =================
 app.post('/api/buy-stars', async (req, res) => {
     try {
         const { telegramId, amount } = req.body;
@@ -124,7 +112,6 @@ app.post('/api/crypto-webhook', async (req, res) => {
     } catch (e) {} res.sendStatus(200);
 });
 
-// ================= ПРОФИЛЬ =================
 app.post('/api/user-data', async (req, res) => {
     try {
         const userData = JSON.parse(new URLSearchParams(req.body.initData).get('user'));
@@ -137,7 +124,6 @@ app.post('/api/user-data', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ================= ТУРНИРЫ И ЛОББИ =================
 app.get('/api/lobbies', async (req, res) => {
     try { await Lobby.deleteMany({ status: 'waiting', createdAt: { $lt: new Date(Date.now() - 10 * 60 * 1000) } }); res.json(await Lobby.find({ status: 'waiting', isPrivate: false }).sort({ createdAt: -1 }).limit(20)); } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -170,49 +156,25 @@ app.post('/api/lobby/cancel', async (req, res) => {
     try { const lobby = await Lobby.findOneAndDelete({ lobbyId: req.body.lobbyId, creatorId: req.body.telegramId, status: 'waiting' }); if (lobby && lobby.betAmount > 0) await User.findOneAndUpdate({ telegramId: req.body.telegramId }, { $inc: { balance: lobby.betAmount } }); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ================= ФИНАЛ ИГРЫ И НАЧИСЛЕНИЕ ПРИЗА =================
 app.post('/api/submit-score', async (req, res) => {
     try {
         const { telegramId, game, score, lobbyId } = req.body;
-        
-        if(game === 'sonic') {
-            await User.findOneAndUpdate({ telegramId, "highScores.sonic": { $gt: score } }, { $set: { "highScores.sonic": score } });
-        } else {
-            const scoreUpdate = { $max: {} }; Reflect.set(scoreUpdate.$max, 'highScores.' + game, score);
-            await User.findOneAndUpdate({ telegramId }, scoreUpdate);
-        }
-        
+        if(game === 'sonic') { await User.findOneAndUpdate({ telegramId, "highScores.sonic": { $gt: score } }, { $set: { "highScores.sonic": score } }); } 
+        else { const scoreUpdate = { $max: {} }; Reflect.set(scoreUpdate.$max, 'highScores.' + game, score); await User.findOneAndUpdate({ telegramId }, scoreUpdate); }
         if (!lobbyId) return res.json({ success: true });
-        
         const lobby = await Lobby.findOne({ lobbyId, status: 'playing' });
         if (!lobby) return res.json({ success: true });
-        
-        if (lobby.player1Id === telegramId) lobby.scores.player1 = score;
-        else if (lobby.player2Id === telegramId) lobby.scores.player2 = score;
+        if (lobby.player1Id === telegramId) lobby.scores.player1 = score; else if (lobby.player2Id === telegramId) lobby.scores.player2 = score;
         await lobby.save();
-        
         if (lobby.scores.player1 !== -1 && lobby.scores.player2 !== -1) {
             lobby.status = 'finished'; await lobby.save();
             if (lobby.betAmount > 0) {
                 const pool = lobby.betAmount * 2; const fee = Math.floor(pool * 0.1); const prize = pool - fee;
                 let winnerId = null, loserId = null;
-                
-                if (game === 'sonic') {
-                    if (lobby.scores.player1 < lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; }
-                    else if (lobby.scores.player2 < lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; }
-                } else {
-                    if (lobby.scores.player1 > lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; }
-                    else if (lobby.scores.player2 > lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; }
-                }
-                
-                if (winnerId) {
-                    await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: fee, adminCommission: fee } }, { upsert: true });
-                    await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } });
-                    await new MatchHistory({ winnerId, loserId, gameType: lobby.gameType, betAmount: lobby.betAmount, prize }).save();
-                } else {
-                    await User.findOneAndUpdate({ telegramId: lobby.player1Id }, { $inc: { balance: lobby.betAmount } });
-                    await User.findOneAndUpdate({ telegramId: lobby.player2Id }, { $inc: { balance: lobby.betAmount } });
-                }
+                if (game === 'sonic') { if (lobby.scores.player1 < lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; } else if (lobby.scores.player2 < lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; } } 
+                else { if (lobby.scores.player1 > lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; } else if (lobby.scores.player2 > lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; } }
+                if (winnerId) { await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: fee, adminCommission: fee } }, { upsert: true }); await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } }); await new MatchHistory({ winnerId, loserId, gameType: lobby.gameType, betAmount: lobby.betAmount, prize }).save(); } 
+                else { await User.findOneAndUpdate({ telegramId: lobby.player1Id }, { $inc: { balance: lobby.betAmount } }); await User.findOneAndUpdate({ telegramId: lobby.player2Id }, { $inc: { balance: lobby.betAmount } }); }
             }
         }
         res.json({ success: true });
@@ -222,14 +184,15 @@ app.post('/api/submit-score', async (req, res) => {
 app.post('/api/forfeit', async (req, res) => {
     try {
         const lobby = await Lobby.findOneAndUpdate({ lobbyId: req.body.lobbyId, status: 'playing' }, { status: 'finished' }, { new: true });
-        if (lobby && lobby.betAmount > 0) {
-            const winnerId = (lobby.player1Id === req.body.telegramId) ? lobby.player2Id : lobby.player1Id;
-            const prize = (lobby.betAmount * 2) - Math.floor((lobby.betAmount * 2) * 0.1);
-            await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } });
-        }
+        if (lobby && lobby.betAmount > 0) { const winnerId = (lobby.player1Id === req.body.telegramId) ? lobby.player2Id : lobby.player1Id; const prize = (lobby.betAmount * 2) - Math.floor((lobby.betAmount * 2) * 0.1); await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } }); }
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ИЗМЕНЕНО: Запускаем server (а не app), чтобы работали оба протокола (HTTP и WS)
-server.listen(CONFIG.PORT, () => console.log('✅ Server & AI Engine running on port ' + CONFIG.PORT));
+// Запускаем сервер
+server.listen(CONFIG.PORT, () => {
+    console.log('===================================');
+    console.log('🚀 Server running on port ' + CONFIG.PORT);
+    console.log('🧠 AI WebSocket Engine is ONLINE');
+    console.log('===================================');
+});
