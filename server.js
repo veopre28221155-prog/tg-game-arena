@@ -10,4 +10,4 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Neural Arena запущен на порту ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 AI Server started on port ${PORT}`));
