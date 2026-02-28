@@ -3,32 +3,38 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
 const http = require('http');
-const WebSocket = require('ws');
 const path = require('path');
-
-process.on('uncaughtException', (err) => console.error('Критическая ошибка:', err));
-process.on('unhandledRejection', (reason, promise) => console.error('Необработанный промис:', reason));
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// БЕЗОПАСНАЯ РАЗДАЧА ФАЙЛОВ ИГР (из папки public)
-app.use(express.static(path.join(__dirname, 'public')));
+// === ВАЖНОЕ ИСПРАВЛЕНИЕ ===
+// Явно указываем папку public и настройки для .bin файлов
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: function (res, path, stat) {
+        if (path.endsWith('.bin')) {
+            res.set('Content-Type', 'application/octet-stream');
+        }
+    }
+}));
+
+// Логируем запрос файла игры, чтобы видеть в консоли Render, качает он его или нет
+app.get('/sonic.bin', (req, res) => {
+    console.log('📂 [SERVER] Попытка скачать sonic.bin...');
+    res.sendFile(path.join(__dirname, 'public', 'sonic.bin'), (err) => {
+        if (err) {
+            console.error('❌ [SERVER] Ошибка отправки файла (проверь название!):', err);
+            res.status(404).send("File not found");
+        } else {
+            console.log('✅ [SERVER] Файл sonic.bin успешно отправлен!');
+        }
+    });
+});
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
-
-const server = http.createServer(app);
-
-let wss;
-try {
-    wss = new WebSocket.Server({ server });
-    console.log('✅ WebSocket сервер успешно инициализирован');
-} catch (e) {
-    console.error('❌ Ошибка инициализации WebSocket:', e);
-}
 
 const CONFIG = {
     TELEGRAM_BOT_TOKEN: "7593728405:AAEcp0It8ovT3P_dyugpaIujGXr6s5AQqH8", 
@@ -38,6 +44,7 @@ const CONFIG = {
     PORT: process.env.PORT || 3000
 };
 
+// Подключение к БД
 mongoose.connect(CONFIG.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('✅ MongoDB Connected'))
     .catch(e => console.error('❌ MongoDB Connection Error:', e));
@@ -45,102 +52,16 @@ mongoose.connect(CONFIG.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: 
 const UserSchema = new mongoose.Schema({
     telegramId: { type: Number, required: true, unique: true },
     balance: { type: Number, default: 0 },
-    highScores: {
-        sonic: { type: Number, default: 999999 },
-        tetris: { type: Number, default: 0 },
-        snake: { type: Number, default: 0 },
-        battleCity: { type: Number, default: 0 },
-        bomber: { type: Number, default: 0 },
-        gold: { type: Number, default: 0 },
-        roadFighter: { type: Number, default: 0 },
-        spaceInvaders: { type: Number, default: 0 },
-        airHockey: { type: Number, default: 0 }
-    },
-    createdAt: { type: Date, default: Date.now }
+    highScores: { sonic: { type: Number, default: 0 } }
 });
-
-const LobbySchema = new mongoose.Schema({
-    lobbyId: { type: String, required: true, unique: true },
-    creatorId: { type: Number, required: true },
-    player1Id: Number,
-    player2Id: Number,
-    gameType: String,
-    betAmount: { type: Number, default: 0 },
-    isPrivate: { type: Boolean, default: false },
-    status: { type: String, default: 'waiting' },
-    scores: {
-        player1: { type: Number, default: -1 },
-        player2: { type: Number, default: -1 }
-    },
-    createdAt: { type: Date, default: Date.now }
-});
-
-const MatchHistorySchema = new mongoose.Schema({
-    winnerId: Number,
-    loserId: Number,
-    gameType: String,
-    betAmount: Number,
-    prize: Number,
-    date: { type: Date, default: Date.now }
-});
-
 const User = mongoose.model('User', UserSchema);
-const Lobby = mongoose.model('Lobby', LobbySchema);
-const MatchHistory = mongoose.model('MatchHistory', MatchHistorySchema);
 
-if (wss) {
-    wss.on('connection', function connection(ws) {
-        console.log('🎮 Игрок подключился к сокетам!');
-        ws.on('error', console.error);
-        ws.on('message', function incoming(message) {
-            console.log('Ввод:', message.toString());
-        });
-        ws.on('close', () => console.log('❌ Игрок отключился'));
-    });
-}
-
-app.post('/api/buy-stars', async (req, res) => {
-    try {
-        const { telegramId, amount } = req.body;
-        const response = await axios.post(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/createInvoiceLink`, {
-            title: `Пополнение ${amount} ⭐️`, description: `Звезды для арены`, payload: `${telegramId}_${amount}`,
-            provider_token: "", currency: "XTR", prices: [{ label: "Stars", amount }]
-        });
-        if (response.data.ok) res.json({ invoiceUrl: response.data.result }); else res.status(400).json({ error: 'TG Error' });
-    } catch (e) { res.status(500).json({ error: 'Server Error' }); }
-});
-
-app.post('/api/telegram-webhook', async (req, res) => {
-    try {
-        if (req.body.pre_checkout_query) await axios.post(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/answerPreCheckoutQuery`, { pre_checkout_query_id: req.body.pre_checkout_query.id, ok: true });
-        if (req.body.message?.successful_payment) {
-            const [userId, stars] = req.body.message.successful_payment.invoice_payload.split('_');
-            if (userId && stars) await User.findOneAndUpdate({ telegramId: Number(userId) }, { $inc: { balance: Number(stars) } }, { upsert: true });
-        }
-    } catch (e) {} res.sendStatus(200);
-});
-
-app.post('/api/deposit', async (req, res) => {
-    try {
-        const response = await axios.post('https://pay.crypt.bot/api/createInvoice', { asset: req.body.asset, amount: req.body.amount.toString(), payload: `${req.body.telegramId}_${req.body.stars}` }, { headers: { 'Crypto-Pay-API-Token': CONFIG.CRYPTO_BOT_TOKEN } });
-        if (response.data.ok) res.json({ payUrl: response.data.result.mini_app_invoice_url });
-    } catch (e) { res.status(500).json({ error: 'Crypto Error' }); }
-});
-
-app.post('/api/crypto-webhook', async (req, res) => {
-    try {
-        if (req.body?.update_type === 'invoice_paid') {
-            const [userId, stars] = req.body.payload.payload.split('_');
-            if (userId && stars) await User.findOneAndUpdate( { telegramId: Number(userId) }, { $inc: { balance: Number(stars) } }, { upsert: true });
-        }
-    } catch (e) {} res.sendStatus(200);
-});
-
+// APIEndpoints
 app.post('/api/user-data', async (req, res) => {
     try {
-        let userData = { id: 12345 }; // Fallback для тестов
+        let userData = { id: 12345 };
         if (req.body.initData && req.body.initData !== "dummy") {
-            userData = JSON.parse(new URLSearchParams(req.body.initData).get('user'));
+            try { userData = JSON.parse(new URLSearchParams(req.body.initData).get('user')); } catch(e){}
         }
         let user = await User.findOne({ telegramId: userData.id });
         if (!user) { user = new User({ telegramId: userData.id }); await user.save(); }
@@ -148,8 +69,7 @@ app.post('/api/user-data', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+const server = http.createServer(app);
 server.listen(CONFIG.PORT, () => {
-    console.log('===================================');
-    console.log('🚀 Server & API running on port ' + CONFIG.PORT);
-    console.log('===================================');
+    console.log('🚀 Server running on port ' + CONFIG.PORT);
 });
