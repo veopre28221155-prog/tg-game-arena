@@ -11,38 +11,62 @@
         .screen { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .active { display: flex; }
         #emu-box { width: 100%; height: 60vh; background: #111; border: 2px solid #00f0ff; position: relative; }
-        .btn { background: #111; color: #00f0ff; border: 4px solid #444; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; width: 250px; }
+        .btn { background: #111; color: #00f0ff; border: 4px solid #444; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; }
         #start-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f0; padding: 15px; z-index: 100; display: none; border: none; font-family: 'Press Start 2P'; }
+        #debug-log { font-size: 8px; color: #555; margin-top: 10px; height: 40px; overflow: hidden; }
     </style>
 </head>
 <body>
 
 <div id="s-main" class="screen active">
-    <h1 style="font-size: 18px;">RETRO ARENA</h1>
-    <button class="btn" onclick="launch()">ИГРАТЬ В SONIC</button>
+    <h1>RETRO ARENA</h1>
+    <button class="btn" onclick="checkAndLaunch()">ЗАПУСТИТЬ SONIC</button>
 </div>
 
 <div id="s-game" class="screen">
     <div id="emu-box">
         <button id="start-btn" onclick="window.EJS_emulator.start(); this.style.display='none'">СТАРТ</button>
     </div>
-    <p id="status" style="font-size: 10px; color: gold;">Загрузка движка...</p>
+    <p id="status" style="font-size: 10px; color: gold; margin-top: 20px;">Проверка файла игры...</p>
+    <div id="debug-log"></div>
 </div>
 
 <script>
-    function launch() {
+    const log = (m) => document.getElementById('debug-log').innerText = m;
+
+    async function checkAndLaunch() {
         document.getElementById('s-main').classList.remove('active');
         document.getElementById('s-game').classList.add('active');
 
+        // Генерируем ссылку на файл игры
+        const romUrl = window.location.origin + '/sonic.bin?t=' + Date.now();
+        log('Проверка: ' + romUrl);
+
+        try {
+            const response = await fetch(romUrl, { method: 'HEAD' });
+            if (response.ok) {
+                log('Файл найден! Запуск эмулятора...');
+                startEmulator(romUrl);
+            } else {
+                document.getElementById('status').innerText = 'ОШИБКА: Файл игры не найден на сервере (404)';
+                log('Статус: ' + response.status);
+            }
+        } catch (e) {
+            log('Ошибка сети при поиске файла');
+            startEmulator(romUrl); // Пробуем всё равно
+        }
+    }
+
+    function startEmulator(url) {
         window.EJS_player = '#emu-box';
-        window.EJS_gameUrl = window.location.origin + '/sonic.bin';
-        window.EJS_core = 'picodrive'; // ЛЕГКОЕ ЯДРО ДЛЯ ТЕЛЕФОНОВ
-        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/'; 
+        window.EJS_gameUrl = url;
+        window.EJS_core = 'segaMD'; // Возвращаемся к надежному ядру
+        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_startOnLoaded = false;
         window.EJS_threads = false;
 
         window.EJS_onGameLoaded = () => {
-            document.getElementById('status').innerText = 'Готово!';
+            document.getElementById('status').innerText = 'Загружено!';
             document.getElementById('start-btn').style.display = 'block';
         };
 
