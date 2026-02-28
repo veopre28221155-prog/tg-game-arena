@@ -2,76 +2,107 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; text-align: center; overflow: hidden; }
+        :root { --accent: #00f0ff; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; text-align: center; overflow: hidden; -webkit-touch-callout: none; -webkit-user-select: none; }
         .screen { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .active { display: flex; }
-        #emu-box { width: 100%; height: 60vh; background: #111; border: 2px solid #00f0ff; position: relative; }
-        .btn { background: #111; color: #00f0ff; border: 4px solid #444; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; width: 260px; }
-        #start-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f0; padding: 15px; z-index: 100; display: none; border: none; font-family: 'Press Start 2P'; }
+        
+        /* Фикс черного квадрата: заставляем GPU работать */
+        #emu-box { 
+            width: 100%; 
+            height: 55vh; 
+            background: #111; 
+            border: 2px solid var(--accent); 
+            position: relative;
+            transform: translateZ(0); 
+            -webkit-transform: translateZ(0);
+        }
+
+        .btn { background: #111; color: var(--accent); border: 4px solid #444; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; width: 260px; z-index: 100; }
+        .btn:active { transform: scale(0.95); background: #222; }
+
+        #start-btn { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: #0f0; color: #000; padding: 20px; z-index: 1000; 
+            border: 4px solid #fff; font-family: 'Press Start 2P'; font-size: 16px;
+            display: none; box-shadow: 0 0 20px #0f0;
+        }
+        
+        #status { font-size: 10px; color: gold; margin-top: 20px; height: 20px; }
     </style>
 </head>
 <body>
 
 <div id="s-main" class="screen active">
-    <h1 style="font-size: 16px;">RETRO ARENA</h1>
-    <button class="btn" onclick="autoDetectRom()">ЗАПУСТИТЬ SONIC</button>
+    <h1 style="font-size: 16px; color: var(--accent);">RETRO ARENA</h1>
+    <button class="btn" onclick="autoDetectRom()">ИГРАТЬ В SONIC</button>
 </div>
 
 <div id="s-game" class="screen">
     <div id="emu-box">
-        <button id="start-btn" onclick="window.EJS_emulator.start(); this.style.display='none'">СТАРТ</button>
+        <button id="start-btn" onclick="startEmuInteraction()">ИГРАТЬ!</button>
     </div>
-    <p id="status" style="font-size: 10px; color: gold; margin-top: 20px;">Поиск файла...</p>
+    <p id="status">Поиск файла...</p>
 </div>
 
 <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Раскрываем на весь экран сразу
+
     async function autoDetectRom() {
         document.getElementById('s-main').classList.remove('active');
         document.getElementById('s-game').classList.add('active');
         
-        const paths = ['/sonic.bin', '/public/sonic.bin'];
-        let foundPath = null;
-
-        for (let p of paths) {
-            try {
-                const res = await fetch(p, { method: 'HEAD' });
-                if (res.ok) {
-                    foundPath = p;
-                    break;
-                }
-            } catch (e) {}
-        }
-
-        if (foundPath) {
-            document.getElementById('status').innerText = 'Файл найден! Загрузка...';
-            startEmulator(foundPath);
-        } else {
-            document.getElementById('status').innerText = 'ОШИБКА: Файл sonic.bin не найден ни в корне, ни в /public/';
-        }
+        const romUrl = window.location.origin + '/sonic.bin';
+        document.getElementById('status').innerText = 'Загрузка движка...';
+        
+        startEmulator(romUrl);
     }
 
     function startEmulator(romUrl) {
         window.EJS_player = '#emu-box';
-        window.EJS_gameUrl = romUrl + '?v=' + Date.now();
+        window.EJS_gameUrl = romUrl;
         window.EJS_core = 'segaMD';
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_startOnLoaded = false;
+        
+        // Мобильные оптимизации
         window.EJS_threads = false;
+        window.EJS_lightSync = true;
+        window.EJS_language = 'ru';
+        window.EJS_DEBUG_MODE = false;
 
         window.EJS_onGameLoaded = () => {
-            document.getElementById('status').innerText = 'Готово! Нажми СТАРТ';
+            document.getElementById('status').innerText = 'ГОТОВО К ЗАПУСКУ!';
             document.getElementById('start-btn').style.display = 'block';
         };
 
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+        script.async = true;
         document.body.appendChild(script);
     }
+
+    function startEmuInteraction() {
+        if (window.EJS_emulator) {
+            window.EJS_emulator.start();
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+        }
+    }
+
+    // Фикс для iOS/Android WebView: запрет скролла, который мешает кнопкам
+    document.addEventListener('touchmove', (e) => {
+        if (document.getElementById('s-game').classList.contains('active')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
 </script>
 </body>
 </html>
