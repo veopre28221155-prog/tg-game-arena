@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sonic Engine</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #emulator { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="emulator"></div>
+
+    <script type="text/javascript">
+        // Данные для эмулятора
+        var EmuJS = {
+            gameUrl: window.location.origin + "/roms/sonic.bin",
+            core: "genesis",
+            container: "#emulator",
+            autoplay: true,
+            onReady: function() { console.log("Engine Ready"); }
+        };
+    </script>
+    <script src="https://emulatorjs.org/loader.js"></script>
+</body>
+</html>
