@@ -7,31 +7,30 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #00f0ff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        .screen { position: fixed; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn { background: #111; color: #00f0ff; border: 3px solid #00f0ff; padding: 20px; font-family: inherit; cursor: pointer; box-shadow: 0 0 15px #00f0ff; }
-        iframe { width: 100vw; height: 100vh; border: none; display: none; }
+        body { margin: 0; background: #000; color: #00f0ff; font-family: 'Press Start 2P', cursive; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .btn { background: #111; color: #00f0ff; border: 3px solid #00f0ff; padding: 25px; cursor: pointer; font-family: inherit; font-size: 12px; box-shadow: 0 0 20px #00f0ff; border-radius: 15px; }
+        iframe { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; display: none; z-index: 100; }
     </style>
 </head>
 <body>
 
-    <div id="lobby" class="screen">
-        <h1 style="font-size: 16px;">ARENA CLOUD</h1>
-        <button class="btn" onclick="connect()">ПОДКЛЮЧИТЬСЯ</button>
+    <div id="ui">
+        <button class="btn" onclick="launch()">ПОДКЛЮЧИТЬСЯ К ARENA</button>
     </div>
 
-    <iframe id="main-frame" allow="autoplay; fullscreen; gamepad"></iframe>
+    <!-- Песочница для обхода блокировок -->
+    <iframe id="game-frame" allow="autoplay; fullscreen; gamepad" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
 
-        function connect() {
-            document.getElementById('lobby').style.display = 'none';
-            const frame = document.getElementById('main-frame');
+        function launch() {
+            document.getElementById('ui').style.display = 'none';
+            const frame = document.getElementById('game-frame');
             frame.style.display = 'block';
-            // Загружаем наш локальный обработчик
-            frame.src = window.location.origin + "/engine";
+            // Добавляем случайный ID для обхода кэша
+            frame.src = window.location.origin + "/engine?auth=" + Date.now();
         }
     </script>
 </body>
