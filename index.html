@@ -1,108 +1,137 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Retro Battle Arena</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sonic Web Arena</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #00f0ff; }
-        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; text-align: center; overflow: hidden; -webkit-touch-callout: none; -webkit-user-select: none; }
-        .screen { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-        .active { display: flex; }
-        
-        /* Фикс черного квадрата: заставляем GPU работать */
-        #emu-box { 
-            width: 100%; 
-            height: 55vh; 
-            background: #111; 
-            border: 2px solid var(--accent); 
-            position: relative;
-            transform: translateZ(0); 
-            -webkit-transform: translateZ(0);
-        }
-
-        .btn { background: #111; color: var(--accent); border: 4px solid #444; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; width: 260px; z-index: 100; }
-        .btn:active { transform: scale(0.95); background: #222; }
-
-        #start-btn { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: #0f0; color: #000; padding: 20px; z-index: 1000; 
-            border: 4px solid #fff; font-family: 'Press Start 2P'; font-size: 16px;
-            display: none; box-shadow: 0 0 20px #0f0;
-        }
-        
-        #status { font-size: 10px; color: gold; margin-top: 20px; height: 20px; }
+        body { margin: 0; background: #000; overflow: hidden; }
+        #game-container { display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { border: 2px solid #00f0ff; box-shadow: 0 0 20px #00f0ff; }
     </style>
 </head>
 <body>
-
-<div id="s-main" class="screen active">
-    <h1 style="font-size: 16px; color: var(--accent);">RETRO ARENA</h1>
-    <button class="btn" onclick="autoDetectRom()">ИГРАТЬ В SONIC</button>
-</div>
-
-<div id="s-game" class="screen">
-    <div id="emu-box">
-        <button id="start-btn" onclick="startEmuInteraction()">ИГРАТЬ!</button>
-    </div>
-    <p id="status">Поиск файла...</p>
-</div>
+    <div id="game-container"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    tg.expand(); // Раскрываем на весь экран сразу
+    tg.expand();
 
-    async function autoDetectRom() {
-        document.getElementById('s-main').classList.remove('active');
-        document.getElementById('s-game').classList.add('active');
-        
-        const romUrl = window.location.origin + '/sonic.bin';
-        document.getElementById('status').innerText = 'Загрузка движка...';
-        
-        startEmulator(romUrl);
+    // Конфигурация игры (Нативный движок)
+    const config = {
+        type: Phaser.AUTO,
+        width: 400,
+        height: 600,
+        parent: 'game-container',
+        physics: {
+            default: 'arcade',
+            arcade: { gravity: { y: 1000 }, debug: false }
+        },
+        scene: { preload: preload, create: create, update: update }
+    };
+
+    const game = new Phaser.Game(config);
+    let player;
+    let cursors;
+    let score = 0;
+    let scoreText;
+
+    function preload() {
+        // Загружаем графику (используем бесплатные спрайты для теста)
+        this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
+        this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
+        this.load.image('ring', 'https://labs.phaser.io/assets/sprites/apple.png'); // Вместо кольца пока яблоко
+        this.load.spritesheet('sonic', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
     }
 
-    function startEmulator(romUrl) {
-        window.EJS_player = '#emu-box';
-        window.EJS_gameUrl = romUrl;
-        window.EJS_core = 'segaMD';
-        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-        window.EJS_startOnLoaded = false;
+    function create() {
+        // Фон
+        this.add.image(200, 300, 'sky');
+
+        // Платформы
+        platforms = this.physics.add.staticGroup();
+        platforms.create(200, 585, 'ground').setScale(2).refreshBody();
+        platforms.create(300, 450, 'ground');
+        platforms.create(50, 300, 'ground');
+
+        // Игрок (Соник)
+        player = this.physics.add.sprite(100, 450, 'sonic');
+        player.setBounce(0.2);
+        player.setCollideWorldBounds(true);
+
+        // Анимации
+        this.anims.create({
+            key: 'left',
+            frames: this.anims.generateFrameNumbers('sonic', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'turn',
+            frames: [ { key: 'sonic', frame: 4 } ],
+            frameRate: 20
+        });
+
+        this.anims.create({
+            key: 'right',
+            frames: this.anims.generateFrameNumbers('sonic', { start: 5, end: 8 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        // Управление
+        cursors = this.input.keyboard.createCursorKeys();
         
-        // Мобильные оптимизации
-        window.EJS_threads = false;
-        window.EJS_lightSync = true;
-        window.EJS_language = 'ru';
-        window.EJS_DEBUG_MODE = false;
+        // Кнопки для ТЕЛЕФОНА (экранные)
+        const leftBtn = this.add.circle(50, 500, 40, 0x00f0ff, 0.5).setInteractive();
+        const rightBtn = this.add.circle(150, 500, 40, 0x00f0ff, 0.5).setInteractive();
+        const jumpBtn = this.add.circle(350, 500, 50, 0xff0055, 0.8).setInteractive();
 
-        window.EJS_onGameLoaded = () => {
-            document.getElementById('status').innerText = 'ГОТОВО К ЗАПУСКУ!';
-            document.getElementById('start-btn').style.display = 'block';
-        };
+        leftBtn.on('pointerdown', () => { player.moveLeft = true; });
+        leftBtn.on('pointerup', () => { player.moveLeft = false; });
+        rightBtn.on('pointerdown', () => { player.moveRight = true; });
+        rightBtn.on('pointerup', () => { player.moveRight = false; });
+        jumpBtn.on('pointerdown', () => { if (player.body.touching.down) player.setVelocityY(-600); });
 
-        const script = document.createElement('script');
-        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-        script.async = true;
-        document.body.appendChild(script);
+        // Кольца (сбор предметов)
+        rings = this.physics.add.group({
+            key: 'ring',
+            repeat: 5,
+            setXY: { x: 12, y: 0, stepX: 70 }
+        });
+
+        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(rings, platforms);
+        this.physics.add.overlap(player, rings, collectRing, null, this);
+
+        scoreText = this.add.text(16, 16, 'RINGS: 0', { fontSize: '20px', fill: '#00f0ff', fontFamily: 'Arial' });
     }
 
-    function startEmuInteraction() {
-        if (window.EJS_emulator) {
-            window.EJS_emulator.start();
-            document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('status').style.display = 'none';
+    function update() {
+        if (cursors.left.isDown || player.moveLeft) {
+            player.setVelocityX(-200);
+            player.anims.play('left', true);
+        } else if (cursors.right.isDown || player.moveRight) {
+            player.setVelocityX(200);
+            player.anims.play('right', true);
+        } else {
+            player.setVelocityX(0);
+            player.anims.play('turn');
+        }
+
+        if (cursors.up.isDown && player.body.touching.down) {
+            player.setVelocityY(-600);
         }
     }
 
-    // Фикс для iOS/Android WebView: запрет скролла, который мешает кнопкам
-    document.addEventListener('touchmove', (e) => {
-        if (document.getElementById('s-game').classList.contains('active')) {
-            e.preventDefault();
-        }
-    }, { passive: false });
-
+    function collectRing(player, ring) {
+        ring.disableBody(true, true);
+        score += 1;
+        scoreText.setText('RINGS: ' + score);
+    }
 </script>
 </body>
 </html>
