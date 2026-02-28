@@ -3,53 +3,60 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sega Cloud Engine</title>
+    <title>Sega Final Build</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; color: #00f0ff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #game { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        #loader { z-index: 2; text-align: center; pointer-events: none; }
-        .spinner { border: 4px solid rgba(0, 240, 255, 0.1); border-left-color: #00f0ff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #error-msg { color: #ff4444; display: none; font-size: 12px; margin-top: 10px; padding: 10px; }
+        #game { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
+        #loader { z-index: 10; text-align: center; background: #000; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .spin { border: 3px solid rgba(0,240,255,0.2); border-left-color: #00f0ff; border-radius: 50%; width: 30px; height: 30px; animation: s 1s linear infinite; }
+        @keyframes s { to { transform: rotate(360deg); } }
+        #start-btn { display: none; margin-top: 20px; padding: 15px 30px; background: #00f0ff; color: #000; border: none; font-weight: bold; cursor: pointer; z-index: 100; }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="spinner"></div>
-        <div id="status">ЗАГРУЗКА ЯДРА SEGA...</div>
-        <div id="error-msg"></div>
+        <div class="spin"></div>
+        <p id="status">СОЕДИНЕНИЕ С ОБЛАКОМ SEGA...</p>
+        <!-- Кнопка появится, если автозапуск не сработает -->
+        <button id="start-btn" onclick="forceStart()">ЗАПУСТИТЬ ВРУЧНУЮ</button>
     </div>
 
     <div id="game"></div>
 
     <script>
-        // Таймер паники: если через 20 секунд ничего не произошло
-        const panicTimer = setTimeout(() => {
-            document.getElementById('error-msg').style.display = 'block';
-            document.getElementById('error-msg').innerText = "Слишком долгая загрузка. Попробуйте обновить страницу или проверьте интернет-соединение.";
-            document.querySelector('.spinner').style.borderColor = "#ff4444";
-        }, 20000);
+        // Принудительный запуск, если система "зависла"
+        function forceStart() {
+            document.getElementById('loader').style.display = 'none';
+            if (window.EmuJS && window.EmuJS.start) window.EmuJS.start();
+        }
 
         window.EmuJS = {
-            // Используем официальный проверенный путь
-            dataUrl: "https://emulatorjs.github.io/EmulatorJS/data/",
+            // Используем максимально стабильное зеркало jsDelivr
+            dataUrl: "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/",
             gameUrl: window.location.origin + "/roms/sonic.bin",
             core: "genesis",
             autoStart: true,
             container: "#game",
-            onStart: function() {
-                clearTimeout(panicTimer);
-                document.getElementById('loader').style.display = 'none';
+            onProgress: function(p) {
+                document.getElementById('status').innerText = "ЗАГРУЗКА ДАННЫХ: " + Math.round(p) + "%";
+                // Если загрузка пошла, показываем кнопку ручного пуска на всякий случай
+                if (p > 10) document.getElementById('start-btn').style.display = 'block';
             },
-            onProgress: function(percent) {
-                document.getElementById('status').innerText = "ЗАГРУЗКА: " + Math.round(percent) + "%";
+            onStart: function() {
+                document.getElementById('loader').style.display = 'none';
             }
+        };
+
+        // Ловим ошибки загрузки
+        window.onerror = function(m) {
+            document.getElementById('status').innerHTML = "ОШИБКА СЕТИ.<br>Попробуйте включить VPN или сменить интернет.";
+            document.getElementById('status').style.color = "red";
         };
     </script>
     
-    <!-- Используем надежный загрузчик -->
-    <script src="https://emulatorjs.github.io/EmulatorJS/data/loader.js"></script>
+    <!-- Загружаем движок -->
+    <script src="https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js"></script>
 
 </body>
 </html>
