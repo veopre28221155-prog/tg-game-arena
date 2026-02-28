@@ -2,60 +2,38 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; color: #ff4444; font-family: monospace; overflow: hidden; }
-        #emu-container { width: 100vw; height: 100vh; }
-        #debug-log { position: fixed; top: 10px; left: 10px; font-size: 10px; pointer-events: none; z-index: 999; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #boot-btn { 
+            padding: 20px; background: #00f0ff; color: #000; border: none; 
+            font-family: sans-serif; font-weight: bold; cursor: pointer; border-radius: 5px;
+            box-shadow: 0 0 20px #00f0ff; z-index: 10;
+        }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; }
     </style>
 </head>
 <body>
-    <div id="debug-log">Инициализация системы...</div>
-    <div id="emu-container"></div>
+
+    <!-- Кнопка принудительной активации (решает проблему зависания) -->
+    <button id="boot-btn" onclick="boot()">НАЖМИ ДЛЯ ЗАПУСКА SEGA</button>
+    
+    <iframe id="emu-frame" allow="autoplay; fullscreen; gamepad"></iframe>
 
     <script>
-        const log = (msg) => {
-            console.log(msg);
-            document.getElementById('debug-log').innerText += "\n> " + msg;
-        };
+        function boot() {
+            const btn = document.getElementById('boot-btn');
+            const ifr = document.getElementById('emu-frame');
+            
+            btn.style.display = 'none';
+            ifr.style.display = 'block';
 
-        // 1. Проверка SharedArrayBuffer (самая частая причина черного экрана)
-        if (!window.SharedArrayBuffer) {
-            log("КРИТИЧЕСКАЯ ОШИБКА: Браузер заблокировал SharedArrayBuffer. Проверьте SSL (https) и заголовки Cross-Origin.");
-        } else {
-            log("Память SharedArrayBuffer: ДОСТУПНА");
+            // Используем прямой URL эмулятора (это работает стабильнее всего)
+            const romUrl = window.location.origin + "/roms/sonic.bin";
+            const emuUrl = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
+            
+            ifr.src = emuUrl;
         }
-
-        // 2. Проверка доступности РОМа
-        const romUrl = window.location.origin + "/roms/sonic.bin";
-        fetch(romUrl, { method: 'HEAD' })
-            .then(res => {
-                if (res.ok) log("Файл игры: НАЙДЕН");
-                else log("ОШИБКА: Файл игры не найден по адресу " + romUrl);
-            })
-            .catch(e => log("ОШИБКА СЕТИ: Не удалось достучаться до файла игры."));
-
-        // 3. Конфигурация эмулятора
-        window.EmuJS = {
-            dataUrl: "https://cdn.statically.io/gh/EmulatorJS/EmulatorJS/main/data/",
-            gameUrl: romUrl,
-            core: "genesis",
-            autoStart: true,
-            container: "#emu-container",
-            onReady: () => log("EmulatorJS: ГОТОВ"),
-            onStart: () => {
-                log("EmulatorJS: ЗАПУСК");
-                document.getElementById('debug-log').style.display = 'none'; // Скрываем логи при успехе
-            }
-        };
-
-        // Таймер паники
-        setTimeout(() => {
-            if (document.getElementById('debug-log').style.display !== 'none') {
-                log("ВНИМАНИЕ: Загрузка длится слишком долго. Возможен конфликт скриптов.");
-            }
-        }, 15000);
     </script>
-    <script src="https://cdn.statically.io/gh/EmulatorJS/EmulatorJS/main/data/loader.js"></script>
 </body>
 </html>
