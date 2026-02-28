@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,118 +7,120 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --tg-bg: #050505; --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive; }
-        body { margin: 0; background: #000; color: #fff; font-family: var(--font-retro); height: 100vh; overflow: hidden; touch-action: none; }
+        :root { --tg-bg: #050505; --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive; }
+        body { margin: 0; background: #000; color: #fff; font-family: var(--font-retro); height: 100vh; overflow: hidden; touch-action: none; text-align: center; }
         
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; }
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; }
         .screen.active { display: flex; }
         
-        .btn-pixel { background: #222; color: #fff; border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-family: var(--font-retro); margin-bottom: 15px; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
-        .btn-pixel:active { transform: translateY(2px); background: #333; }
+        h1 { color: var(--accent-neon); font-size: 20px; text-shadow: 0 0 10px var(--accent-neon); margin-bottom: 30px; line-height: 1.5; }
         
-        #emulator-container {
-            width: 100%;
-            height: 65vh; 
-            background: #000;
-            border: 2px solid var(--accent-neon);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
-            position: relative; /* Для кнопки СТАРТ */
-        }
+        /* Сетка для списка игр */
+        .games-grid { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 400px; overflow-y: auto; padding-bottom: 20px; }
         
-        /* НАША НОВАЯ КНОПКА СТАРТ */
+        .btn-pixel { background: #111; color: #fff; border: 3px solid #444; padding: 15px; font-family: var(--font-retro); font-size: 12px; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: 0.1s; }
+        .btn-pixel:active { transform: translate(4px, 4px); box-shadow: 0 0 0 #000; background: #222; }
+        .btn-sega { border-color: #0055ff; color: #00aaff; }
+        .btn-danger { border-color: var(--accent-pink); color: var(--accent-pink); }
+        
+        /* Контейнер эмулятора */
+        #emulator-container { width: 100%; height: 65vh; background: #000; border: 2px solid var(--accent-neon); position: relative; }
+        
+        /* Кнопка старта поверх эмулятора */
         #start-emu-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #111;
-            color: #00ff00;
-            border: 4px solid #00ff00;
-            padding: 20px 30px;
-            font-size: 1.5rem;
-            font-family: var(--font-retro);
-            cursor: pointer;
-            z-index: 100;
-            display: none; /* Скрыта пока игра не загрузится */
-            box-shadow: 0 0 20px rgba(0,255,0,0.5);
-            text-shadow: 2px 2px 0 #000;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #000; color: #0f0; border: 4px solid #0f0; padding: 20px;
+            font-size: 16px; font-family: var(--font-retro); z-index: 100; display: none;
+            box-shadow: 0 0 20px rgba(0,255,0,0.4); text-shadow: 2px 2px #000;
         }
-        #start-emu-button:active { background: #222; }
-
+        #start-emu-button:active { background: #0f0; color: #000; }
+        
+        #loading-status { font-size: 10px; color: #aaa; margin-top: 15px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- МЕНЮ -->
-    <div id="s-main" class="screen active" style="justify-content: center;">
-        <h1 style="color:var(--accent-neon); text-align:center;">RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="launchSega('sonic.bin')">🎮 SONIC THE HEDGEHOG</button>
+    <!-- ГЛАВНОЕ МЕНЮ (СПИСОК ИГР) -->
+    <div id="s-main" class="screen active">
+        <h1>RETRO ARENA<br><span style="font-size: 10px; color: gold;">SEGA COLLECTION</span></h1>
+        
+        <div class="games-grid">
+            <!-- ЧТОБЫ ДОБАВИТЬ ИГРУ: Скопируй строчку ниже, поменяй текст и название файла .bin -->
+            <button class="btn-pixel btn-sega" onclick="launchGame('sonic.bin', 'segaMD')">🦔 SONIC THE HEDGEHOG</button>
+            <button class="btn-pixel btn-sega" onclick="launchGame('mk3.bin', 'segaMD')">🐉 MORTAL KOMBAT 3</button>
+            <button class="btn-pixel btn-sega" onclick="launchGame('comix.bin', 'segaMD')">👊 COMIX ZONE</button>
+            
+            <button class="btn-pixel" style="border-color: #555; color: #555;" onclick="alert('Добавь файлы в папку public!')">➕ БОЛЬШЕ ИГР...</button>
+        </div>
     </div>
 
-    <!-- ЭКРАН ИГРЫ -->
-    <div id="s-game" class="screen" style="padding: 10px;">
-        <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <button class="btn-pixel" style="width:auto; padding:8px; font-size:10px; border-color:var(--accent-pink);" onclick="location.reload()">❌ ВЫЙТИ</button>
-            <div style="color:gold; font-size:10px; padding-top:10px;">SEGA GENESIS</div>
+    <!-- ЭКРАН ИГРЫ И ЭМУЛЯТОРА -->
+    <div id="s-game" class="screen">
+        <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+            <button class="btn-pixel btn-danger" style="padding: 10px; font-size: 10px;" onclick="location.reload()">НАЗАД</button>
+            <div id="game-title-display" style="color: gold; font-size: 10px;">SEGA GENESIS</div>
         </div>
 
-        <!-- Контейнер для эмулятора и кнопки СТАРТ -->
-        <div style="position: relative; width: 100%; height: 65vh;">
+        <div style="position: relative; width: 100%;">
             <div id="emulator-container"></div>
             <button id="start-emu-button" onclick="runEmulator()">▶ СТАРТ</button>
         </div>
+        
+        <p id="loading-status">Подготовка системы...</p>
     </div>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp; 
-    tg.ready(); 
-    tg.expand();
+    const tg = window.Telegram.WebApp;
+    tg.ready(); tg.expand();
     if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
-    function navScreen(id) { 
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
-        document.getElementById(id).classList.add('active'); 
+    function navScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
     }
 
+    // Запуск игры после нажатия СТАРТ
     function runEmulator() {
-        // Эта функция будет вызвана кнопкой СТАРТ
         if (window.EJS_emulator) {
             window.EJS_emulator.start();
-            document.getElementById('start-emu-button').style.display = 'none'; // Прячем кнопку после старта
+            document.getElementById('start-emu-button').style.display = 'none';
+            document.getElementById('loading-status').style.display = 'none';
         }
     }
 
-    function launchSega(romName) {
+    // === ГЛАВНАЯ ФУНКЦИЯ ЗАПУСКА ЛЮБОЙ ИГРЫ ===
+    function launchGame(romFileName, coreName) {
         navScreen('s-game');
-        
-        const romUrl = window.location.origin + '/' + romName;
+        document.getElementById('game-title-display').innerText = romFileName.toUpperCase();
+        document.getElementById('loading-status').innerText = 'Загрузка локального эмулятора...\nПожалуйста, подожди.';
 
-        window.EJS_player = '#emulator-container'; 
-        window.EJS_core = 'segaMD'; 
-        window.EJS_gameUrl = romUrl; 
-        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/'; 
+        // Настраиваем пути на ТВОЙ локальный сервер
+        window.EJS_pathtodata = '/data/';            // Папка с ядром (которую ты только что загрузил)
+        window.EJS_gameUrl = '/' + romFileName;      // Файл игры из папки public (например /sonic.bin)
         
-        // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
-        // Отключаем автостарт. Мы запустим игру сами.
-        window.EJS_startOnLoaded = false;
+        window.EJS_player = '#emulator-container';
+        window.EJS_core = coreName;                  // 'segaMD' для сеги
+        window.EJS_startOnLoaded = false;            // Ждем нажатия кнопки старт!
         
-        // Отключаем кнопки Сохранения, чтобы не мешали
         window.EJS_Buttons = {
             playPause: false, restart: true, mute: true, settings: true,
-            fullscreen: true, saveState: false, loadState: false 
+            fullscreen: true, saveState: true, loadState: true 
         };
 
-        // Эта функция сработает, когда эмулятор скачает игру и будет готов
+        // Когда движок всё скачал и готов к работе
         window.EJS_onGameLoaded = function() {
-            console.log("Игра загружена в память. Показываем кнопку СТАРТ.");
-            document.getElementById('start-emu-button').style.display = 'block';
+            document.getElementById('loading-status').innerText = '✅ Игра загружена в память!';
+            document.getElementById('start-emu-button').style.display = 'block'; // Показываем кнопку СТАРТ
         };
 
-        // Загружаем скрипт эмулятора
+        // Подключаем движок из твоей локальной папки data
         const script = document.createElement('script');
-        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+        script.src = '/data/loader.js';
+        script.onerror = function() {
+            document.getElementById('loading-status').innerHTML = '<span style="color:red">❌ Ошибка загрузки /data/loader.js<br>Проверь папку public на GitHub.</span>';
+        };
         document.body.appendChild(script);
     }
 </script>
