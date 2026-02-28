@@ -16,27 +16,35 @@
         .btn-pixel { background: #222; color: #fff; border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-family: var(--font-retro); margin-bottom: 15px; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
         .btn-pixel:active { transform: translateY(2px); background: #333; }
         
-        /* КОНСОЛЬ (оставим на всякий случай, но сделаем поменьше) */
-        #debug-log {
-            width: 100%;
-            max-width: 800px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #555;
-            color: #aaa;
-            font-family: monospace;
-            font-size: 8px;
-            padding: 5px;
-            margin-top: 5px;
-            display: none; 
-        }
-
         #emulator-container {
             width: 100%;
-            height: 65vh; /* Чуть больше экран */
+            height: 65vh; 
             background: #000;
             border: 2px solid var(--accent-neon);
             box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+            position: relative; /* Для кнопки СТАРТ */
         }
+        
+        /* НАША НОВАЯ КНОПКА СТАРТ */
+        #start-emu-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #111;
+            color: #00ff00;
+            border: 4px solid #00ff00;
+            padding: 20px 30px;
+            font-size: 1.5rem;
+            font-family: var(--font-retro);
+            cursor: pointer;
+            z-index: 100;
+            display: none; /* Скрыта пока игра не загрузится */
+            box-shadow: 0 0 20px rgba(0,255,0,0.5);
+            text-shadow: 2px 2px 0 #000;
+        }
+        #start-emu-button:active { background: #222; }
+
     </style>
 </head>
 <body>
@@ -50,15 +58,16 @@
 
     <!-- ЭКРАН ИГРЫ -->
     <div id="s-game" class="screen" style="padding: 10px;">
-        <div style="width: 100%; display: flex; justify-content: space-between;">
+        <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px;">
             <button class="btn-pixel" style="width:auto; padding:8px; font-size:10px; border-color:var(--accent-pink);" onclick="location.reload()">❌ ВЫЙТИ</button>
             <div style="color:gold; font-size:10px; padding-top:10px;">SEGA GENESIS</div>
         </div>
 
-        <!-- Сюда встраивается эмулятор -->
-        <div id="emulator-container"></div>
-        
-        <div id="debug-log"></div>
+        <!-- Контейнер для эмулятора и кнопки СТАРТ -->
+        <div style="position: relative; width: 100%; height: 65vh;">
+            <div id="emulator-container"></div>
+            <button id="start-emu-button" onclick="runEmulator()">▶ СТАРТ</button>
+        </div>
     </div>
 </div>
 
@@ -73,56 +82,44 @@
         document.getElementById(id).classList.add('active'); 
     }
 
-    function logError(msg) {
-        const box = document.getElementById('debug-log');
-        box.style.display = 'block';
-        box.innerText += `> ${msg}\n`;
-        console.log(msg);
+    function runEmulator() {
+        // Эта функция будет вызвана кнопкой СТАРТ
+        if (window.EJS_emulator) {
+            window.EJS_emulator.start();
+            document.getElementById('start-emu-button').style.display = 'none'; // Прячем кнопку после старта
+        }
     }
 
-    async function launchSega(romName) {
+    function launchSega(romName) {
         navScreen('s-game');
-        document.getElementById('emulator-container').innerHTML = ''; // Очистка перед запуском
-        logError("Загрузка...");
-
+        
         const romUrl = window.location.origin + '/' + romName;
 
-        // === ГЛАВНЫЕ ИСПРАВЛЕНИЯ ЗДЕСЬ ===
         window.EJS_player = '#emulator-container'; 
-        
-        // 1. Меняем ядро на segaMD (специально для Mega Drive/Genesis)
         window.EJS_core = 'segaMD'; 
-        
-        // 2. Указываем путь к файлу
         window.EJS_gameUrl = romUrl; 
-        
-        // 3. Откуда качать движок
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/'; 
         
-        // 4. АВТОСТАРТ (Очень важно! Иначе будет черный экран паузы)
-        window.EJS_startOnLoaded = true;
+        // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
+        // Отключаем автостарт. Мы запустим игру сами.
+        window.EJS_startOnLoaded = false;
         
-        // 5. Настройки интерфейса
+        // Отключаем кнопки Сохранения, чтобы не мешали
         window.EJS_Buttons = {
-            playPause: false,
-            restart: true,
-            mute: true,
-            settings: true,
-            fullscreen: true,
-            saveState: true,
-            loadState: true
+            playPause: false, restart: true, mute: true, settings: true,
+            fullscreen: true, saveState: false, loadState: false 
         };
 
-        logError("Конфигурация создана. Подключение ядра...");
+        // Эта функция сработает, когда эмулятор скачает игру и будет готов
+        window.EJS_onGameLoaded = function() {
+            console.log("Игра загружена в память. Показываем кнопку СТАРТ.");
+            document.getElementById('start-emu-button').style.display = 'block';
+        };
 
-        // Небольшая задержка, чтобы экран успел отрисоваться перед стартом тяжелого скрипта
-        setTimeout(() => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-            script.onload = () => logError("Ядро загружено! Жди заставку SEGA.");
-            script.onerror = () => logError("Ошибка CDN EmulatorJS");
-            document.body.appendChild(script);
-        }, 100);
+        // Загружаем скрипт эмулятора
+        const script = document.createElement('script');
+        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+        document.body.appendChild(script);
     }
 </script>
 </body>
