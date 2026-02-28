@@ -3,126 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neural Arena: Sonic Sim</title>
+    <title>Neural Battle Arena</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-        #game-ui {
-            position: fixed; top: 10px; left: 10px; color: #00f0ff; 
-            font-family: monospace; font-size: 12px; pointer-events: none; z-index: 10;
+        :root { --neon: #00f0ff; --pink: #ff0055; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        .screen { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .active { display: flex; }
+        
+        /* Меню */
+        h1 { font-size: 18px; color: var(--neon); text-shadow: 0 0 10px var(--neon); margin-bottom: 40px; }
+        .game-btn { 
+            background: #111; border: 3px solid #444; color: #fff; padding: 20px; 
+            width: 280px; margin: 10px; cursor: pointer; font-family: 'Press Start 2P'; font-size: 12px;
         }
-        .ai-status { color: #0f0; text-shadow: 0 0 5px #0f0; }
+        .game-btn:active { border-color: var(--neon); color: var(--neon); transform: scale(0.95); }
+
+        /* ИИ Обработка */
+        #ai-log { font-family: monospace; font-size: 10px; color: #0f0; text-align: left; width: 90%; max-width: 400px; height: 200px; overflow: hidden; border: 1px solid #0f0; padding: 10px; background: rgba(0,20,0,0.9); }
+        .ai-scanner { width: 100%; height: 2px; background: #0f0; box-shadow: 0 0 10px #0f0; position: relative; animation: scan 2s infinite; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 200px; } }
+
+        /* Контейнер игры */
+        #game-container { width: 100%; height: 100%; }
+        #game-overlay { position: fixed; top: 10px; left: 10px; pointer-events: none; font-size: 8px; color: var(--neon); }
     </style>
 </head>
 <body>
 
-<div id="game-ui">
-    SYSTEM: <span class="ai-status">NEURAL_SIM_ACTIVE</span><br>
-    ENTITY: SONIC_UNIT_01<br>
-    FPS: <span id="fps">60</span>
+<!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
+<div id="s-menu" class="screen active">
+    <h1>NEURAL ARENA</h1>
+    <button class="game-btn" onclick="startAI('sonic.bin')">🦔 NEURAL SONIC 1</button>
+    <button class="game-btn" style="opacity: 0.3">🔒 MK II (AI TRAINING...)</button>
+    <p style="font-size: 8px; color: #555; margin-top: 20px;">AI ENGINE v1.0.4 - READY</p>
 </div>
 
-<div id="game-container"></div>
+<!-- ЭКРАН 2: ИИ ОБРАБОТКА -->
+<div id="s-ai" class="screen">
+    <h2 style="font-size: 12px;">AI ANALYZING ROM...</h2>
+    <div id="ai-log"></div>
+    <div class="ai-scanner"></div>
+</div>
+
+<!-- ЭКРАН 3: ИГРА -->
+<div id="s-game" class="screen" style="padding:0;">
+    <div id="game-overlay">
+        CORE: NEURAL_GENESIS_V1<br>
+        ENTITY: SONIC_UNIT<br>
+        STATUS: STABLE_RECONSTRUCTION
+    </div>
+    <div id="game-container"></div>
+</div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const config = {
-        type: Phaser.AUTO,
-        width: window.innerWidth,
-        height: window.innerHeight,
-        parent: 'game-container',
-        backgroundColor: '#050505',
-        physics: {
-            default: 'arcade',
-            arcade: { gravity: { y: 1200 }, debug: false }
-        },
-        scene: { preload: preload, create: create, update: update }
-    };
+    function startAI(fileName) {
+        document.getElementById('s-menu').classList.remove('active');
+        document.getElementById('s-ai').classList.add('active');
 
-    const game = new Phaser.Game(config);
+        const log = document.getElementById('ai-log');
+        const messages = [
+            `> Loading file: ${fileName}...`,
+            `> Byte structure detected: SEGA GENESIS ROM`,
+            `> AI: Initializing neural deconstruction...`,
+            `> Mapping sprite sheets: Sonic_Wait, Sonic_Run...`,
+            `> Extracting physics: Gravity=1200, Acceleration=0.6`,
+            `> AI: Reconstructing Green Hill Zone assets...`,
+            `> Neural Engine: Building native bridge...`,
+            `> Finalizing environment... SUCCESS`,
+            `> RUNNING SIMULATION...`
+        ];
+
+        let i = 0;
+        const interval = setInterval(() => {
+            if(i < messages.length) {
+                log.innerHTML += messages[i] + '<br>';
+                i++;
+            } else {
+                clearInterval(interval);
+                setTimeout(launchNativeGame, 1000);
+            }
+        }, 400);
+    }
+
+    function launchNativeGame() {
+        document.getElementById('s-ai').classList.remove('active');
+        document.getElementById('s-game').classList.add('active');
+
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            parent: 'game-container',
+            physics: { default: 'arcade', arcade: { gravity: { y: 1500 } } },
+            scene: { preload: preload, create: create, update: update }
+        };
+
+        const game = new Phaser.Game(config);
+    }
+
     let player, platforms, cursors;
-    let isJumping = false;
     let moveData = { left: false, right: false, jump: false };
 
     function preload() {
-        // Загрузка ресурсов через безопасный CDN
         this.load.image('bg', 'https://labs.phaser.io/assets/skies/space3.png');
         this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
         this.load.spritesheet('sonic', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
     }
 
     function create() {
-        // Создание мира (Neural Grid)
         this.add.image(window.innerWidth/2, window.innerHeight/2, 'bg').setScale(2);
-        
         platforms = this.physics.add.staticGroup();
-        const bottom = window.innerHeight - 20;
-        
-        // Пол
-        for(let i=0; i<10; i++) {
-            platforms.create(i*400, bottom, 'ground').setScale(2).refreshBody();
-        }
-        
-        // Несколько парящих платформ
-        platforms.create(200, bottom - 150, 'ground');
-        platforms.create(600, bottom - 300, 'ground');
+        const b = window.innerHeight - 30;
+        for(let i=0; i<10; i++) platforms.create(i*400, b, 'ground').setScale(2).refreshBody();
 
-        // Персонаж (Sonic Unit)
-        player = this.physics.add.sprite(100, bottom - 100, 'sonic');
-        player.setBounce(0.1);
+        player = this.physics.add.sprite(100, b - 100, 'sonic').setScale(1.5);
         player.setCollideWorldBounds(true);
-        player.setScale(1.5);
 
-        // Анимации бега
         this.anims.create({
             key: 'run',
             frames: this.anims.generateFrameNumbers('sonic', { start: 5, end: 8 }),
             frameRate: 15, repeat: -1
         });
-        this.anims.create({
-            key: 'idle',
-            frames: [ { key: 'sonic', frame: 4 } ],
-            frameRate: 20
-        });
+        this.anims.create({ key: 'idle', frames: [ { key: 'sonic', frame: 4 } ], frameRate: 20 });
 
         this.physics.add.collider(player, platforms);
-        cursors = this.input.keyboard.createCursorKeys();
-
-        // СОЗДАЕМ КНОПКИ ДЛЯ ТЕЛЕФОНА (СЕНСОРНЫЙ ИНТЕРФЕЙС)
-        createTouchControls(this);
-    }
-
-    function createTouchControls(scene) {
-        const w = window.innerWidth;
+        
+        // Кнопки управления (Neural Interface)
         const h = window.innerHeight;
-
-        // Лево
-        const leftBtn = scene.add.circle(60, h - 80, 40, 0x00f0ff, 0.3).setInteractive();
-        leftBtn.on('pointerdown', () => moveData.left = true);
-        leftBtn.on('pointerup', () => moveData.left = false);
-
-        // Право
-        const rightBtn = scene.add.circle(160, h - 80, 40, 0x00f0ff, 0.3).setInteractive();
-        rightBtn.on('pointerdown', () => moveData.right = true);
-        rightBtn.on('pointerup', () => moveData.right = false);
-
-        // Прыжок
-        const jumpBtn = scene.add.circle(w - 80, h - 100, 50, 0xff0055, 0.5).setInteractive();
-        jumpBtn.on('pointerdown', () => moveData.jump = true);
-        jumpBtn.on('pointerup', () => moveData.jump = false);
+        const w = window.innerWidth;
+        const createBtn = (x, y, color, action) => {
+            let b = this.add.circle(x, y, 40, color, 0.4).setInteractive();
+            b.on('pointerdown', () => moveData[action] = true);
+            b.on('pointerup', () => moveData[action] = false);
+        };
+        
+        createBtn(60, h-80, 0x00f0ff, 'left');
+        createBtn(160, h-80, 0x00f0ff, 'right');
+        createBtn(w-80, h-100, 0xff0055, 'jump');
     }
 
     function update() {
-        const speed = 250;
-        
-        if (cursors.left.isDown || moveData.left) {
+        const speed = 300;
+        if (moveData.left) {
             player.setVelocityX(-speed);
             player.anims.play('run', true);
             player.flipX = true;
-        } else if (cursors.right.isDown || moveData.right) {
+        } else if (moveData.right) {
             player.setVelocityX(speed);
             player.anims.play('run', true);
             player.flipX = false;
@@ -130,12 +162,9 @@
             player.setVelocityX(0);
             player.anims.play('idle');
         }
-
-        if ((cursors.up.isDown || moveData.jump) && player.body.touching.down) {
-            player.setVelocityY(-700);
+        if (moveData.jump && player.body.touching.down) {
+            player.setVelocityY(-750);
         }
-
-        document.getElementById('fps').innerText = Math.round(game.loop.actualFps);
     }
 </script>
 </body>
