@@ -7,30 +7,31 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        body { margin: 0; background: #000; color: #00f0ff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
         .screen { position: fixed; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn { background: #111; color: #00f0ff; border: 3px solid #00f0ff; padding: 20px; font-family: inherit; cursor: pointer; font-size: 12px; }
+        .btn { background: #111; color: #00f0ff; border: 3px solid #00f0ff; padding: 20px; font-family: inherit; cursor: pointer; box-shadow: 0 0 15px #00f0ff; }
         iframe { width: 100vw; height: 100vh; border: none; display: none; }
     </style>
 </head>
 <body>
 
     <div id="lobby" class="screen">
-        <h1 style="font-size:18px; color:#00f0ff; text-shadow: 0 0 10px #00f0ff;">ARENA CLOUD</h1>
-        <button class="btn" onclick="start()">ПОДКЛЮЧИТЬСЯ К УЗЛУ</button>
+        <h1 style="font-size: 16px;">ARENA CLOUD</h1>
+        <button class="btn" onclick="connect()">ПОДКЛЮЧИТЬСЯ</button>
     </div>
 
-    <iframe id="game-view" allow="autoplay; fullscreen; gamepad"></iframe>
+    <iframe id="main-frame" allow="autoplay; fullscreen; gamepad"></iframe>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
 
-        function start() {
+        function connect() {
             document.getElementById('lobby').style.display = 'none';
-            const f = document.getElementById('game-view');
-            f.style.display = 'block';
-            f.src = window.location.origin + "/engine";
+            const frame = document.getElementById('main-frame');
+            frame.style.display = 'block';
+            // Загружаем наш локальный обработчик
+            frame.src = window.location.origin + "/engine";
         }
     </script>
 </body>
