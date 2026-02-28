@@ -7,16 +7,14 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --tg-bg: #050505; --accent-neon: #00f0ff; --accent-pink: #ff0055; --font-retro: 'Press Start 2P', cursive; }
-        body { margin: 0; background: #000; color: #fff; font-family: var(--font-retro); height: 100vh; overflow: hidden; text-align: center; }
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        :root { --tg-bg: #050505; --accent-neon: #00f0ff; --font-retro: 'Press Start 2P', cursive; }
+        body { margin: 0; background: #000; color: #fff; font-family: var(--font-retro); height: 100vh; overflow: hidden; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
-        h1 { color: var(--accent-neon); font-size: 18px; margin-top: 30px; text-shadow: 0 0 10px var(--accent-neon); }
-        .btn-pixel { background: #111; color: #fff; border: 4px solid #444; padding: 15px; font-family: var(--font-retro); font-size: 12px; cursor: pointer; width: 100%; max-width: 280px; margin: 10px 0; }
-        .btn-sega { border-color: #0055ff; color: #00aaff; }
-        #emulator-container { width: 100%; height: 50vh; background: #111; border: 2px solid #333; position: relative; }
+        .btn-pixel { background: #111; color: #00f0ff; border: 4px solid #444; padding: 15px; font-family: var(--font-retro); font-size: 12px; cursor: pointer; margin-top: 50px; }
+        #emulator-container { width: 100%; height: 50vh; background: #111; border: 2px solid #333; position: relative; margin-top: 10px; }
         #start-emu-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f0; color: #000; border: none; padding: 15px; font-family: var(--font-retro); cursor: pointer; display: none; z-index: 100; }
-        #global-debug { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: rgba(0,0,0,0.8); color: #0f0; font-family: monospace; font-size: 10px; overflow-y: auto; text-align: left; padding: 5px; z-index: 9999; }
+        #global-debug { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: rgba(0,0,0,0.8); color: #0f0; font-family: monospace; font-size: 10px; overflow-y: auto; padding: 5px; z-index: 9999; }
     </style>
 </head>
 <body>
@@ -24,51 +22,51 @@
 <div id="global-debug">Ожидание...</div>
 
 <div id="s-main" class="screen active">
-    <h1>RETRO ARENA</h1>
-    <button id="btn-sonic" class="btn-pixel btn-sega" onclick="launchGame('sonic.bin', 'segaMD')">ЗАПУСТИТЬ SONIC</button>
+    <h1 style="color:var(--accent-neon); font-size:16px; margin-top:40px;">RETRO ARENA</h1>
+    <button class="btn-pixel" onclick="launchGame('sonic.bin')">ИГРАТЬ В SONIC</button>
 </div>
 
 <div id="s-game" class="screen">
-    <button class="btn-pixel" style="width: auto; padding: 5px 10px;" onclick="location.reload()">НАЗАД</button>
+    <button class="btn-pixel" style="margin:0; padding:5px 10px;" onclick="location.reload()">НАЗАД</button>
     <div id="emulator-container">
         <button id="start-emu-button" onclick="runEmulator()">ЖМИ СТАРТ</button>
     </div>
-    <p id="loading-status" style="font-size: 10px;">Загрузка системы...</p>
+    <p id="loading-status" style="font-size: 9px; color: gold;">Загрузка ядра...</p>
 </div>
 
 <script>
     const debug = document.getElementById('global-debug');
     function log(m) { debug.innerHTML += `> ${m}<br>`; debug.scrollTop = debug.scrollHeight; }
 
-    function launchGame(rom, core) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    function launchGame(rom) {
+        document.getElementById('s-main').classList.remove('active');
         document.getElementById('s-game').classList.add('active');
 
-        const romUrl = window.location.origin + '/' + rom + '?v=' + Date.now();
-        log('Загрузка с нового CDN...');
+        // Генерируем случайный ключ для обхода кэша
+        const cacheBuster = '?v=' + Math.random().toString(36).substring(7);
+        const romUrl = window.location.origin + '/' + rom + cacheBuster;
+        
+        log('Запуск (Mobile Optimized)...');
 
-        // Настройки для максимальной совместимости с Telegram
         window.EJS_player = '#emulator-container';
         window.EJS_gameUrl = romUrl;
-        window.EJS_core = core; // Используем segaMD
-        // МЕНЯЕМ CDN НА JSDELIVR
+        window.EJS_core = 'segaMD';
         window.EJS_pathtodata = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/';
         window.EJS_startOnLoaded = false;
-        window.EJS_language = 'ru';
         
-        // Отключаем лишнее для скорости
-        window.EJS_Buttons = { playPause: false, restart: true, settings: true, fullscreen: true };
-
+        // КРИТИЧЕСКИЕ НАСТРОЙКИ ДЛЯ ТЕЛЕФОНА:
+        window.EJS_threads = false; // Отключаем потоки (важно для WebView!)
+        window.EJS_lightSync = true; // Облегченная синхронизация
+        
         window.EJS_onGameLoaded = () => {
-            log('ДВИЖОК ГОТОВ!');
-            document.getElementById('loading-status').innerText = 'Загружено!';
+            log('ЯДРО ЗАГРУЖЕНО!');
+            document.getElementById('loading-status').innerText = 'Готово!';
             document.getElementById('start-emu-button').style.display = 'block';
         };
 
-        // Грузим лоадер тоже с JSDelivr
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js';
-        script.onerror = () => log('ОШИБКА CDN: Попробуй ВПН или другой интернет');
+        // Добавляем cache buster и к скрипту лоадера
+        script.src = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js' + cacheBuster;
         document.body.appendChild(script);
     }
 
