@@ -5,36 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        #start-area { text-align: center; color: #00f0ff; font-family: sans-serif; z-index: 10; }
-        .start-btn { 
-            padding: 20px 40px; background: #00f0ff; color: #000; border: none; 
-            font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 5px;
-            box-shadow: 0 0 20px #00f0ff;
-        }
-        #emu-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; }
+        #start-screen { text-align: center; color: #00f0ff; font-family: sans-serif; z-index: 20; }
+        .boot-btn { padding: 20px 40px; background: #00f0ff; color: #000; border: none; font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #00f0ff; }
+        #emu-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
     </style>
 </head>
 <body>
 
-    <div id="start-area">
-        <button class="start-btn" onclick="run()">ЗАПУСТИТЬ SEGA</button>
-        <p><small>Нажмите для активации звука и видео</small></p>
+    <div id="start-screen">
+        <button class="boot-btn" onclick="initEmu()">ЗАПУСТИТЬ SEGA</button>
+        <p style="font-size: 10px; margin-top: 15px;">ДЕШИФРОВКА АССЕТОВ...</p>
     </div>
 
-    <iframe id="emu-view" allow="autoplay; fullscreen; gamepad"></iframe>
+    <div id="emu-container"></div>
 
     <script>
-        function run() {
-            const btn = document.getElementById('start-area');
-            const ifr = document.getElementById('emu-view');
-            
-            btn.style.display = 'none';
-            ifr.style.display = 'block';
+        function initEmu() {
+            document.getElementById('start-screen').style.display = 'none';
 
-            // Формируем ссылку для эмулятора
-            const romUrl = window.location.origin + "/roms/sonic.bin";
-            // Используем официальный плеер-посредник (он самый стабильный)
-            ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
+            window.EmuJS = {
+                // Используем глобальное зеркало для обхода блокировок GitHub
+                dataUrl: "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/",
+                gameUrl: window.location.origin + "/assets/data.bin", // Наш замаскированный файл
+                core: "genesis",
+                autoStart: true,
+                container: "#emu-container"
+            };
+
+            // Динамическая загрузка движка
+            const s = document.createElement('script');
+            s.src = "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js";
+            document.body.appendChild(s);
         }
     </script>
 </body>
