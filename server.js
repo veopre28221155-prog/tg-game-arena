@@ -16,12 +16,14 @@ const publicPath = path.join(__dirname, 'public');
 // === ЖЕЛЕЗОБЕТОННЫЕ ЗАГОЛОВКИ ДЛЯ ТЕЛЕФОНОВ ===
 app.use(express.static(publicPath, {
     setHeaders: function (res, path, stat) {
-        // Разрешаем загрузку с любых источников (важно для Telegram Web App)
         res.set('Access-Control-Allow-Origin', '*');
         
-        // Принудительно указываем типы файлов, чтобы телефон не блокировал их
+        // ВОТ ОНО, ГЛАВНОЕ ИСПРАВЛЕНИЕ:
+        // Добавляем поддержку .data файлов, которые просит телефон
         if (path.endsWith('.wasm')) {
             res.set('Content-Type', 'application/wasm');
+        } else if (path.endsWith('.data')) {
+            res.set('Content-Type', 'application/octet-stream');
         } else if (path.endsWith('.js')) {
             res.set('Content-Type', 'application/javascript');
         } else if (path.endsWith('.bin') || path.endsWith('.gen') || path.endsWith('.smd')) {
