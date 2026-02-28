@@ -12,8 +12,16 @@
         .active { display: flex; }
         h1 { color: #00f0ff; text-shadow: 0 0 10px #00f0ff; font-size: 14px; }
         .btn { background: #1a1a1a; color: #00f0ff; border: 4px solid #000; padding: 15px; width: 260px; margin: 10px; font-family: inherit; font-size: 10px; cursor: pointer; }
-        iframe { border: 4px solid #222; background: #000; width: 100% !important; max-width: 320px; height: 400px; }
-        #loader { font-size: 8px; color: #555; margin-top: 10px; }
+        
+        /* Контейнер трансляции */
+        #game-stream {
+            width: 95vw;
+            height: 70vh;
+            border: 4px solid #222;
+            background: #000;
+            display: none;
+        }
+        #status { font-size: 8px; color: #555; margin: 10px; }
     </style>
 </head>
 <body>
@@ -21,58 +29,38 @@
 <div id="app">
     <div id="s-menu" class="screen active">
         <h1>RETRO ARENA</h1>
-        <button class="btn" onclick="nav('s-play')">🕹 ЗАПУСТИТЬ СОНИКА</button>
-        <div id="u-bal">★ 0</div>
+        <button class="btn" onclick="startStream()">🕹 ЗАПУСТИТЬ ТРАНСЛЯЦИЮ СОНИКА</button>
     </div>
 
     <div id="s-play" class="screen">
-        <div id="emu-container" style="width:100%; display:flex; justify-content:center;"></div>
-        <div id="loader">Загрузка данных...</div>
-        <button class="btn" onclick="location.reload()" style="background:red; color:white; width:100px; padding:5px; margin-top:10px;">ВЫХОД</button>
+        <iframe id="game-stream"></iframe>
+        <div id="status">Загрузка потока...</div>
+        <button class="btn" onclick="location.reload()" style="background:red; color:white; width:100px; padding:5px;">ВЫХОД</button>
     </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
 
-    function nav(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(id === 's-play') startSonic();
+    function startStream() {
+        document.getElementById('s-menu').classList.remove('active');
+        document.getElementById('s-play').classList.add('active');
+        
+        const stream = document.getElementById('game-stream');
+        const status = document.getElementById('status');
+        
+        stream.style.display = 'block';
+        // Вызываем наш выделенный игровой узел
+        stream.src = window.location.origin + "/play-sonic";
+
+        // Обработка загрузки
+        stream.onload = function() {
+            status.innerText = "Трансляция активна. Нажмите на экран игры для активации звука.";
+            setTimeout(() => { status.style.opacity = '0'; }, 3000);
+        };
     }
-
-    async function init() {
-        tg.ready(); tg.expand();
-        try {
-            const r = await fetch('/api/user-data', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({initData:tg.initData})
-            });
-            const user = await r.json();
-            document.getElementById('u-bal').innerText = '★ ' + user.balance;
-        } catch(e) {}
-    }
-
-    function startSonic() {
-        const container = document.getElementById('emu-container');
-        const loader = document.getElementById('loader');
-        
-        // ЧИСТАЯ ССЫЛКА БЕЗ ПАРАМЕТРОВ (чтобы эмулятор видел .bin)
-        const romUrl = window.location.origin + '/roms/sonic.bin';
-        
-        const ifr = document.createElement('iframe');
-        ifr.allow = "autoplay; fullscreen";
-        
-        // Используем стабильный адрес эмулятора
-        ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
-        
-        container.innerHTML = '';
-        container.appendChild(ifr);
-
-        setTimeout(() => { loader.innerText = "Если экран черный, подождите 10 сек или очистите кэш Telegram"; }, 5000);
-    }
-
-    init();
 </script>
 </body>
 </html>
