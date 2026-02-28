@@ -2,40 +2,40 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        #start-screen { text-align: center; color: #00f0ff; font-family: sans-serif; z-index: 20; }
-        .boot-btn { padding: 20px 40px; background: #00f0ff; color: #000; border: none; font-weight: bold; font-size: 18px; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #00f0ff; }
-        #emu-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #game-container { width: 100%; height: 100%; z-index: 1; }
+        #overlay { position: fixed; z-index: 10; text-align: center; color: #00f0ff; font-family: sans-serif; }
+        .btn { padding: 20px 40px; background: #00f0ff; color: #000; border: none; font-weight: bold; font-size: 20px; cursor: pointer; border-radius: 10px; box-shadow: 0 0 20px #00f0ff; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <button class="boot-btn" onclick="initEmu()">ЗАПУСТИТЬ SEGA</button>
-        <p style="font-size: 10px; margin-top: 15px;">ДЕШИФРОВКА АССЕТОВ...</p>
+    <div id="overlay">
+        <button class="btn" onclick="start()">ИГРАТЬ (START)</button>
+        <p id="msg">Нажмите для активации видео и звука</p>
     </div>
 
-    <div id="emu-container"></div>
+    <div id="game-container"></div>
 
     <script>
-        function initEmu() {
-            document.getElementById('start-screen').style.display = 'none';
+        function start() {
+            document.getElementById('overlay').style.display = 'none';
 
             window.EmuJS = {
-                // Используем глобальное зеркало для обхода блокировок GitHub
+                // Прямой путь к данным эмулятора
                 dataUrl: "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/",
-                gameUrl: window.location.origin + "/assets/data.bin", // Наш замаскированный файл
+                gameUrl: window.location.origin + "/assets/data.bin",
                 core: "genesis",
                 autoStart: true,
-                container: "#emu-container"
+                container: "#game-container"
             };
 
-            // Динамическая загрузка движка
-            const s = document.createElement('script');
-            s.src = "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js";
-            document.body.appendChild(s);
+            // Загружаем ядро
+            const script = document.createElement('script');
+            script.src = "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js";
+            document.body.appendChild(script);
         }
     </script>
 </body>
