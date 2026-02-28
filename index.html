@@ -3,68 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Arena</title>
+    <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin:0; background:#000; color:#fff; font-family:'Press Start 2P', cursive; overflow:hidden; }
-        .screen { display:none; position:absolute; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; }
-        .active { display:flex; }
-        .btn { background:#1a1a1a; color:#00f0ff; border:4px solid #000; padding:15px; width:280px; margin:10px; font-family:inherit; cursor:pointer; }
-        iframe { width:100%; max-width:320px; height:400px; border:4px solid #222; }
-        #status { font-size:8px; color:red; margin-top:10px; text-align:center; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; touch-action: none; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .active { display: flex; }
+        h1 { color: #00f0ff; text-shadow: 0 0 10px #00f0ff; font-size: 1.2rem; text-align: center; }
+        .btn { background: #1a1a1a; color: #00f0ff; border: 4px solid #000; padding: 15px; width: 280px; margin: 10px; font-family: inherit; font-size: 10px; cursor: pointer; box-shadow: 4px 4px 0 #000; }
+        .btn:active { transform: translate(2px, 2px); box-shadow: none; }
+        iframe { border: 4px solid #222; background: #000; width: 100% !important; max-width: 320px; height: 380px; }
+        #status-text { font-size: 8px; color: #555; margin-top: 10px; text-align: center; }
+        .score-box { position: absolute; top: 10px; right: 10px; font-size: 10px; color: gold; }
     </style>
 </head>
 <body>
+
 <div id="app">
+    <!-- МЕНЮ -->
     <div id="s-menu" class="screen active">
         <h1>RETRO ARENA</h1>
-        <button class="btn" onclick="nav('s-play')">ИГРАТЬ В СОНИКА</button>
-        <div id="u-bal">★ 0</div>
+        <button class="btn" onclick="nav('s-play')">🕹 ИГРАТЬ В СОНИКА</button>
+        <div id="u-bal" style="margin-top:20px;">★ 0</div>
     </div>
+
+    <!-- ИГРА -->
     <div id="s-play" class="screen">
-        <div id="g-score" style="margin-bottom:10px;">0.0s</div>
-        <div id="container"></div>
-        <div id="status"></div>
-        <button class="btn" onclick="location.reload()" style="width:120px; font-size:8px; background:red; color:white;">ВЫХОД</button>
+        <div class="score-box" id="g-score">0.0s</div>
+        <div id="emu-container" style="width:100%; display:flex; justify-content:center;"></div>
+        <div id="status-text">Загрузка игры...</div>
+        <button class="btn" onclick="location.reload()" style="background:red; color:white; width:120px; padding:5px; margin-top:10px;">ВЫХОД</button>
     </div>
 </div>
+
 <script>
     const tg = window.Telegram.WebApp;
-    function nav(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id==='s-play') startSonic(); }
+    let timer;
+
+    function nav(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 's-play') startSonic();
+    }
 
     async function init() {
         tg.ready(); tg.expand();
         try {
-            const r = await fetch('/api/user-data', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({initData:tg.initData}) });
+            const r = await fetch('/api/user-data', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({initData:tg.initData})
+            });
             const user = await r.json();
             document.getElementById('u-bal').innerText = '★ ' + user.balance;
         } catch(e) {}
     }
 
-    async function startSonic() {
-        const status = document.getElementById('status');
-        const container = document.getElementById('container');
-        const romUrl = window.location.origin + '/roms/sonic.bin';
-        
-        status.innerText = "ПРОВЕРКА СВЯЗИ С СЕРВЕРОМ...";
-        try {
-            const check = await fetch(romUrl, { method: 'HEAD' });
-            if (!check.ok) throw new Error("Файл sonic.bin не найден на сервере (404)");
+    function startSonic() {
+        const container = document.getElementById('emu-container');
+        const status = document.getElementById('status-text');
+        container.innerHTML = ''; // Очистка
 
-            status.innerText = "ЗАГРУЗКА ЭМУЛЯТОРА...";
-            const ifr = document.createElement('iframe');
-            ifr.allow = 'autoplay; fullscreen';
-            ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
-            container.appendChild(ifr);
-            status.innerText = "";
-            
-            let start = Date.now();
-            setInterval(() => {
-                document.getElementById('g-score').innerText = ((Date.now() - start)/1000).toFixed(1) + "s";
-            }, 100);
-        } catch (e) { status.innerText = "ОШИБКА: " + e.message; }
+        // Формируем ссылку на файл с анти-кэшем (?v=...)
+        const romUrl = window.location.origin + '/roms/sonic.bin?v=' + Date.now();
+        
+        const ifr = document.createElement('iframe');
+        ifr.allow = 'autoplay; fullscreen';
+        // Официальный эмулятор
+        ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
+        
+        container.appendChild(ifr);
+
+        // Через 5 секунд убираем надпись "Загрузка"
+        setTimeout(() => { status.innerText = "Если игра не запустилась, очистите кэш в настройках Telegram"; }, 5000);
+
+        let start = Date.now();
+        timer = setInterval(() => {
+            document.getElementById('g-score').innerText = ((Date.now() - start)/1000).toFixed(1) + "s";
+        }, 100);
     }
+
     init();
 </script>
 </body>
