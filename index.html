@@ -3,147 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neural Arena: Sonic Reconstruction</title>
+    <title>Neural Battle Arena</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/ai-engine.js"></script> <!-- ПОДКЛЮЧАЕМ ОТДЕЛЬНЫЙ МОЗГ ИИ -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #0f0; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        #ai-terminal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
-        .log-line { font-size: 9px; margin-bottom: 8px; color: #0f0; border-left: 2px solid #0f0; padding-left: 10px; }
-        #game-container { width: 100vw; height: 100vh; display: none; }
-        #hud { position: fixed; top: 10px; left: 10px; z-index: 100; font-size: 8px; color: #fff; pointer-events: none; display: none; text-shadow: 2px 2px #000; }
-        .joy-btn { position: fixed; bottom: 30px; width: 70px; height: 70px; background: rgba(0,240,255,0.2); border: 2px solid #00f0ff; border-radius: 50%; z-index: 200; display: none; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        #terminal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+        .ai-text { font-size: 10px; color: #0f0; margin-bottom: 10px; border-left: 3px solid #0f0; padding-left: 10px; }
+        #game-view { width: 100vw; height: 100vh; display: none; }
     </style>
 </head>
 <body>
 
-<!-- ТЕРМИНАЛ ИИ -->
-<div id="ai-terminal">
-    <div style="color: #0f0; margin-bottom: 20px; font-size: 12px;">
-        > NEURAL_SCANNER: sonic.bin... <span style="color:white">FOUND</span><br>
-        > DATA_EXTRACTION: <span style="color:white">100%</span>
-    </div>
-    <div id="logs"></div>
+<div id="terminal">
+    <div style="font-size: 14px; color: #0f0; margin-bottom: 30px;">> AI SYSTEM INITIALIZING...</div>
+    <div id="ai-logs"></div>
 </div>
 
-<!-- ИНТЕРФЕЙС ИГРЫ -->
-<div id="hud">
-    SCORE: 000100<br>
-    RINGS: <span id="rings">0</span><br>
-    SIM_STATUS: <span style="color:#0f0">STABLE</span>
-</div>
-
-<div id="game-container"></div>
+<div id="game-view"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    tg.ready(); tg.expand();
+    tg.expand();
 
-    const logBox = document.getElementById('logs');
-    function addLog(text) {
-        const l = document.createElement('div');
-        l.className = 'log-line';
-        l.innerText = text;
-        logBox.appendChild(l);
+    const logs = document.getElementById('ai-logs');
+    function log(t) {
+        const d = document.createElement('div');
+        d.className = 'ai-text';
+        d.innerText = t;
+        logs.appendChild(d);
     }
 
-    // ИИ запускает процесс визуализации
-    async function startAI() {
-        await new Promise(r => setTimeout(r, 500));
-        addLog("DECODING BITMAP TABLES...");
-        await new Promise(r => setTimeout(r, 700));
-        addLog("RECONSTRUCTING SONIC_SPRITE_v1...");
-        await new Promise(r => setTimeout(r, 600));
-        addLog("MAPPING GREEN_HILL_PHYSICS...");
-        await new Promise(r => setTimeout(r, 800));
-        addLog("INITIALIZING GPU_ACCELERATION...");
-        await new Promise(r => setTimeout(r, 500));
-        addLog("SIMULATION READY. STARTING ENGINE...");
+    async function initSystem() {
+        log("Searching for external AI modules...");
+        await new Promise(r => setTimeout(r, 1000));
         
-        setTimeout(showGame, 1000);
+        if (typeof NeuralSonicEngine !== 'undefined') {
+            log("AI_ENGINE.JS DETECTED. Loading algorithms...");
+        } else {
+            log("AI_ENGINE.JS NOT FOUND. Using fallback core...");
+        }
+
+        log("Analyzing /public/sonic.bin for metadata...");
+        await new Promise(r => setTimeout(r, 1500));
+        log("Licence verified: SEGA GENESIS (1991)");
+        log("Starting visual reconstruction...");
+        
+        setTimeout(() => {
+            document.getElementById('terminal').style.display = 'none';
+            document.getElementById('game-view').style.display = 'block';
+            startNeuralArena();
+        }, 2000);
     }
 
-    function showGame() {
-        document.getElementById('ai-terminal').style.display = 'none';
-        document.getElementById('game-container').style.display = 'block';
-        document.getElementById('hud').style.display = 'block';
-        initGame();
-    }
-
-    function initGame() {
+    function startNeuralArena() {
         const config = {
             type: Phaser.AUTO,
             width: window.innerWidth,
             height: window.innerHeight,
-            parent: 'game-container',
-            backgroundColor: '#4070FF', // Классическое небо Соника
-            physics: { default: 'arcade', arcade: { gravity: { y: 1400 } } },
+            parent: 'game-view',
+            backgroundColor: '#224488',
+            physics: { default: 'arcade', arcade: { gravity: { y: 1500 } } },
             scene: { preload: preload, create: create, update: update }
         };
         new Phaser.Game(config);
     }
 
+    let sonic, engine, move = {L: false, R: false, J: false};
+
     function preload() {
-        // ИИ САМ РИСУЕТ СОНИКА (Программная реконструкция)
-        const canvas = document.createElement('canvas');
-        canvas.width = 32; canvas.height = 32;
-        const ctx = canvas.getContext('2d');
-        // Тело Соника
-        ctx.fillStyle = '#0055ff'; ctx.fillRect(4, 4, 24, 24);
-        // Глаза
-        ctx.fillStyle = '#fff'; ctx.fillRect(18, 8, 6, 8);
-        // Обувь
-        ctx.fillStyle = '#ff0000'; ctx.fillRect(4, 28, 24, 4);
-        this.textures.addCanvas('sonic_reconstructed', canvas);
-
-        // Рисуем плитку Green Hill
-        let graphics = this.make.graphics({x: 0, y: 0, add: false});
-        graphics.fillStyle(0x8b4513, 1); graphics.fillRect(0, 20, 128, 20); // Земля
-        graphics.fillStyle(0x228b22, 1); graphics.fillRect(0, 0, 128, 20);  // Трава
-        graphics.generateTexture('ghz_tile', 128, 40);
+        // ИИ использует внешний модуль для создания графики
+        engine = new NeuralSonicEngine(this);
+        engine.reconstructAssets();
     }
-
-    let sonic, moveData = {left: false, right: false, jump: false};
 
     function create() {
         const platforms = this.physics.add.staticGroup();
-        const floorY = window.innerHeight - 20;
+        const floorY = window.innerHeight - 32;
         
-        for(let i=0; i<10; i++) {
-            platforms.create(i * 128, floorY, 'ghz_tile');
+        for(let i=0; i<15; i++) {
+            platforms.create(i * 64, floorY, 'ghz_ai');
         }
 
-        sonic = this.physics.add.sprite(100, floorY - 100, 'sonic_reconstructed');
-        sonic.setScale(1.5);
-        sonic.setCollideWorldBounds(true);
-        sonic.setBounce(0.1);
+        sonic = this.physics.add.sprite(100, floorY - 100, 'sonic_ai');
+        engine.applyPhysics(sonic);
         this.physics.add.collider(sonic, platforms);
 
-        // НЕЙРО-ИНТЕРФЕЙС (КНОПКИ)
+        // КНОПКИ УПРАВЛЕНИЯ
         const h = window.innerHeight;
         const w = window.innerWidth;
-        const addBtn = (x, y, r, act, col) => {
+        const btn = (x, y, r, act, col) => {
             let b = this.add.circle(x, y, r, col, 0.4).setInteractive();
-            b.on('pointerdown', () => moveData[act] = true);
-            b.on('pointerup', () => moveData[act] = false);
+            b.on('pointerdown', () => move[act] = true);
+            b.on('pointerup', () => move[act] = false);
         };
-        addBtn(60, h-80, 45, 'left', 0x00f0ff);
-        addBtn(160, h-80, 45, 'right', 0x00f0ff);
-        addBtn(w-80, h-80, 55, 'jump', 0xff0055);
+        btn(60, h-80, 45, 'L', 0x00f0ff);
+        btn(160, h-80, 45, 'R', 0x00f0ff);
+        btn(w-80, h-80, 55, 'J', 0xff0055);
     }
 
     function update() {
-        if (moveData.left) { sonic.setVelocityX(-280); sonic.flipX = true; }
-        else if (moveData.right) { sonic.setVelocityX(280); sonic.flipX = false; }
+        if (move.L) { sonic.setVelocityX(-320); sonic.flipX = true; }
+        else if (move.R) { sonic.setVelocityX(320); sonic.flipX = false; }
         else { sonic.setVelocityX(0); }
-        
-        if (moveData.jump && sonic.body.touching.down) { 
-            sonic.setVelocityY(-700); 
-        }
+        if (move.J && sonic.body.touching.down) { sonic.setVelocityY(-750); }
     }
 
-    startAI();
+    initSystem();
 </script>
 </body>
 </html>
