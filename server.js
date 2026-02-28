@@ -11,17 +11,21 @@ app.use(cors());
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = "mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.net/retro_arena?retryWrites=true&w=majority";
 
-// === ГЛАВНОЕ ИСПРАВЛЕНИЕ ДЛЯ ТЕЛЕФОНОВ ===
 const publicPath = path.join(__dirname, 'public');
+
+// === ЖЕЛЕЗОБЕТОННЫЕ ЗАГОЛОВКИ ДЛЯ ТЕЛЕФОНОВ ===
 app.use(express.static(publicPath, {
     setHeaders: function (res, path, stat) {
-        // Правильный заголовок для игр и архивов
-        if (path.endsWith('.bin') || path.endsWith('.gen') || path.endsWith('.smd') || path.endsWith('.zip')) {
-            res.set('Content-Type', 'application/octet-stream');
-        }
-        // КРИТИЧЕСКИ ВАЖНО ДЛЯ МОБИЛОК: Правильный заголовок для ядра эмулятора
+        // Разрешаем загрузку с любых источников (важно для Telegram Web App)
+        res.set('Access-Control-Allow-Origin', '*');
+        
+        // Принудительно указываем типы файлов, чтобы телефон не блокировал их
         if (path.endsWith('.wasm')) {
             res.set('Content-Type', 'application/wasm');
+        } else if (path.endsWith('.js')) {
+            res.set('Content-Type', 'application/javascript');
+        } else if (path.endsWith('.bin') || path.endsWith('.gen') || path.endsWith('.smd')) {
+            res.set('Content-Type', 'application/octet-stream');
         }
     }
 }));
