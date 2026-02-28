@@ -1,67 +1,55 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const http = require('http');
 const path = require('path');
-const fs = require('fs');
+const http = require('http');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const CONFIG = {
-    PORT: process.env.PORT || 3000,
-    MONGO_URI: "mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.net/retro_arena?retryWrites=true&w=majority",
-};
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = "mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.net/retro_arena?retryWrites=true&w=majority";
 
-// === ДИАГНОСТИКА ФАЙЛОВ ПРИ ЗАПУСКЕ ===
+// === РАЗДАЧА ФАЙЛОВ ЭМУЛЯТОРА И ИГР ===
 const publicPath = path.join(__dirname, 'public');
-console.log(`📂 [SERVER] Путь к папке public: ${publicPath}`);
-
-if (fs.existsSync(publicPath)) {
-    console.log('✅ [SERVER] Папка public существует. Содержимое:');
-    fs.readdirSync(publicPath).forEach(file => {
-        console.log(`   📄 - ${file}`);
-    });
-} else {
-    console.error('❌ [SERVER] ПАПКА PUBLIC НЕ НАЙДЕНА! Создай её и положи туда sonic.bin');
-}
-
-// === РАЗДАЧА ФАЙЛОВ ===
-app.use(express.static(publicPath));
-
-// Специальный маршрут для проверки наличия файла клиентом
-app.get('/check-file/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(publicPath, filename);
-    
-    if (fs.existsSync(filePath)) {
-        res.json({ found: true, size: fs.statSync(filePath).size });
-    } else {
-        res.status(404).json({ found: false, error: 'File not found on disk' });
+app.use(express.static(publicPath, {
+    setHeaders: function (res, path, stat) {
+        // Гарантируем, что файлы игр скачиваются правильно
+        if (path.endsWith('.bin') || path.endsWith('.gen') || path.endsWith('.smd')) {
+            res.set('Content-Type', 'application/octet-stream');
+        }
     }
-});
+}));
 
+// Главная страница
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// === ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ ===
-mongoose.connect(CONFIG.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('✅ MongoDB Connected'))
-    .catch(e => console.error('❌ MongoDB Error:', e));
+// === БАЗА ДАННЫХ ===
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('✅ MongoDB успешно подключена'))
+    .catch(e => console.error('❌ Ошибка подключения к MongoDB:', e));
 
-const UserSchema = new mongoose.Schema({ telegramId: Number, balance: Number });
+const UserSchema = new mongoose.Schema({ telegramId: Number, balance: { type: Number, default: 0 } });
 const User = mongoose.model('User', UserSchema);
 
+// API для юзеров
 app.post('/api/user-data', async (req, res) => {
     try {
-        const user = new User({ telegramId: 12345, balance: 100 }); // Заглушка для теста
+        let userId = 12345; // Заглушка, если запущен не в ТГ
+        if (req.body.initData && req.body.initData !== "dummy") {
+            try { userId = JSON.parse(new URLSearchParams(req.body.initData).get('user')).id; } catch(e){}
+        }
+        let user = await User.findOne({ telegramId: userId });
+        if (!user) { user = new User({ telegramId: userId }); await user.save(); }
         res.json(user);
-    } catch (e) { res.json({ error: e.message }); }
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Запуск сервера
 const server = http.createServer(app);
-server.listen(CONFIG.PORT, () => {
-    console.log('🚀 Server running on port ' + CONFIG.PORT);
+server.listen(PORT, () => {
+    console.log(`🚀 Сервер запущен на порту ${PORT}`);
 });
