@@ -2,34 +2,71 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Sega Genesis Emulator</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: monospace; }
-        
-        /* Экран загрузки поверх всего */
-        #ai-boot { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; color: #0f0; z-index: 9999; 
-            display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; 
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #000; overflow: hidden; font-family: monospace;
+            overscroll-behavior-y: none; /* Запрет обновления страницы свайпом вниз */
+        }
+
+        /* Экран загрузки */
+        #ai-boot {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: #0f0; z-index: 9999;
+            display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
         }
         .log { margin-bottom: 8px; font-size: 12px; }
-        
-        /* Контейнер эмулятора (теперь он всегда block, просто сзади) */
-        #game-container { 
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; 
+
+        /* ЭКРАН С ПРОСЬБОЙ ПОВЕРНУТЬ ТЕЛЕФОН */
+        #rotate-prompt {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: #00f0ff; z-index: 10000;
+            display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        #rotate-prompt svg { 
+            width: 60px; height: 60px; fill: #00f0ff; margin-bottom: 20px; 
+            animation: rotatePhone 2s infinite ease-in-out; 
+        }
+
+        @keyframes rotatePhone {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(-90deg); }
+        }
+
+        /* Логика ориентации экрана */
+        @media screen and (orientation: portrait) {
+            #rotate-prompt { display: flex; } /* Показываем просьбу повернуть */
+            #game-container, #ai-boot { display: none !important; } /* Прячем игру */
+        }
+
+        @media screen and (orientation: landscape) {
+            #game-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; display: block; }
         }
     </style>
 </head>
 <body>
+
+<!-- ПРОСЬБА ПОВЕРНУТЬ ЭКРАН -->
+<div id="rotate-prompt">
+    <svg viewBox="0 0 24 24"><path d="M16 1H8C6.9 1 6 1.9 6 3v18c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zm0 19H8V4h8v16z"/></svg>
+    <div style="font-family: Arial, sans-serif; font-size: 16px; font-weight: bold;">
+        ПОВЕРНИ ТЕЛЕФОН ГОРИЗОНТАЛЬНО<br>
+        <span style="font-size: 12px; color: #888; margin-top: 10px; display: block;">
+            (Обязательно включи автоповорот в настройках)
+        </span>
+    </div>
+</div>
 
 <!-- AI BOOT SEQUENCE -->
 <div id="ai-boot">
     <div class="log">> INITIALIZING MOTOROLA 68000 CORE...</div>
     <div class="log" id="log2" style="display:none;">> CONNECTING TO EMULATORJS CDN...</div>
     <div class="log" id="log3" style="display:none;">> FETCHING ROM: sonic.bin...</div>
-    <div class="log" id="log4" style="display:none; color: yellow;">> STARTING VIRTUAL MACHINE...</div>
+    <div class="log" id="log4" style="display:none; color: yellow;">> ALL SYSTEMS NOMINAL. LAUNCHING...</div>
 </div>
 
 <!-- КОНТЕЙНЕР ДЛЯ ИГРЫ -->
@@ -38,7 +75,12 @@
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-    tg.ready();
+    
+    // ВАЖНО: Блокируем свайпы Telegram, чтобы джойстик не закрыл приложение!
+    try { tg.disableVerticalSwipes(); } catch(e) {}
+    
+    // Включаем настоящий Fullscreen (работает в новых версиях Telegram)
+    try { if (tg.requestFullscreen) tg.requestFullscreen(); } catch(e) {}
 
     // Анимация текста
     setTimeout(() => document.getElementById('log2').style.display = 'block', 500);
@@ -48,29 +90,29 @@
     // НАСТРОЙКИ ЭМУЛЯТОРА
     window.EJS_player = '#game-container';
     window.EJS_core = 'sega';
-    
-    // Трюк с Date.now() обходит жесткий кэш Телеграма!
-    window.EJS_gameUrl = 'sonic.bin?v=' + Date.now(); 
-    
+    window.EJS_gameUrl = 'sonic.bin?v=' + Date.now();
     window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-    window.EJS_virtualGamepad = true; // Геймпад на экране
-    window.EJS_startOnLoaded = true;  // Автоматический старт
-    window.EJS_color = '#000000';     // Черный фон эмулятора
+    
+    window.EJS_virtualGamepad = true;
+    window.EJS_startOnLoaded = true;
+    window.EJS_color = '#000000';
+    
+    // ОЧИЩАЕМ ИНТЕРФЕЙС (Убираем Fast/Slow и лишние меню)
+    window.EJS_Buttons = {
+        playPause: false, restart: false, mute: false, settings: false,
+        fullscreen: false, saveState: false, loadState: false, screenRecord: false,
+        gamepad: true, cheat: false, volume: false, save_savestates: false,
+        load_savestates: false, fastForward: false
+    };
 
-    // Загружаем ядро эмулятора
+    // Загрузка ядра
     const script = document.createElement('script');
     script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
     
-    // Как только скрипт эмулятора загрузится, убираем наш хакерский экран
     script.onload = () => {
         setTimeout(() => {
             document.getElementById('ai-boot').style.display = 'none';
-        }, 2500); // Даем ему 2.5 секунды на распаковку игры
-    };
-
-    // Если CDN заблокирован провайдером
-    script.onerror = () => {
-        document.getElementById('ai-boot').innerHTML += `<div style="color:red; margin-top:20px;">ERROR: FAILED TO LOAD EMULATOR CORE. CHECK INTERNET CONNECTION.</div>`;
+        }, 2500);
     };
 
     document.body.appendChild(script);
