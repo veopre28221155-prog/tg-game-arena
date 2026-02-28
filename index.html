@@ -3,44 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Arena Diagnostics</title>
+    <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
         .screen { position: fixed; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn { background: #111; color: #00f0ff; border: 3px solid #00f0ff; padding: 20px; font-family: inherit; cursor: pointer; }
+        .btn { background: #111; color: #00f0ff; border: 3px solid #00f0ff; padding: 20px; font-family: inherit; cursor: pointer; font-size: 12px; }
         iframe { width: 100vw; height: 100vh; border: none; display: none; }
-        #status { font-size: 8px; margin-top: 15px; color: #555; }
     </style>
 </head>
 <body>
-    <div id="menu" class="screen">
-        <h1 style="font-size:14px;">RETRO CLOUD</h1>
-        <button class="btn" onclick="run()">ПОДКЛЮЧИТЬСЯ</button>
-        <div id="status">Проверка связи с сервером...</div>
+
+    <div id="lobby" class="screen">
+        <h1 style="font-size:18px; color:#00f0ff; text-shadow: 0 0 10px #00f0ff;">ARENA CLOUD</h1>
+        <button class="btn" onclick="start()">ПОДКЛЮЧИТЬСЯ К УЗЛУ</button>
     </div>
-    <iframe id="game" allow="autoplay; fullscreen; gamepad"></iframe>
+
+    <iframe id="game-view" allow="autoplay; fullscreen; gamepad"></iframe>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
 
-        // Проверка сервера при старте
-        fetch('/api/check-rom')
-            .then(r => r.json())
-            .then(data => {
-                const s = document.getElementById('status');
-                if(data.status === "OK") s.innerText = "СИСТЕМА ГОТОВА: " + data.message;
-                else s.innerText = "ОШИБКА СЕРВЕРА: " + data.message;
-                s.style.color = data.status === "OK" ? "#0f0" : "#f00";
-            });
-
-        function run() {
-            document.getElementById('menu').style.display = 'none';
-            const f = document.getElementById('game');
+        function start() {
+            document.getElementById('lobby').style.display = 'none';
+            const f = document.getElementById('game-view');
             f.style.display = 'block';
-            f.src = window.location.origin + "/engine?t=" + Date.now();
+            f.src = window.location.origin + "/engine";
         }
     </script>
 </body>
