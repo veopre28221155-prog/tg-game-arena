@@ -7,60 +7,35 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        body { margin: 0; background: #050505; color: white; font-family: 'Press Start 2P', cursive; overflow: hidden; }
         .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; }
         .active { display: flex; }
-        h1 { color: #00f0ff; text-shadow: 0 0 10px #00f0ff; font-size: 14px; }
-        .btn { background: #1a1a1a; color: #00f0ff; border: 4px solid #000; padding: 15px; width: 260px; margin: 10px; font-family: inherit; font-size: 10px; cursor: pointer; }
-        
-        /* Контейнер трансляции */
-        #game-stream {
-            width: 95vw;
-            height: 70vh;
-            border: 4px solid #222;
-            background: #000;
-            display: none;
-        }
-        #status { font-size: 8px; color: #555; margin: 10px; }
+        .btn { background: #1a1a1a; color: #00f0ff; border: 4px solid #000; padding: 15px; width: 260px; margin: 10px; font-family: inherit; font-size: 10px; cursor: pointer; box-shadow: 4px 4px 0 #000; }
+        iframe { width: 100vw; height: 80vh; border: none; background: #000; }
+        h1 { font-size: 14px; color: #00f0ff; text-shadow: 0 0 10px #00f0ff; }
     </style>
 </head>
 <body>
-
-<div id="app">
     <div id="s-menu" class="screen active">
         <h1>RETRO ARENA</h1>
-        <button class="btn" onclick="startStream()">🕹 ЗАПУСТИТЬ ТРАНСЛЯЦИЮ СОНИКА</button>
+        <button class="btn" onclick="startPlay()">▶ ЗАПУСТИТЬ ТРАНСЛЯЦИЮ</button>
     </div>
 
     <div id="s-play" class="screen">
-        <iframe id="game-stream"></iframe>
-        <div id="status">Загрузка потока...</div>
-        <button class="btn" onclick="location.reload()" style="background:red; color:white; width:100px; padding:5px;">ВЫХОД</button>
+        <iframe id="stream-frame"></iframe>
+        <button class="btn" onclick="location.reload()" style="background:red; color:white; height:40px; padding:5px; margin-top:5px;">ВЫХОД</button>
     </div>
-</div>
 
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready(); tg.expand();
 
-    function startStream() {
-        document.getElementById('s-menu').classList.remove('active');
-        document.getElementById('s-play').classList.add('active');
-        
-        const stream = document.getElementById('game-stream');
-        const status = document.getElementById('status');
-        
-        stream.style.display = 'block';
-        // Вызываем наш выделенный игровой узел
-        stream.src = window.location.origin + "/play-sonic";
-
-        // Обработка загрузки
-        stream.onload = function() {
-            status.innerText = "Трансляция активна. Нажмите на экран игры для активации звука.";
-            setTimeout(() => { status.style.opacity = '0'; }, 3000);
-        };
-    }
-</script>
+        function startPlay() {
+            document.getElementById('s-menu').classList.remove('active');
+            document.getElementById('s-play').classList.add('active');
+            // Загружаем "игровой узел" с нашего сервера
+            document.getElementById('stream-frame').src = window.location.origin + "/engine";
+        }
+    </script>
 </body>
 </html>
