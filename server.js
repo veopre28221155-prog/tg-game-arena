@@ -7,20 +7,20 @@ app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 
-// Указываем, что файлы могут быть и в корне, и в папке public
-app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, 'public')));
+// Разрешаем серверу отдавать файлы из папки public и из корня
+const publicPath = __dirname;
+app.use(express.static(publicPath, {
+    setHeaders: (res, filePath) => {
+        res.set('Access-Control-Allow-Origin', '*');
+        // Помогаем телефону понять типы файлов эмулятора
+        if (filePath.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
+        if (filePath.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
+        if (filePath.endsWith('.js')) res.set('Content-Type', 'application/javascript');
+    }
+}));
 
 app.get('/', (req, res) => {
-    // Проверяем оба варианта расположения index.html
-    res.sendFile(path.join(__dirname, 'index.html'), (err) => {
-        if (err) res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    });
-});
-
-// Специальный маршрут для проверки файла игры
-app.get('/test-file', (req, res) => {
-    res.send('Сервер работает. Попробуй открыть /sonic.bin в браузере.');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
