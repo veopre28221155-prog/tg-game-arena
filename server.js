@@ -113,3 +113,91 @@ app.post('/api/deposit', async (req, res) => {
 app.post('/api/crypto-webhook', async (req, res) => {
     try {
         if (req.body?.update_type === 'invoice_paid') {
+            const [userId, stars] = req.body.payload.payload.split('_');
+            if (userId && stars) await User.findOneAndUpdate( { telegramId: Number(userId) }, { $inc: { balance: Number(stars) } }, { upsert: true });
+        }
+    } catch (e) {} res.sendStatus(200);
+});
+
+app.post('/api/user-data', async (req, res) => {
+    try {
+        const userData = JSON.parse(new URLSearchParams(req.body.initData).get('user'));
+        let user = await User.findOne({ telegramId: userData.id });
+        if (!user) { user = new User({ telegramId: userData.id }); await user.save(); }
+        const stuck = await Lobby.find({ $or: [{ player1Id: user.telegramId }, { player2Id: user.telegramId }], status: { $in: ['waiting', 'playing'] }, createdAt: { $lt: new Date(Date.now() - 30 * 60 * 1000) } });
+        for (let l of stuck) { l.status = 'cancelled'; await l.save(); if (l.betAmount > 0) { user.balance += l.betAmount; if (l.player1Id !== user.telegramId && l.player1Id) await User.findOneAndUpdate({ telegramId: l.player1Id }, { $inc: { balance: l.betAmount } }); if (l.player2Id !== user.telegramId && l.player2Id) await User.findOneAndUpdate({ telegramId: l.player2Id }, { $inc: { balance: l.betAmount } }); } }
+        if (stuck.length > 0) await user.save();
+        res.json(user);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/lobbies', async (req, res) => {
+    try { await Lobby.deleteMany({ status: 'waiting', createdAt: { $lt: new Date(Date.now() - 10 * 60 * 1000) } }); res.json(await Lobby.find({ status: 'waiting', isPrivate: false }).sort({ createdAt: -1 }).limit(20)); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/lobby/create', async (req, res) => {
+    try {
+        const { telegramId, gameType, betAmount, isPrivate } = req.body;
+        const user = await User.findOne({ telegramId });
+        if (betAmount > 0) { if (!user || user.balance < betAmount) return res.status(400).json({ success: false, error: 'Недостаточно звезд' }); user.balance -= betAmount; await user.save(); }
+        const lobby = new Lobby({ lobbyId: 'L_' + Date.now() + Math.floor(Math.random()*1000), creatorId: telegramId, player1Id: telegramId, gameType, betAmount: betAmount || 0, isPrivate }); await lobby.save();
+        res.json({ success: true, lobby });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+app.post('/api/lobby/join', async (req, res) => {
+    try {
+        const { telegramId, lobbyId } = req.body;
+        const user = await User.findOne({ telegramId }); const lobby = await Lobby.findOne({ lobbyId, status: 'waiting' });
+        if (!lobby) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        if (lobby.creatorId === telegramId) return res.status(400).json({ success: false, error: 'Сам с собой?' });
+        if (lobby.betAmount > 0) { if (!user || user.balance < lobby.betAmount) return res.status(400).json({ success: false, error: 'Недостаточно звезд' }); user.balance -= lobby.betAmount; await user.save(); }
+        lobby.player2Id = telegramId; lobby.status = 'playing'; await lobby.save();
+        res.json({ success: true, lobby });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+app.post('/api/lobby/status', async (req, res) => { res.json({ lobby: await Lobby.findOne({ lobbyId: req.body.lobbyId }) }); });
+
+app.post('/api/lobby/cancel', async (req, res) => {
+    try { const lobby = await Lobby.findOneAndDelete({ lobbyId: req.body.lobbyId, creatorId: req.body.telegramId, status: 'waiting' }); if (lobby && lobby.betAmount > 0) await User.findOneAndUpdate({ telegramId: req.body.telegramId }, { $inc: { balance: lobby.betAmount } }); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/submit-score', async (req, res) => {
+    try {
+        const { telegramId, game, score, lobbyId } = req.body;
+        if(game === 'sonic') { await User.findOneAndUpdate({ telegramId, "highScores.sonic": { $gt: score } }, { $set: { "highScores.sonic": score } }); } 
+        else { const scoreUpdate = { $max: {} }; Reflect.set(scoreUpdate.$max, 'highScores.' + game, score); await User.findOneAndUpdate({ telegramId }, scoreUpdate); }
+        if (!lobbyId) return res.json({ success: true });
+        const lobby = await Lobby.findOne({ lobbyId, status: 'playing' });
+        if (!lobby) return res.json({ success: true });
+        if (lobby.player1Id === telegramId) lobby.scores.player1 = score; else if (lobby.player2Id === telegramId) lobby.scores.player2 = score;
+        await lobby.save();
+        if (lobby.scores.player1 !== -1 && lobby.scores.player2 !== -1) {
+            lobby.status = 'finished'; await lobby.save();
+            if (lobby.betAmount > 0) {
+                const pool = lobby.betAmount * 2; const fee = Math.floor(pool * 0.1); const prize = pool - fee;
+                let winnerId = null, loserId = null;
+                if (game === 'sonic') { if (lobby.scores.player1 < lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; } else if (lobby.scores.player2 < lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; } } 
+                else { if (lobby.scores.player1 > lobby.scores.player2) { winnerId = lobby.player1Id; loserId = lobby.player2Id; } else if (lobby.scores.player2 > lobby.scores.player1) { winnerId = lobby.player2Id; loserId = lobby.player1Id; } }
+                if (winnerId) { await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: fee, adminCommission: fee } }, { upsert: true }); await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } }); await new MatchHistory({ winnerId, loserId, gameType: lobby.gameType, betAmount: lobby.betAmount, prize }).save(); } 
+                else { await User.findOneAndUpdate({ telegramId: lobby.player1Id }, { $inc: { balance: lobby.betAmount } }); await User.findOneAndUpdate({ telegramId: lobby.player2Id }, { $inc: { balance: lobby.betAmount } }); }
+            }
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/forfeit', async (req, res) => {
+    try {
+        const lobby = await Lobby.findOneAndUpdate({ lobbyId: req.body.lobbyId, status: 'playing' }, { status: 'finished' }, { new: true });
+        if (lobby && lobby.betAmount > 0) { const winnerId = (lobby.player1Id === req.body.telegramId) ? lobby.player2Id : lobby.player1Id; const prize = (lobby.betAmount * 2) - Math.floor((lobby.betAmount * 2) * 0.1); await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } }); }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+server.listen(CONFIG.PORT, () => {
+    console.log('===================================');
+    console.log('🚀 Server & AI WebSocket running on port ' + CONFIG.PORT);
+    console.log('===================================');
+});
