@@ -8,160 +8,132 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root { --neon: #00f0ff; --pink: #ff0055; }
-        body { margin: 0; background: #050505; color: white; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; overflow-y: auto; }
+        body { margin: 0; background: #050505; color: white; font-family: 'Press Start 2P', cursive; overflow: hidden; touch-action: none; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .active { display: flex; }
-        h1 { color: var(--neon); text-shadow: 0 0 10px var(--neon); font-size: 1.2rem; text-align: center; }
-        .btn-pixel { 
-            background: #1a1a1a; color: var(--neon); border: 4px solid #000; 
-            padding: 15px; width: 100%; max-width: 320px; font-size: 0.6rem; margin-bottom: 12px;
-            font-family: inherit; cursor: pointer; box-shadow: 4px 4px 0 #000;
-        }
-        .btn-pixel:active { transform: translate(2px, 2px); box-shadow: none; }
-        canvas, #sonic-emulator { border: 4px solid #222; background: #000; width: 100% !important; max-width: 300px; height: 380px; }
-        .controls { display: flex; width: 100%; max-width: 320px; justify-content: space-between; margin-top: 10px; }
-        .d-pad { display: grid; grid-template-areas: ". u ." "l . r" ". d ."; gap: 5px; }
-        .ctrl-btn { width: 50px; height: 50px; background: #222; border: 2px solid #444; color: white; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
+        h1 { color: var(--neon); text-shadow: 0 0 10px var(--neon); font-size: 1.2rem; }
+        .btn { background: #1a1a1a; color: var(--neon); border: 4px solid #000; padding: 15px; width: 280px; margin: 10px; font-family: inherit; font-size: 10px; cursor: pointer; box-shadow: 4px 4px 0 #000; }
+        .btn:active { transform: translate(2px, 2px); box-shadow: none; }
+        canvas, #sonic-frame { border: 4px solid #222; background: #000; width: 100% !important; max-width: 300px; height: 380px; }
+        #debug-info { font-size: 8px; color: #555; margin-top: 10px; text-align: center; }
+        .score-bar { position: absolute; top: 10px; right: 10px; font-size: 10px; color: gold; }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- Меню -->
-    <div id="s-main" class="screen active">
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="s-menu" class="screen active">
         <h1>RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="navScreen('s-games')">🕹 ОДИНОЧНАЯ ИГРА</button>
-        <button class="btn-pixel" style="color:gold">⚔️ ТУРНИРЫ (PVP)</button>
-        <div style="margin-top: 20px; font-size: 0.7rem;">БАЛАНС: <span id="p-bal">0</span> ★</div>
+        <button class="btn" onclick="nav('s-list')">🕹 ОДИНОЧНАЯ ИГРА</button>
+        <div id="u-bal" style="margin-top:20px;">★ 0</div>
     </div>
 
-    <!-- Выбор игр -->
-    <div id="s-games" class="screen">
-        <h2>ИГРЫ</h2>
-        <button class="btn-pixel" onclick="launchGame('sonic')">🦔 SONIC THE HEDGEHOG</button>
-        <button class="btn-pixel" onclick="launchGame('snake')">🐍 SNAKE CLASSIC</button>
-        <button class="btn-pixel" onclick="launchGame('tetris')">🧱 TETRIS</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
+    <!-- ВЫБОР ИГР -->
+    <div id="s-list" class="screen">
+        <button class="btn" onclick="startSonic()">🦔 SONIC 16-BIT</button>
+        <button class="btn" onclick="startSnake()">🐍 SNAKE CLASSIC</button>
+        <button class="btn" onclick="nav('s-menu')">НАЗАД</button>
     </div>
 
-    <!-- Игровой экран -->
-    <div id="s-game" class="screen" style="padding: 10px;">
-        <div style="width:100%; max-width:300px; display:flex; justify-content:space-between; margin-bottom:10px;">
-            <button onclick="location.reload()" style="background:red; color:white; border:none; padding:5px; font-family:inherit; font-size:0.5rem;">ВЫХОД</button>
-            <div id="g-score" style="font-size:0.6rem;">0</div>
+    <!-- ИГРОВОЙ ЭКРАН -->
+    <div id="s-play" class="screen">
+        <div class="score-bar" id="g-score">0</div>
+        <div id="game-container" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+            <canvas id="gameCanvas" width="240" height="380"></canvas>
         </div>
-        
-        <canvas id="gameCanvas" width="240" height="380"></canvas>
-        
-        <div id="game-controls" class="controls">
-            <div class="d-pad">
-                <div class="ctrl-btn" ontouchstart="press('up',true)" ontouchend="press('up',false)">▲</div>
-                <div class="ctrl-btn" ontouchstart="press('left',true)" ontouchend="press('left',false)">◀</div>
-                <div class="ctrl-btn" ontouchstart="press('right',true)" ontouchend="press('right',false)">▶</div>
-                <div class="ctrl-btn" ontouchstart="press('down',true)" ontouchend="press('down',false)">▼</div>
-            </div>
-            <div class="ctrl-btn" style="width:70px; height:70px; border-radius:50%; background:red;" ontouchstart="press('action',true)" ontouchend="press('action',false)">A</div>
-        </div>
+        <div id="debug-info"></div>
+        <button class="btn" onclick="location.reload()" style="background:red; color:white; width:100px; padding:5px; margin-top:10px;">ВЫЙТИ</button>
     </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    let user, gameType, score = 0, loop, sonicStartTime, keys = {};
+    let score = 0, loop, sonicTimer;
 
-    function navScreen(id) {
+    function nav(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
     }
 
-    function press(k, v) { keys[k] = v; if(v && window.onInput) window.onInput(k); }
-
     async function init() {
         tg.ready(); tg.expand();
-        try {
-            const r = await fetch('/api/user-data', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({initData:tg.initData})
-            });
-            user = await r.json();
-            document.getElementById('p-bal').innerText = user.balance;
-        } catch(e) { console.error(e); }
+        const r = await fetch('/api/user-data', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({initData:tg.initData})
+        });
+        const user = await r.json();
+        document.getElementById('u-bal').innerText = '★ ' + user.balance;
     }
 
-    function launchGame(t) {
-        gameType = t; score = 0; navScreen('s-game');
-        const canvas = document.getElementById('gameCanvas');
-        const controls = document.getElementById('game-controls');
-        
-        // Удаляем старый Соник если был
-        const oldEmu = document.getElementById('sonic-emulator');
-        if(oldEmu) oldEmu.remove();
+    // --- ЛОГИКА СОНИКА ---
+    async function startSonic() {
+        nav('s-play');
+        const container = document.getElementById('game-container');
+        const debug = document.getElementById('debug-info');
+        document.getElementById('gameCanvas').style.display = 'none';
+        debug.innerText = "ПРОВЕРКА ФАЙЛА ИГРЫ...";
 
-        if(t === 'sonic') {
-            canvas.style.display = 'none';
-            controls.style.display = 'none';
-            
+        const romUrl = window.location.origin + '/roms/sonic.bin';
+
+        try {
+            // Проверка: видит ли браузер файл вообще?
+            const res = await fetch(romUrl, { method: 'HEAD' });
+            if(!res.ok) throw new Error("Файл sonic.bin не найден. Проверьте папку roms на GitHub!");
+
+            debug.innerText = "ЗАГРУЗКА ЭМУЛЯТОРА...";
             const ifr = document.createElement('iframe');
-            ifr.id = 'sonic-emulator';
+            ifr.id = 'sonic-frame';
             ifr.allow = 'autoplay; fullscreen';
-            
-            const romUrl = window.location.origin + '/roms/sonic.bin';
-            // Стабильный путь к EmulatorJS
+            // Используем официальную чистую версию EmulatorJS
             ifr.src = `https://emulatorjs.org/emu/index.html?game=${encodeURIComponent(romUrl)}&core=genesis`;
             
-            canvas.parentNode.insertBefore(ifr, canvas.nextSibling);
-            
-            sonicStartTime = Date.now();
-            loop = setInterval(() => {
-                score = Date.now() - sonicStartTime;
-                document.getElementById('g-score').innerText = Math.floor(score/1000) + "s";
-            }, 1000);
-        } else {
-            canvas.style.display = 'block';
-            controls.style.display = 'flex';
-            if(t === 'snake') runSnake();
-            if(t === 'tetris') runTetris();
+            container.appendChild(ifr);
+            debug.innerText = "ИГРА ЗАПУЩЕНА";
+
+            let start = Date.now();
+            sonicTimer = setInterval(() => {
+                score = Date.now() - start;
+                document.getElementById('g-score').innerText = (score/1000).toFixed(1) + "s";
+            }, 100);
+
+        } catch(e) {
+            debug.style.color = "red";
+            debug.innerText = e.message;
         }
     }
 
-    function runSnake() {
-        const c = document.getElementById('gameCanvas'), ctx = c.getContext('2d');
-        let snake = [{x:10,y:10}], dx=0, dy=-1, food={x:5,y:5}, fr=0;
-        window.onInput = k => {
-            if(k==='left' && dx===0){dx=-1;dy=0}
-            if(k==='right' && dx===0){dx=1;dy=0}
-            if(k==='up' && dy===0){dx=0;dy=-1}
-            if(k==='down' && dy===0){dx=0;dy=1}
+    // --- ЛОГИКА ЗМЕЙКИ (ДЛЯ ТЕСТА) ---
+    function startSnake() {
+        nav('s-play');
+        document.getElementById('gameCanvas').style.display = 'block';
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let s = [{x:10,y:10}], f = {x:5,y:5}, dx=0, dy=-1, fr=0;
+
+        // Простое управление тапами
+        canvas.onclick = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            if(x < 100) { let tmp = dx; dx = dy; dy = -tmp; } // Поворот
+            else { let tmp = dx; dx = -dy; dy = tmp; }
         };
-        function tick() {
+
+        function draw() {
             if(++fr % 10 === 0) {
-                let h = {x:snake[0].x+dx, y:snake[0].y+dy};
+                let h = {x:s[0].x+dx, y:s[0].y+dy};
                 if(h.x<0||h.x>11||h.y<0||h.y>18) return location.reload();
-                snake.unshift(h);
-                if(h.x===food.x && h.y===food.y) {
-                    score += 10; food={x:Math.floor(Math.random()*12),y:Math.floor(Math.random()*19)};
-                } else snake.pop();
+                s.unshift(h);
+                if(h.x===f.x && h.y===f.y) { score+=10; f={x:Math.floor(Math.random()*12),y:Math.floor(Math.random()*19)}; }
+                else s.pop();
             }
             ctx.fillStyle='black'; ctx.fillRect(0,0,240,380);
-            ctx.fillStyle='red'; ctx.fillRect(food.x*20, food.y*20, 18, 18);
-            ctx.fillStyle='cyan'; snake.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
+            ctx.fillStyle='red'; ctx.fillRect(f.x*20, f.y*20, 18, 18);
+            ctx.fillStyle='cyan'; s.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
             document.getElementById('g-score').innerText = score;
-            loop = requestAnimationFrame(tick);
+            loop = requestAnimationFrame(draw);
         }
-        tick();
-    }
-
-    function runTetris() {
-        const c = document.getElementById('gameCanvas'), ctx = c.getContext('2d');
-        let x=4, y=0, fr=0;
-        function tick() {
-            if(++fr % 30 === 0) { y++; if(y>18) { y=0; score+=100; } }
-            ctx.fillStyle='black'; ctx.fillRect(0,0,240,380);
-            ctx.fillStyle='orange'; ctx.fillRect(x*20, y*20, 18, 18);
-            document.getElementById('g-score').innerText = score;
-            loop = requestAnimationFrame(tick);
-        }
-        tick();
+        draw();
     }
 
     init();
