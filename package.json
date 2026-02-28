@@ -1,10 +1,8 @@
 {
-  "name": "tg-retro-arena",
-  "version": "1.4.0",
+  "name": "tg-cloud-retro",
+  "version": "1.5.0",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
+  "scripts": { "start": "node server.js" },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5"
