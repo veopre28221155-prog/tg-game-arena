@@ -5,8 +5,7 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
-// КРИТИЧЕСКИЕ НАСТРОЙКИ МОЩНОСТИ (SharedArrayBuffer)
-// Эти заголовки позволяют эмулятору использовать многопоточность процессора телефона
+// Настройки для высокой производительности эмулятора
 app.use((req, res, next) => {
     res.set('Cross-Origin-Opener-Policy', 'same-origin');
     res.set('Cross-Origin-Embedder-Policy', 'require-corp');
@@ -15,10 +14,15 @@ app.use((req, res, next) => {
 
 app.use(express.static(__dirname));
 
-// Маршрут к Игровому Узлу
+// Маршрут для папки с игрой
+app.use('/roms', express.static(path.join(__dirname, 'roms')));
+
+// Маршрут для игрового движка
 app.get('/engine', (req, res) => {
     res.sendFile(path.join(__dirname, 'game.html'));
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Игровая станция активна` phot));
+app.listen(PORT, () => {
+    console.log(`Сервер запущен на порту ${PORT}`);
+});
