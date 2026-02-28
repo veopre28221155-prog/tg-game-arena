@@ -4,7 +4,7 @@ const cors = require('cors');
 const axios = require('axios');
 const http = require('http'); 
 const WebSocket = require('ws'); 
-const path = require('path'); // ДОБАВЛЕНО: для работы с путями к файлам
+const path = require('path');
 
 process.on('uncaughtException', (err) => console.error('Критическая ошибка:', err));
 process.on('unhandledRejection', (reason, promise) => console.error('Необработанный промис:', reason));
@@ -13,16 +13,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// =========================================================
-// 🚀 РАЗДАЧА ИГРЫ (ОТДАЕМ index.html)
-// =========================================================
-// Когда Telegram открывает корень сайта, мы отправляем ему файл игры
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
-
-// Если у тебя есть картинки или звуки в папке проекта, раскомментируй строку ниже:
-// app.use(express.static(__dirname));
 
 const server = http.createServer(app);
 
@@ -54,9 +47,6 @@ const User = mongoose.model('User', UserSchema);
 const Lobby = mongoose.model('Lobby', LobbySchema);
 const MatchHistory = mongoose.model('MatchHistory', MatchHistorySchema);
 
-// =========================================================
-// 🚀 NEURAL ENGINE: WEBSOCKET СЕРВЕР
-// =========================================================
 if (wss) {
     wss.on('connection', function connection(ws) {
         console.log('🎮 [AI ENGINE] Игрок подключился к потоку!');
@@ -81,7 +71,6 @@ if (wss) {
     });
 }
 
-// ================= API И ПЛАТЕЖИ =================
 app.post('/api/buy-stars', async (req, res) => {
     try {
         const { telegramId, amount } = req.body;
