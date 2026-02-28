@@ -3,23 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neural Battle Arena</title>
+    <title>Neural Arena v4</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/ai-engine.js"></script> <!-- ПОДКЛЮЧАЕМ ОТДЕЛЬНЫЙ МОЗГ ИИ -->
+    <script src="/ai-engine.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        #terminal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
-        .ai-text { font-size: 10px; color: #0f0; margin-bottom: 10px; border-left: 3px solid #0f0; padding-left: 10px; }
-        #game-view { width: 100vw; height: 100vh; display: none; }
+        #ai-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(0,20,40,1) 0%, #000 100%); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .scan-line { width: 100%; height: 2px; background: rgba(0,255,255,0.2); position: absolute; animation: scan 3s linear infinite; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+        #game-ui { position: fixed; top: 15px; left: 15px; z-index: 100; font-size: 7px; color: #00f0ff; pointer-events: none; display: none; line-height: 1.5; }
     </style>
 </head>
 <body>
 
-<div id="terminal">
-    <div style="font-size: 14px; color: #0f0; margin-bottom: 30px;">> AI SYSTEM INITIALIZING...</div>
-    <div id="ai-logs"></div>
+<div id="ai-overlay">
+    <div class="scan-line"></div>
+    <div style="color:#00f0ff; margin-bottom:20px;">> NEURAL CORE BOOTING...</div>
+    <div id="status-log" style="font-size:9px; color:#0f0; width:80%;"></div>
+</div>
+
+<div id="game-ui">
+    SYSTEM: AI_RECONSTRUCTION_MODE<br>
+    ENGINE: PHASER_NATIVE_V4<br>
+    STATUS: <span id="sonic-status" style="color:white">CALIBRATING</span><br>
+    COORDS: <span id="sonic-pos" style="color:white">0.0</span>
 </div>
 
 <div id="game-view"></div>
@@ -28,90 +37,80 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const logs = document.getElementById('ai-logs');
-    function log(t) {
-        const d = document.createElement('div');
-        d.className = 'ai-text';
-        d.innerText = t;
-        logs.appendChild(d);
-    }
+    const log = (t) => { document.getElementById('status-log').innerHTML += `> ${t}<br>`; };
 
-    async function initSystem() {
-        log("Searching for external AI modules...");
+    async function startSystem() {
+        log("Accessing public/ai-engine.js...");
+        await new Promise(r => setTimeout(r, 800));
+        log("Neural Core initialized.");
+        log("Reading sonic.bin byte-stream...");
         await new Promise(r => setTimeout(r, 1000));
-        
-        if (typeof NeuralSonicEngine !== 'undefined') {
-            log("AI_ENGINE.JS DETECTED. Loading algorithms...");
-        } else {
-            log("AI_ENGINE.JS NOT FOUND. Using fallback core...");
-        }
-
-        log("Analyzing /public/sonic.bin for metadata...");
-        await new Promise(r => setTimeout(r, 1500));
-        log("Licence verified: SEGA GENESIS (1991)");
-        log("Starting visual reconstruction...");
+        log("Reconstructing Sonic sprites via AI-Canvas...");
+        log("Compiling Green Hill environment...");
         
         setTimeout(() => {
-            document.getElementById('terminal').style.display = 'none';
-            document.getElementById('game-view').style.display = 'block';
-            startNeuralArena();
-        }, 2000);
-    }
-
-    function startNeuralArena() {
-        const config = {
-            type: Phaser.AUTO,
-            width: window.innerWidth,
-            height: window.innerHeight,
-            parent: 'game-view',
-            backgroundColor: '#224488',
-            physics: { default: 'arcade', arcade: { gravity: { y: 1500 } } },
-            scene: { preload: preload, create: create, update: update }
-        };
-        new Phaser.Game(config);
+            document.getElementById('ai-overlay').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            initPhaser();
+        }, 1500);
     }
 
     let sonic, engine, move = {L: false, R: false, J: false};
 
-    function preload() {
-        // ИИ использует внешний модуль для создания графики
-        engine = new NeuralSonicEngine(this);
-        engine.reconstructAssets();
+    function initPhaser() {
+        const config = {
+            type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight,
+            parent: 'game-view', backgroundColor: '#204090',
+            physics: { default: 'arcade', arcade: { gravity: { y: 1800 } } },
+            scene: { preload: function() {
+                engine = new NeuralSonicEngine(this);
+                engine.generateTextures();
+            }, create: create, update: update }
+        };
+        new Phaser.Game(config);
     }
 
     function create() {
         const platforms = this.physics.add.staticGroup();
-        const floorY = window.innerHeight - 32;
-        
-        for(let i=0; i<15; i++) {
-            platforms.create(i * 64, floorY, 'ghz_ai');
-        }
+        const groundY = window.innerHeight - 32;
+        for(let i=0; i<50; i++) platforms.create(i * 64, groundY, 'tile_v4');
 
-        sonic = this.physics.add.sprite(100, floorY - 100, 'sonic_ai');
-        engine.applyPhysics(sonic);
+        sonic = this.physics.add.sprite(100, groundY - 100, 'sonic_v4');
+        sonic.setScale(1.2).setCollideWorldBounds(true).setDragX(600);
         this.physics.add.collider(sonic, platforms);
+        this.cameras.main.startFollow(sonic, true, 0.1, 0.1);
 
-        // КНОПКИ УПРАВЛЕНИЯ
-        const h = window.innerHeight;
-        const w = window.innerWidth;
-        const btn = (x, y, r, act, col) => {
-            let b = this.add.circle(x, y, r, col, 0.4).setInteractive();
-            b.on('pointerdown', () => move[act] = true);
-            b.on('pointerup', () => move[act] = false);
+        // КНОПКИ
+        const h = window.innerHeight, w = window.innerWidth;
+        const addB = (x, y, r, act, col) => {
+            let b = this.add.circle(x, y, r, col, 0.3).setInteractive().setScrollFactor(0);
+            b.on('pointerdown', () => move[act] = true); b.on('pointerup', () => move[act] = false);
         };
-        btn(60, h-80, 45, 'L', 0x00f0ff);
-        btn(160, h-80, 45, 'R', 0x00f0ff);
-        btn(w-80, h-80, 55, 'J', 0xff0055);
+        addB(60, h-80, 45, 'L', 0x00f0ff);
+        addB(160, h-80, 45, 'R', 0x00f0ff);
+        addB(w-80, h-80, 55, 'J', 0xff0055);
     }
 
     function update() {
-        if (move.L) { sonic.setVelocityX(-320); sonic.flipX = true; }
-        else if (move.R) { sonic.setVelocityX(320); sonic.flipX = false; }
-        else { sonic.setVelocityX(0); }
-        if (move.J && sonic.body.touching.down) { sonic.setVelocityY(-750); }
+        const acc = 450;
+        if (move.L) { sonic.setVelocityX(-acc); sonic.flipX = true; sonic.setAngle(-10); }
+        else if (move.R) { sonic.setVelocityX(acc); sonic.flipX = false; sonic.setAngle(10); }
+        else { sonic.setAngle(0); }
+        
+        if (move.J && sonic.body.touching.down) sonic.setVelocityY(-850);
+        
+        if (!sonic.body.touching.down) {
+            sonic.setAngularVelocity(move.R ? 500 : -500); // Крутится в прыжке!
+        } else {
+            sonic.setAngularVelocity(0);
+        }
+
+        // Обновляем HUD
+        document.getElementById('sonic-status').innerText = engine.getVelocityData(sonic.body.velocity.x);
+        document.getElementById('sonic-pos').innerText = Math.round(sonic.x);
     }
 
-    initSystem();
+    startSystem();
 </script>
 </body>
 </html>
