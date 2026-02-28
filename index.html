@@ -3,14 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonic AI Ultra Fix</title>
+    <title>Sonic AI + Neural Stream</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; touch-action: none; font-family: 'Press Start 2P', cursive; }
-        canvas { display: block; width: 100vw; height: 100vh; }
-        #stats { position: fixed; top: 15px; left: 15px; color: #ffff00; font-size: 10px; z-index: 10; text-shadow: 2px 2px #000; line-height: 1.5; }
+        
+        /* Холст нативного JS движка (Fallback) */
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* Контейнер для потока от Нейросети (ИИ) */
+        #ai-engine-view {
+            display: none; /* Скрыт по умолчанию */
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000; z-index: 2;
+            align-items: center; justify-content: center;
+        }
+        #ai-engine-view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+
+        #stats { position: fixed; top: 15px; left: 15px; color: #ffff00; font-size: 10px; z-index: 10; text-shadow: 2px 2px #000; line-height: 1.5; pointer-events: none; }
         #ui { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; z-index: 10; pointer-events: none; }
+        
         .btn { 
             width: 70px; height: 70px; background: rgba(0, 0, 0, 0.6); 
             border: 3px solid #00f0ff; border-radius: 50%; color: #fff; 
@@ -20,13 +33,20 @@
         }
         .btn:active { background: #00f0ff; color: #000; }
         #btnJump { border-color: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        
+        /* Индикатор подключения */
+        #connection-status {
+            position: fixed; top: 15px; right: 15px; font-size: 8px; color: #fff; z-index: 10;
+            background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
+    <!-- UI Слои (поверх всего) -->
     <div id="stats">SCORE: 000000<br>RINGS: 0</div>
-    <canvas id="game"></canvas>
-
+    <div id="connection-status">NATIVE MODE</div>
+    
     <div id="ui">
         <div style="display:flex; gap: 15px;">
             <div class="btn" id="btnLeft">◀</div>
@@ -35,132 +55,36 @@
         <div class="btn" id="btnJump">JUMP</div>
     </div>
 
+    <!-- Fallback: Нативный движок -->
+    <canvas id="game"></canvas>
+
+    <!-- AI Engine: Контейнер для стрима -->
+    <div id="ai-engine-view">
+        <img id="ai-frame" src="" alt="AI Stream" />
+    </div>
+
 <script>
     const tg = window.Telegram.WebApp;
     tg.ready(); tg.expand();
 
+    // --- НАСТРОЙКИ СЕТИ И СОСТОЯНИЯ ---
+    let ws = null;
+    let isAiActive = false; // Флаг: работает ли сейчас ИИ сервер
+    const aiView = document.getElementById('ai-engine-view');
+    const aiFrame = document.getElementById('ai-frame');
     const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
+    const statusLabel = document.getElementById('connection-status');
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
+    // --- ФУНКЦИЯ ПОДКЛЮЧЕНИЯ К AI ENGINE ---
+    function connectToAiEngine(endpoint) {
+        statusLabel.innerText = "CONNECTING AI...";
+        statusLabel.style.color = "yellow";
 
-    let worldX = 0;
-    let player = {
-        x: 100, y: 0,
-        vx: 0, vy: 0,
-        w: 30, h: 30,
-        speed: 5,
-        jump: -12,
-        onGround: false,
-        angle: 0
-    };
+        try {
+            ws = new WebSocket(endpoint);
 
-    let keys = { left: false, right: false };
-
-    // Обработка кнопок
-    const setup = (id, k) => {
-        const e = document.getElementById(id);
-        const start = (ev) => { ev.preventDefault(); if(k==='j'){if(player.onGround) player.vy=player.jump;} else keys[k]=true; };
-        const end = () => { if(k!=='j') keys[k]=false; };
-        e.onmousedown = e.ontouchstart = start;
-        window.onmouseup = window.ontouchend = end;
-    };
-    setup('btnLeft', 'left'); setup('btnRight', 'right'); setup('btnJump', 'j');
-
-    function draw() {
-        // Принудительный ресайз если экран черный
-        if(canvas.width === 0) resize();
-
-        // 1. НЕБО (Ярко-синее)
-        ctx.fillStyle = '#00aaff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 2. ЗЕМЛЯ (Green Hill)
-        const groundY = canvas.height - 80;
-        ctx.fillStyle = '#8b4513'; // Коричневая почва
-        ctx.fillRect(0, groundY, canvas.width, 80);
-        
-        ctx.fillStyle = '#22cc22'; // Яркая трава
-        ctx.fillRect(0, groundY, canvas.width, 15);
-
-        // Клетчатый узор земли (как в Сеге)
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        for(let i=0; i<canvas.width; i+=40) {
-            ctx.fillRect(i - (worldX % 40), groundY + 20, 20, 20);
-        }
-
-        // 3. ПАРАЛЛАКС ГОРЫ
-        ctx.fillStyle = '#0088dd';
-        for(let i=0; i<4; i++) {
-            let x = i*400 - (worldX * 0.3 % 400);
-            ctx.beginPath();
-            ctx.moveTo(x, groundY);
-            ctx.lineTo(x + 200, groundY - 150);
-            ctx.lineTo(x + 400, groundY);
-            ctx.fill();
-        }
-
-        // 4. СОНИК
-        ctx.save();
-        // Рисуем игрока относительно экрана
-        let screenX = player.x - worldX;
-        let screenY = player.y;
-
-        ctx.translate(screenX + 15, screenY + 15);
-        if(!player.onGround || Math.abs(player.vx) > 1) {
-            player.angle += player.vx * 0.1;
-            ctx.rotate(player.angle);
-        }
-
-        // Синее тело
-        ctx.fillStyle = '#0000ff';
-        ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
-        // Иголки
-        ctx.beginPath(); ctx.moveTo(-12, -5); ctx.lineTo(-25, -15); ctx.lineTo(-12, 5); ctx.fill();
-        // Лицо
-        ctx.fillStyle = '#ffdbac';
-        ctx.beginPath(); ctx.arc(8, 2, 10, 0, Math.PI*2); ctx.fill();
-        // Глаз
-        ctx.fillStyle = '#000'; ctx.fillRect(10, -3, 3, 6);
-        // Кеды
-        ctx.fillStyle = '#ff0000'; ctx.fillRect(-10, 12, 20, 7);
-
-        ctx.restore();
-    }
-
-    function update() {
-        if (keys.left) player.vx = -player.speed;
-        else if (keys.right) player.vx = player.speed;
-        else player.vx *= 0.85;
-
-        player.vy += 0.7; // Гравитация
-        player.x += player.vx;
-        player.y += player.vy;
-
-        const groundY = canvas.height - 80;
-        if (player.y > groundY - 30) {
-            player.y = groundY - 30;
-            player.vy = 0;
-            player.onGround = true;
-        } else {
-            player.onGround = false;
-        }
-
-        worldX = player.x - 100;
-        document.getElementById('stats').innerHTML = `SCORE: ${Math.floor(player.x).toString().padStart(6, '0')}<br>RINGS: 0`;
-    }
-
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
-    loop();
-</script>
-</body>
-</html>
+            ws.onopen = () => {
+                console.log("AI Engine Connected!");
+                isAiActive = true;
+                statusLabel.innerText = "AI ENGINE ACTIVE";
+                statusLabel.style.color = "#00ff00";
