@@ -11,33 +11,24 @@ app.use(cors());
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = "mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.net/retro_arena?retryWrites=true&w=majority";
 
-const publicPath = path.join(__dirname, 'public');
+// ТАК КАК ВСЕ ФАЙЛЫ В ОДНОЙ ПАПКЕ:
+const publicPath = __dirname; 
 
-// === ЖЕЛЕЗОБЕТОННЫЕ ЗАГОЛОВКИ ДЛЯ ТЕЛЕФОНОВ ===
 app.use(express.static(publicPath, {
     setHeaders: function (res, path, stat) {
         res.set('Access-Control-Allow-Origin', '*');
-        
-        // ВОТ ОНО, ГЛАВНОЕ ИСПРАВЛЕНИЕ:
-        // Добавляем поддержку .data файлов, которые просит телефон
-        if (path.endsWith('.wasm')) {
-            res.set('Content-Type', 'application/wasm');
-        } else if (path.endsWith('.data')) {
-            res.set('Content-Type', 'application/octet-stream');
-        } else if (path.endsWith('.js')) {
-            res.set('Content-Type', 'application/javascript');
-        } else if (path.endsWith('.bin') || path.endsWith('.gen') || path.endsWith('.smd')) {
-            res.set('Content-Type', 'application/octet-stream');
-        }
+        if (path.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
+        if (path.endsWith('.bin')) res.set('Content-Type', 'application/octet-stream');
+        if (path.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
     }
 }));
 
+// Исправленный путь к index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// База данных
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGO_URI)
     .then(() => console.log('✅ MongoDB подключена'))
     .catch(e => console.error('❌ Ошибка MongoDB:', e));
 
