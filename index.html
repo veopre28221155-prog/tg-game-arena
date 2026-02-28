@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,34 +7,39 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #050505; color: white; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; }
-        .active { display: flex; }
-        .btn { background: #1a1a1a; color: #00f0ff; border: 4px solid #000; padding: 15px; width: 260px; margin: 10px; font-family: inherit; font-size: 10px; cursor: pointer; box-shadow: 4px 4px 0 #000; }
-        iframe { width: 100vw; height: 80vh; border: none; background: #000; }
-        h1 { font-size: 14px; color: #00f0ff; text-shadow: 0 0 10px #00f0ff; }
+        body { margin: 0; background: #000; color: #00f0ff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        .screen { position: fixed; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; }
+        h1 { font-size: 18px; text-shadow: 0 0 15px #00f0ff; text-align: center; line-height: 1.5; }
+        .btn { background: #1a1a1a; color: #00f0ff; border: 4px solid #00f0ff; padding: 20px; font-family: inherit; font-size: 12px; cursor: pointer; box-shadow: 0 0 10px #00f0ff; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); box-shadow: none; }
+        #game-stream { width: 100vw; height: 100vh; border: none; display: none; }
+        .footer { margin-top: 30px; font-size: 8px; color: #555; }
     </style>
 </head>
 <body>
-    <div id="s-menu" class="screen active">
-        <h1>RETRO ARENA</h1>
-        <button class="btn" onclick="startPlay()">▶ ЗАПУСТИТЬ ТРАНСЛЯЦИЮ</button>
+
+    <div id="welcome-screen" class="screen">
+        <h1>RETRO ARENA<br>SYSTEM v1.4</h1>
+        <button class="btn" onclick="launchGame()">🕹 ЗАПУСТИТЬ СОНИКА</button>
+        <div class="footer">СЕРВЕР: RENDER.COM | ENGINE: SEGA</div>
     </div>
 
-    <div id="s-play" class="screen">
-        <iframe id="stream-frame"></iframe>
-        <button class="btn" onclick="location.reload()" style="background:red; color:white; height:40px; padding:5px; margin-top:5px;">ВЫХОД</button>
-    </div>
+    <iframe id="game-stream" allow="autoplay; fullscreen; gamepad"></iframe>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+        tg.ready();
+        tg.expand();
 
-        function startPlay() {
-            document.getElementById('s-menu').classList.remove('active');
-            document.getElementById('s-play').classList.add('active');
-            // Загружаем "игровой узел" с нашего сервера
-            document.getElementById('stream-frame').src = window.location.origin + "/engine";
+        function launchGame() {
+            // Прячем меню
+            document.getElementById('welcome-screen').style.display = 'none';
+            
+            // Запускаем игровой поток
+            const stream = document.getElementById('game-stream');
+            stream.style.display = 'block';
+            // Добавляем случайный параметр, чтобы обойти кэш Telegram
+            stream.src = window.location.origin + "/player?nocache=" + Date.now();
         }
     </script>
 </body>
