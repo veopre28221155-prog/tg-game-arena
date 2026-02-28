@@ -7,32 +7,27 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --tg-bg: #050505; --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; --btn-base: #1a1a1a; --btn-border: #000000; --btn-highlight: rgba(255,255,255,0.2); --btn-shadow: rgba(0,0,0,0.8); }
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #050505; background-image: radial-gradient(circle at center, #111424 0%, #000000 100%); color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; }
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
-        .screen.active { display: flex; }
-        h1, h2 { text-align: center; text-transform: uppercase; margin-bottom: 20px; line-height: 1.4; }
-        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; }
-        h2 { font-size: 1rem; color: #fff; text-shadow: 2px 2px 0 #000; }
-        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 16px; width: 100%; max-width: 320px; font-size: 0.7rem; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 12px; position: relative; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(0, 240, 255, 0.2); text-shadow: 2px 2px 0 #000; }
-        .btn-pixel:active { box-shadow: inset 4px 4px 0 var(--btn-shadow), inset -4px -4px 0 rgba(0, 240, 255, 0.3); transform: translateY(2px); color: #fff; }
-        .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(255, 215, 0, 0.2); }
-        .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(255, 0, 85, 0.2); }
-        .btn-sm { width: auto; padding: 10px; font-size: 0.6rem; margin-bottom: 0; }
-        .pixel-panel { background: rgba(0,0,0,0.8); border: 4px solid var(--accent-neon); box-shadow: inset 4px 4px 0 rgba(255,255,255,0.1), inset -4px -4px 0 rgba(0,0,0,0.8); padding: 15px; width: 100%; max-width: 340px; margin-bottom: 15px; }
+        :root { --tg-bg: #050505; --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; --btn-base: #1a1a1a; --btn-border: #000000; }
+        body { margin: 0; background: #000; color: var(--tg-text); font-family: var(--font-retro); height: 100vh; overflow: hidden; touch-action: none; }
         
-        /* КОНТЕЙНЕР ДЛЯ ЭМУЛЯТОРА SEGA */
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; }
+        .screen.active { display: flex; }
+        
+        h1 { color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon); margin-top: 20px; text-align: center; line-height: 1.5; }
+        
+        .btn-pixel { background: #222; color: #fff; border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-family: var(--font-retro); margin-bottom: 15px; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
+        .btn-pixel:active { transform: translateY(2px); background: #333; }
+        .btn-pink { border-color: var(--accent-pink); color: var(--accent-pink); }
+        
+        /* Контейнер эмулятора */
         #emulator-container {
             width: 100%;
+            height: 100%;
             max-width: 800px;
-            height: 70vh;
-            min-height: 300px;
-            border: 4px solid var(--accent-neon);
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,240,255,0.4);
-            margin-bottom: 20px;
+            max-height: 60vh;
             background: #000;
+            border: 2px solid var(--accent-neon);
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -43,42 +38,27 @@
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>RETRO ARENA</h1>
         <button class="btn-pixel" onclick="navScreen('s-single')">🎮 ИГРАТЬ (SEGA)</button>
-        <button class="btn-pixel" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
+        <button class="btn-pixel" onclick="alert('Скоро!')">👤 ПРОФИЛЬ</button>
     </div>
 
-    <!-- ВЫБОР ИГРЫ -->
+    <!-- МЕНЮ ВЫБОРА -->
     <div id="s-single" class="screen">
-        <h2>АРКАДНЫЕ АВТОМАТЫ</h2>
-        <div style="width: 100%; overflow-y:auto; flex-grow:1; display:flex; flex-direction:column; align-items:center;">
-            <button class="btn-pixel btn-sm" style="width:100%; max-width:320px;" onclick="launchSega('sonic.bin')">🦔 SONIC THE HEDGEHOG</button>
-            <div style="color: #666; font-size: 0.5rem; margin-top: 20px; text-align: center;">
-                Сюда можно добавить MK3, Comix Zone, <br><br>Battletoads и другие хиты!
-            </div>
-        </div>
-        <button class="btn-pixel btn-pink" style="margin-top: 15px;" onclick="navScreen('s-main')">НАЗАД</button>
-    </div>
-
-    <!-- ПРОФИЛЬ -->
-    <div id="s-profile" class="screen" style="justify-content: center;">
-        <h2>ПРОФИЛЬ</h2>
-        <div class="pixel-panel" style="text-align: center; border-color: var(--accent-gold);">
-            <div style="font-size: 2rem; color: var(--accent-gold); text-shadow: 2px 2px 0 #000;">
-                <span id="p-bal">0</span> ★
-            </div>
-            <div style="font-size: 0.6rem; margin-top: 10px;">БАЛАНС ЗВЕЗД</div>
-        </div>
+        <h1>ВЫБЕРИ ИГРУ</h1>
+        <button class="btn-pixel" onclick="launchSega('sonic.bin')">🦔 SONIC 1</button>
         <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- ЭКРАН ЭМУЛЯТОРА -->
-    <div id="s-game" class="screen" style="padding-top: 10px; padding-bottom: 0;">
-        <div style="width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <button class="btn-pixel btn-pink" style="margin:0; padding:10px; width:auto; font-size:0.6rem;" onclick="location.reload()">ВЫЙТИ</button>
-            <h2 style="color: var(--accent-gold); margin: 0; font-size: 0.7rem;">SEGA GENESIS</h2>
+    <!-- ЭКРАН ИГРЫ -->
+    <div id="s-game" class="screen" style="padding: 10px;">
+        <div style="width: 100%; display: flex; justify-content: space-between;">
+            <button class="btn-pixel btn-pink" style="width: auto; padding: 10px; font-size: 10px;" onclick="location.reload()">❌ ВЫЙТИ</button>
+            <div style="color: gold; font-size: 10px; padding-top: 10px;">SEGA GENESIS</div>
         </div>
-
-        <!-- СЮДА ЗАГРУЗИТСЯ НАСТОЯЩАЯ ИГРА -->
+        
+        <!-- Сюда встраивается игра -->
         <div id="emulator-container"></div>
+        
+        <div id="loading-text" style="color: gray; font-size: 10px; margin-top: 10px;">Загрузка ядра эмулятора...</div>
     </div>
 </div>
 
@@ -86,62 +66,33 @@
     const tg = window.Telegram.WebApp; 
     tg.ready(); 
     tg.expand();
-
-    // ЗАЩИТА ОТ СВАЙПОВ (чтобы ТГ не закрывался при игре на джойстике)
-    if (tg.disableVerticalSwipes) {
-        tg.disableVerticalSwipes();
-    }
-
-    const API = "https://tg-game-arena.onrender.com";
-    let user = null;
-
-    // Подгружаем баланс пользователя
-    async function init() {
-        try { 
-            const r = await fetch(API+'/api/user-data', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({initData: tg.initData || "dummy"})
-            }); 
-            user = await r.json(); 
-            document.getElementById('p-bal').innerText = user.balance || 0; 
-        } catch (e) { 
-            console.error(e); 
-        }
-    }
-    init();
+    if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
     function navScreen(id) { 
         document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
         document.getElementById(id).classList.add('active'); 
     }
 
-    // =========================================================
-    // 🚀 ЗАПУСК НАСТОЯЩЕГО ЭМУЛЯТОРА SEGA
-    // =========================================================
     function launchSega(romFile) {
         navScreen('s-game');
-        
-        // Отключаем скролл на странице игры
-        document.getElementById('s-game').style.overflow = 'hidden';
-        
-        // Настройки для EmulatorJS
+        document.getElementById('loading-text').innerText = "Скачивание " + romFile + "...";
+
+        // === ГЛАВНОЕ ИСПРАВЛЕНИЕ: ПОЛНЫЙ ПУТЬ ===
+        // Мы берем текущий адрес сайта (https://tg-game-arena.onrender.com) и добавляем имя файла
+        const fullRomUrl = window.location.origin + '/' + romFile;
+        console.log("Запуск игры по ссылке:", fullRomUrl);
+
+        // Настройки EmulatorJS
         window.EJS_player = '#emulator-container'; 
         window.EJS_core = 'sega'; 
-        window.EJS_gameUrl = '/' + romFile; // Сервер автоматически отдаст /sonic.bin из папки public
+        window.EJS_gameUrl = fullRomUrl; // Используем полный путь!
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/'; 
         
-        window.EJS_Buttons = {
-            playPause: false,
-            restart: true,
-            mute: true,
-            settings: true,
-            fullscreen: true,
-            saveState: true,
-            loadState: true
+        window.EJS_onGameStart = function() {
+            document.getElementById('loading-text').innerText = "Игра запущена! Жми START";
         };
 
-        // Загружаем скрипт эмулятора
+        // Подгружаем скрипт
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
         document.body.appendChild(script);
