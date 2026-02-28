@@ -2,25 +2,25 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Sonic Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-        #emulator { width: 100vw; height: 100vh; }
+        #game { width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
-    <div id="emulator"></div>
+    <div id="game"></div>
 
-    <script type="text/javascript">
-        // Данные для эмулятора
-        var EmuJS = {
+    <script>
+        // Конфигурация "трансляции"
+        window.EmuJS = {
+            dataUrl: "https://cdn.statically.io/gh/EmulatorJS/EmulatorJS/main/data/", // Стабильное облако движка
             gameUrl: window.location.origin + "/roms/sonic.bin",
             core: "genesis",
-            container: "#emulator",
-            autoplay: true,
-            onReady: function() { console.log("Engine Ready"); }
+            autoStart: true
         };
     </script>
-    <script src="https://emulatorjs.org/loader.js"></script>
+    <!-- Загружаем ядро напрямую из CDN, чтобы не зависеть от GitHub Pages -->
+    <script src="https://cdn.statically.io/gh/EmulatorJS/EmulatorJS/main/data/loader.js"></script>
 </body>
 </html>
