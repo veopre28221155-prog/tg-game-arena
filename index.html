@@ -3,86 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Multi-Arena</title>
+    <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #00f0ff; --bg: #0a0a0a; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; }
-        .screen { display: none; height: 100vh; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; text-align: center; }
+        .screen { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; }
         .active { display: flex; }
-        
-        h1 { font-size: 16px; color: var(--neon); text-shadow: 0 0 10px var(--neon); margin: 30px 0; }
-        
-        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; width: 100%; max-width: 300px; }
-        .game-card { 
-            background: #1a1a1a; border: 3px solid #444; padding: 15px; 
-            cursor: pointer; text-align: center; font-size: 12px; transition: 0.2s;
-        }
-        .game-card:active { transform: scale(0.95); border-color: var(--neon); }
-
-        #emu-container { 
-            width: 100vw; height: 60vh; background: #000; 
-            border-bottom: 2px solid var(--neon); position: relative; 
-        }
-        #controls-hint { font-size: 8px; color: #666; margin-top: 10px; line-height: 1.6; }
-        
-        #btn-start-game { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #0f0; border: none; padding: 20px; font-family: 'Press Start 2P';
-            z-index: 1000; display: none; box-shadow: 0 0 20px #0f0;
-        }
-        #loader-text { font-size: 10px; color: gold; margin-top: 10px; }
+        #emu-container { width: 100vw; height: 60vh; background: #111; border: 2px solid #00f0ff; position: relative; }
+        .btn { background: #111; color: #00f0ff; border: 3px solid #444; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; }
+        #start-game-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f0; color: #000; padding: 20px; z-index: 1000; border: none; display: none; }
     </style>
 </head>
 <body>
 
-<!-- ГЛАВНОЕ МЕНЮ -->
 <div id="s-menu" class="screen active">
-    <h1>ВЫБЕРИ ИГРУ</h1>
-    <div class="menu-grid">
-        <div class="game-card" onclick="launch('sonic.bin', 'picodrive', 'SONIC THE HEDGEHOG')">🦔 SONIC 1</div>
-        <!-- Сюда легко добавлять новые игры -->
-        <div class="game-card" style="opacity: 0.5;">🔒 СКОРО НОВЫЕ ИГРЫ</div>
-    </div>
+    <h1>RETRO ARENA</h1>
+    <button class="btn" onclick="launchGame('sonic.bin')">ИГРАТЬ В SONIC</button>
 </div>
 
-<!-- ЭКРАН ИГРЫ -->
-<div id="s-game" class="screen" style="padding: 0;">
+<div id="s-game" class="screen">
     <div id="emu-container">
-        <button id="btn-start-game" onclick="runEmu()">ИГРАТЬ!</button>
+        <button id="start-game-btn" onclick="runEmu()">СТАРТ</button>
     </div>
-    <h2 id="game-title" style="font-size: 10px; margin: 10px 0;"></h2>
-    <p id="loader-text">Загрузка...</p>
-    <button onclick="location.reload()" style="background:none; border:1px solid #333; color:#555; padding:5px; font-family:'Press Start 2P'; font-size:8px;">В МЕНЮ</button>
-    
-    <div id="controls-hint">
-        Кнопки появятся автоматически.<br>
-        Если черный экран - подожди 10 сек.
-    </div>
+    <p id="status" style="font-size: 10px; margin-top: 10px;">Загрузка...</p>
+    <button onclick="location.reload()" style="font-size: 8px; color: #555; background: none; border: none;">В МЕНЮ</button>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    function launch(romName, core, title) {
+    function launchGame(rom) {
         document.getElementById('s-menu').classList.remove('active');
         document.getElementById('s-game').classList.add('active');
-        document.getElementById('game-title').innerText = title;
 
-        // Настройки эмулятора
+        // Ссылка на игру
+        const romUrl = window.location.origin + '/' + rom;
+
         window.EJS_player = '#emu-container';
-        window.EJS_gameUrl = window.location.origin + '/' + romName;
-        window.EJS_core = core; // Используем легкое ядро picodrive
+        window.EJS_gameUrl = romUrl;
+        window.EJS_core = 'segaMD';
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_startOnLoaded = false;
-        window.EJS_threads = false; // Важно для мобилок!
-        window.EJS_lightSync = true;
+        window.EJS_threads = false; // Важно для мобилок
 
         window.EJS_onGameLoaded = () => {
-            document.getElementById('loader-text').innerText = 'ЗАГРУЖЕНО';
-            document.getElementById('btn-start-game').style.display = 'block';
+            document.getElementById('status').innerText = 'Загружено!';
+            document.getElementById('start-game-btn').style.display = 'block';
         };
 
         const script = document.createElement('script');
@@ -93,8 +61,7 @@
     function runEmu() {
         if (window.EJS_emulator) {
             window.EJS_emulator.start();
-            document.getElementById('btn-start-game').style.display = 'none';
-            document.getElementById('loader-text').style.display = 'none';
+            document.getElementById('start-game-btn').style.display = 'none';
         }
     }
 </script>
