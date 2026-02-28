@@ -88,3 +88,194 @@
                 isAiActive = true;
                 statusLabel.innerText = "AI ENGINE ACTIVE";
                 statusLabel.style.color = "#00ff00";
+                
+                // Включаем Neural Container, прячем Canvas
+                aiView.style.display = 'flex';
+                canvas.style.display = 'none';
+            };
+
+            ws.onmessage = (event) => {
+                // Принимаем кадры от сервера и вставляем в <img>
+                // Сервер может слать Base64 строки (data:image/jpeg;base64,...) или Blob
+                if (typeof event.data === 'string') {
+                    aiFrame.src = event.data;
+                } else {
+                    // Если прилетают бинарные данные
+                    const url = URL.createObjectURL(event.data);
+                    aiFrame.src = url;
+                    aiFrame.onload = () => URL.revokeObjectURL(url); // Очистка памяти
+                }
+            };
+
+            ws.onerror = (err) => {
+                console.error("AI Engine WebSocket Error", err);
+                triggerFallback();
+            };
+
+            ws.onclose = () => {
+                console.log("AI Engine Disconnected");
+                triggerFallback();
+            };
+
+        } catch (e) {
+            triggerFallback();
+        }
+    }
+
+    // --- ФУНКЦИЯ FALLBACK (Переход на JS) ---
+    function triggerFallback() {
+        if (!isAiActive) return; // Уже на нативном движке
+        isAiActive = false;
+        statusLabel.innerText = "NATIVE FALLBACK";
+        statusLabel.style.color = "#ff0000";
+        
+        // Прячем Neural Container, возвращаем Canvas
+        aiView.style.display = 'none';
+        canvas.style.display = 'block';
+        
+        // Запускаем локальный цикл
+        requestAnimationFrame(loop);
+    }
+
+    // --- ЛОГИКА НАТИВНОГО ДВИЖКА (Fallback Game) ---
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let worldX = 0;
+    let player = {
+        x: 100, y: 0,
+        vx: 0, vy: 0,
+        w: 30, h: 30,
+        speed: 5, jump: -12,
+        onGround: false, angle: 0
+    };
+
+    let keys = { left: false, right: false };
+
+    // --- ОБРАБОТКА КНОПОК И ОТПРАВКА JSON ---
+    const setupInput = (id, keyName, jsonCommand) => {
+        const btn = document.getElementById(id);
+        
+        const press = (ev) => { 
+            ev.preventDefault(); 
+            // 1. Отправляем JSON на ИИ сервер, если он работает
+            if (isAiActive && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ input: jsonCommand, action: "press" }));
+            } 
+            // 2. Либо обрабатываем локально для Fallback движка
+            else {
+                if(keyName === 'jump') { 
+                    if(player.onGround) player.vy = player.jump; 
+                } else {
+                    keys[keyName] = true; 
+                }
+            }
+        };
+
+        const release = (ev) => { 
+            ev.preventDefault();
+            // 1. Отправляем JSON на ИИ сервер об отпускании кнопки
+            if (isAiActive && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ input: jsonCommand, action: "release" }));
+            } 
+            // 2. Обрабатываем локально
+            else {
+                if(keyName !== 'jump') keys[keyName] = false; 
+            }
+        };
+
+        btn.onmousedown = btn.ontouchstart = press;
+        btn.onmouseup = btn.ontouchend = btn.onmouseleave = release;
+    };
+
+    setupInput('btnLeft', 'left', 'left'); 
+    setupInput('btnRight', 'right', 'right'); 
+    setupInput('btnJump', 'jump', 'jump');
+
+    // --- ОТРИСОВКА И ОБНОВЛЕНИЕ НАТИВНОЙ ИГРЫ ---
+    function draw() {
+        if(canvas.width === 0) resize();
+
+        ctx.fillStyle = '#00aaff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const groundY = canvas.height - 80;
+        ctx.fillStyle = '#8b4513'; 
+        ctx.fillRect(0, groundY, canvas.width, 80);
+        ctx.fillStyle = '#22cc22'; 
+        ctx.fillRect(0, groundY, canvas.width, 15);
+
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        for(let i=0; i<canvas.width; i+=40) {
+            ctx.fillRect(i - (worldX % 40), groundY + 20, 20, 20);
+        }
+
+        ctx.fillStyle = '#0088dd';
+        for(let i=0; i<4; i++) {
+            let x = i*400 - (worldX * 0.3 % 400);
+            ctx.beginPath();
+            ctx.moveTo(x, groundY); ctx.lineTo(x + 200, groundY - 150); ctx.lineTo(x + 400, groundY);
+            ctx.fill();
+        }
+
+        ctx.save();
+        let screenX = player.x - worldX;
+        ctx.translate(screenX + 15, player.y + 15);
+        if(!player.onGround || Math.abs(player.vx) > 1) {
+            player.angle += player.vx * 0.1; ctx.rotate(player.angle);
+        }
+
+        ctx.fillStyle = '#0000ff'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-12, -5); ctx.lineTo(-25, -15); ctx.lineTo(-12, 5); ctx.fill();
+        ctx.fillStyle = '#ffdbac'; ctx.beginPath(); ctx.arc(8, 2, 10, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#000'; ctx.fillRect(10, -3, 3, 6);
+        ctx.fillStyle = '#ff0000'; ctx.fillRect(-10, 12, 20, 7);
+        ctx.restore();
+    }
+
+    function update() {
+        if (keys.left) player.vx = -player.speed;
+        else if (keys.right) player.vx = player.speed;
+        else player.vx *= 0.85;
+
+        player.vy += 0.7; 
+        player.x += player.vx;
+        player.y += player.vy;
+
+        const groundY = canvas.height - 80;
+        if (player.y > groundY - 30) {
+            player.y = groundY - 30; player.vy = 0; player.onGround = true;
+        } else {
+            player.onGround = false;
+        }
+
+        worldX = player.x - 100;
+        document.getElementById('stats').innerHTML = `SCORE: ${Math.floor(player.x).toString().padStart(6, '0')}<br>RINGS: 0`;
+    }
+
+    function loop() {
+        // Если работает ИИ, прерываем локальный цикл рендера (экономим батарею)
+        if (isAiActive) return; 
+
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // --- СТАРТ ПРИЛОЖЕНИЯ ---
+    // 1. Сразу запускаем Fallback-версию, чтобы не было "чёрного экрана"
+    requestAnimationFrame(loop);
+
+    // 2. Пытаемся подключиться к ИИ серверу. 
+    // ЗАМЕНИ URL НА СВОЙ AI ENDPOINT:
+    connectToAiEngine('wss://your-neural-engine-server.com/socket');
+
+</script>
+</body>
+</html>
