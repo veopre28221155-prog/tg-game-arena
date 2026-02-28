@@ -3,66 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Arena</title>
+    <title>Neural Arena: Sonic Sim</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; text-align: center; }
-        .screen { display: none; height: 100vh; flex-direction: column; align-items: center; justify-content: center; }
-        .active { display: flex; }
-        #emu-container { width: 100vw; height: 60vh; background: #111; border: 2px solid #00f0ff; position: relative; }
-        .btn { background: #111; color: #00f0ff; border: 3px solid #444; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; }
-        #start-game-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f0; color: #000; padding: 20px; z-index: 1000; border: none; display: none; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #game-ui {
+            position: fixed; top: 10px; left: 10px; color: #00f0ff; 
+            font-family: monospace; font-size: 12px; pointer-events: none; z-index: 10;
+        }
+        .ai-status { color: #0f0; text-shadow: 0 0 5px #0f0; }
     </style>
 </head>
 <body>
 
-<div id="s-menu" class="screen active">
-    <h1>RETRO ARENA</h1>
-    <button class="btn" onclick="launchGame('sonic.bin')">ИГРАТЬ В SONIC</button>
+<div id="game-ui">
+    SYSTEM: <span class="ai-status">NEURAL_SIM_ACTIVE</span><br>
+    ENTITY: SONIC_UNIT_01<br>
+    FPS: <span id="fps">60</span>
 </div>
 
-<div id="s-game" class="screen">
-    <div id="emu-container">
-        <button id="start-game-btn" onclick="runEmu()">СТАРТ</button>
-    </div>
-    <p id="status" style="font-size: 10px; margin-top: 10px;">Загрузка...</p>
-    <button onclick="location.reload()" style="font-size: 8px; color: #555; background: none; border: none;">В МЕНЮ</button>
-</div>
+<div id="game-container"></div>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    function launchGame(rom) {
-        document.getElementById('s-menu').classList.remove('active');
-        document.getElementById('s-game').classList.add('active');
+    const config = {
+        type: Phaser.AUTO,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        parent: 'game-container',
+        backgroundColor: '#050505',
+        physics: {
+            default: 'arcade',
+            arcade: { gravity: { y: 1200 }, debug: false }
+        },
+        scene: { preload: preload, create: create, update: update }
+    };
 
-        // Ссылка на игру
-        const romUrl = window.location.origin + '/' + rom;
+    const game = new Phaser.Game(config);
+    let player, platforms, cursors;
+    let isJumping = false;
+    let moveData = { left: false, right: false, jump: false };
 
-        window.EJS_player = '#emu-container';
-        window.EJS_gameUrl = romUrl;
-        window.EJS_core = 'segaMD';
-        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-        window.EJS_startOnLoaded = false;
-        window.EJS_threads = false; // Важно для мобилок
-
-        window.EJS_onGameLoaded = () => {
-            document.getElementById('status').innerText = 'Загружено!';
-            document.getElementById('start-game-btn').style.display = 'block';
-        };
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-        document.body.appendChild(script);
+    function preload() {
+        // Загрузка ресурсов через безопасный CDN
+        this.load.image('bg', 'https://labs.phaser.io/assets/skies/space3.png');
+        this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
+        this.load.spritesheet('sonic', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
     }
 
-    function runEmu() {
-        if (window.EJS_emulator) {
-            window.EJS_emulator.start();
-            document.getElementById('start-game-btn').style.display = 'none';
+    function create() {
+        // Создание мира (Neural Grid)
+        this.add.image(window.innerWidth/2, window.innerHeight/2, 'bg').setScale(2);
+        
+        platforms = this.physics.add.staticGroup();
+        const bottom = window.innerHeight - 20;
+        
+        // Пол
+        for(let i=0; i<10; i++) {
+            platforms.create(i*400, bottom, 'ground').setScale(2).refreshBody();
         }
+        
+        // Несколько парящих платформ
+        platforms.create(200, bottom - 150, 'ground');
+        platforms.create(600, bottom - 300, 'ground');
+
+        // Персонаж (Sonic Unit)
+        player = this.physics.add.sprite(100, bottom - 100, 'sonic');
+        player.setBounce(0.1);
+        player.setCollideWorldBounds(true);
+        player.setScale(1.5);
+
+        // Анимации бега
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers('sonic', { start: 5, end: 8 }),
+            frameRate: 15, repeat: -1
+        });
+        this.anims.create({
+            key: 'idle',
+            frames: [ { key: 'sonic', frame: 4 } ],
+            frameRate: 20
+        });
+
+        this.physics.add.collider(player, platforms);
+        cursors = this.input.keyboard.createCursorKeys();
+
+        // СОЗДАЕМ КНОПКИ ДЛЯ ТЕЛЕФОНА (СЕНСОРНЫЙ ИНТЕРФЕЙС)
+        createTouchControls(this);
+    }
+
+    function createTouchControls(scene) {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        // Лево
+        const leftBtn = scene.add.circle(60, h - 80, 40, 0x00f0ff, 0.3).setInteractive();
+        leftBtn.on('pointerdown', () => moveData.left = true);
+        leftBtn.on('pointerup', () => moveData.left = false);
+
+        // Право
+        const rightBtn = scene.add.circle(160, h - 80, 40, 0x00f0ff, 0.3).setInteractive();
+        rightBtn.on('pointerdown', () => moveData.right = true);
+        rightBtn.on('pointerup', () => moveData.right = false);
+
+        // Прыжок
+        const jumpBtn = scene.add.circle(w - 80, h - 100, 50, 0xff0055, 0.5).setInteractive();
+        jumpBtn.on('pointerdown', () => moveData.jump = true);
+        jumpBtn.on('pointerup', () => moveData.jump = false);
+    }
+
+    function update() {
+        const speed = 250;
+        
+        if (cursors.left.isDown || moveData.left) {
+            player.setVelocityX(-speed);
+            player.anims.play('run', true);
+            player.flipX = true;
+        } else if (cursors.right.isDown || moveData.right) {
+            player.setVelocityX(speed);
+            player.anims.play('run', true);
+            player.flipX = false;
+        } else {
+            player.setVelocityX(0);
+            player.anims.play('idle');
+        }
+
+        if ((cursors.up.isDown || moveData.jump) && player.body.touching.down) {
+            player.setVelocityY(-700);
+        }
+
+        document.getElementById('fps').innerText = Math.round(game.loop.actualFps);
     }
 </script>
 </body>
