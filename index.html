@@ -16,7 +16,7 @@
         .btn-sega { border-color: #0055ff; color: #00aaff; }
         #emulator-container { width: 100%; height: 50vh; background: #111; border: 2px solid #333; position: relative; }
         #start-emu-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f0; color: #000; border: none; padding: 15px; font-family: var(--font-retro); cursor: pointer; display: none; z-index: 100; }
-        #global-debug { position: fixed; bottom: 0; left: 0; width: 100%; height: 80px; background: rgba(0,0,0,0.8); color: #0f0; font-family: monospace; font-size: 10px; overflow-y: auto; text-align: left; padding: 5px; z-index: 9999; }
+        #global-debug { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: rgba(0,0,0,0.8); color: #0f0; font-family: monospace; font-size: 10px; overflow-y: auto; text-align: left; padding: 5px; z-index: 9999; }
     </style>
 </head>
 <body>
@@ -25,7 +25,7 @@
 
 <div id="s-main" class="screen active">
     <h1>RETRO ARENA</h1>
-    <button id="btn-sonic" class="btn-pixel btn-sega" onclick="launchGame('sonic.bin', 'genesis')">ЗАПУСТИТЬ SONIC</button>
+    <button id="btn-sonic" class="btn-pixel btn-sega" onclick="launchGame('sonic.bin', 'segaMD')">ЗАПУСТИТЬ SONIC</button>
 </div>
 
 <div id="s-game" class="screen">
@@ -33,51 +33,42 @@
     <div id="emulator-container">
         <button id="start-emu-button" onclick="runEmulator()">ЖМИ СТАРТ</button>
     </div>
-    <p id="loading-status" style="font-size: 10px;">Загрузка ядра...</p>
+    <p id="loading-status" style="font-size: 10px;">Загрузка системы...</p>
 </div>
 
 <script>
     const debug = document.getElementById('global-debug');
     function log(m) { debug.innerHTML += `> ${m}<br>`; debug.scrollTop = debug.scrollHeight; }
 
-    function nav(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-
     function launchGame(rom, core) {
-        nav('s-game');
-        const romUrl = window.location.origin + '/' + rom;
-        log('Проверка файла: ' + romUrl);
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('s-game').classList.add('active');
 
-        // Проверяем, видит ли браузер файл вообще
-        fetch(romUrl, { method: 'HEAD' })
-            .then(res => {
-                if (res.ok) {
-                    log('Файл найден! Размер: ' + res.headers.get('content-length'));
-                    initEmulator(romUrl, core);
-                } else {
-                    log('ОШИБКА 404: Файл не найден на сервере');
-                }
-            })
-            .catch(e => log('Ошибка сети: ' + e.message));
-    }
+        const romUrl = window.location.origin + '/' + rom + '?v=' + Date.now();
+        log('Загрузка с нового CDN...');
 
-    function initEmulator(url, core) {
+        // Настройки для максимальной совместимости с Telegram
         window.EJS_player = '#emulator-container';
-        window.EJS_gameUrl = url;
-        window.EJS_core = core;
-        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+        window.EJS_gameUrl = romUrl;
+        window.EJS_core = core; // Используем segaMD
+        // МЕНЯЕМ CDN НА JSDELIVR
+        window.EJS_pathtodata = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/';
         window.EJS_startOnLoaded = false;
+        window.EJS_language = 'ru';
+        
+        // Отключаем лишнее для скорости
+        window.EJS_Buttons = { playPause: false, restart: true, settings: true, fullscreen: true };
 
         window.EJS_onGameLoaded = () => {
-            log('Игра загружена в память!');
-            document.getElementById('loading-status').innerText = 'Готово!';
+            log('ДВИЖОК ГОТОВ!');
+            document.getElementById('loading-status').innerText = 'Загружено!';
             document.getElementById('start-emu-button').style.display = 'block';
         };
 
+        // Грузим лоадер тоже с JSDelivr
         const script = document.createElement('script');
-        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+        script.src = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js';
+        script.onerror = () => log('ОШИБКА CDN: Попробуй ВПН или другой интернет');
         document.body.appendChild(script);
     }
 
