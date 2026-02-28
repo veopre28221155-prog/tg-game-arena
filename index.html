@@ -3,29 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Arena</title>
+    <title>Sonic AI Engine</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { margin: 0; background: #000; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        #launch-btn { background: #000; color: #00f0ff; border: 2px solid #00f0ff; padding: 20px 40px; font-size: 16px; cursor: pointer; border-radius: 10px; font-family: sans-serif; font-weight: bold; }
-        iframe { position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        canvas { display: block; background: linear-gradient(#0077ff, #00bbff); }
+        #ui { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-around; z-index: 10; }
+        .btn { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; -webkit-user-select: none; }
+        .btn:active { background: rgba(255,255,255,0.5); }
+        #score { position: fixed; top: 10px; left: 10px; font-weight: bold; text-shadow: 2px 2px #000; }
     </style>
 </head>
 <body>
 
-    <button id="launch-btn" onclick="launch()">ВОЙТИ В АРЕНУ</button>
-    <iframe id="game-view" allow="autoplay; fullscreen; gamepad"></iframe>
+    <div id="score">RINGS: 0 | DISTANCE: 0m</div>
+    <canvas id="gameCanvas"></canvas>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+    <div id="ui">
+        <div class="btn" id="btnLeft">◀</div>
+        <div class="btn" id="btnRight">▶</div>
+        <div class="btn" id="btnJump">JUMP</div>
+    </div>
 
-        function launch() {
-            document.getElementById('launch-btn').style.display = 'none';
-            const frame = document.getElementById('game-view');
-            frame.style.display = 'block';
-            frame.src = window.location.origin + "/engine";
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.ready(); tg.expand();
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // ГЕЙМПЛЕЙНЫЕ ПАРАМЕТРЫ (AI LOGIC)
+    let player = {
+        x: 50, y: canvas.height - 100,
+        w: 40, h: 40,
+        vx: 0, vy: 0,
+        speed: 5, jumpPower: -12,
+        onGround: false,
+        angle: 0
+    };
+
+    let gravity = 0.6;
+    let score = 0;
+    let distance = 0;
+    let worldX = 0;
+
+    // ОБЪЕКТЫ МИРА (Генерируются "на лету")
+    let rings = [];
+    let clouds = [];
+    for(let i=0; i<10; i++) clouds.push({x: Math.random()*canvas.width*2, y: Math.random()*100 + 50});
+
+    // УПРАВЛЕНИЕ
+    let keys = { left: false, right: false };
+    document.getElementById('btnLeft').ontouchstart = () => keys.left = true;
+    document.getElementById('btnLeft').ontouchend = () => keys.left = false;
+    document.getElementById('btnRight').ontouchstart = () => keys.right = true;
+    document.getElementById('btnRight').ontouchend = () => keys.right = false;
+    document.getElementById('btnJump').ontouchstart = () => { if(player.onGround) player.vy = player.jumpPower; };
+
+    function update() {
+        // Логика перемещения
+        if (keys.left) player.vx = -player.speed;
+        else if (keys.right) player.vx = player.speed;
+        else player.vx *= 0.9;
+
+        player.x += player.vx;
+        player.vy += gravity;
+        player.y += player.vy;
+
+        // Коллизия с землей
+        if (player.y > canvas.height - 80) {
+            player.y = canvas.height - 80;
+            player.vy = 0;
+            player.onGround = true;
+        } else {
+            player.onGround = false;
         }
-    </script>
+
+        // Вращение как у Соника
+        if (Math.abs(player.vx) > 1) player.angle += player.vx * 0.05;
+
+        // Камера
+        worldX = player.x - 50;
+        distance = Math.floor(player.x / 10);
+        document.getElementById('score').innerText = `RINGS: ${score} | DISTANCE: ${distance}m`;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Небо и Облака
+        ctx.fillStyle = '#fff';
+        clouds.forEach(c => {
+            ctx.beginPath(); ctx.arc(c.x - worldX*0.3, c.y, 20, 0, Math.PI*2); ctx.fill();
+        });
+
+        // Земля (Green Hill Zone Style)
+        ctx.fillStyle = '#228b22';
+        ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+        // РИСУЕМ "AI СОНИКА" (Синий шар с колючками)
+        ctx.save();
+        ctx.translate(player.x - worldX + player.w/2, player.y + player.h/2);
+        ctx.rotate(player.angle);
+        
+        // Тело
+        ctx.fillStyle = '#0044ff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI*2);
+        ctx.fill();
+        
+        // Колючки (AI штрихи)
+        ctx.strokeStyle = '#0044ff';
+        ctx.lineWidth = 4;
+        for(let i=0; i<3; i++) {
+            ctx.beginPath(); ctx.moveTo(-15, -10 + i*10); ctx.lineTo(-30, -5 + i*10); ctx.stroke();
+        }
+
+        // Глаза
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(5, -10, 10, 10);
+        
+        // Красные кроссовки
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(-10, 15, 20, 10);
+
+        ctx.restore();
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    loop();
+</script>
 </body>
 </html>
