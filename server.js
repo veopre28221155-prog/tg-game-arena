@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-// Middleware для логирования запросов (полезно для отладки)
+// Middleware для логирования запросов, чтобы видеть, что происходит
 app.use((req, res, next) => {
     console.log(`[REQUEST] ${req.method} ${req.url}`);
     next();
@@ -13,9 +13,9 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-// Если у тебя будет API для турниров, оно будет здесь.
+// Тут может быть твой API для турниров, если ты его вернешь.
 // app.use(express.json());
-// app.post('/api/some-route', ...);
+// app.post('/api/create-duel', ...);
 
 
 const PORT = process.env.PORT || 3000;
