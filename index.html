@@ -6,187 +6,164 @@
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    
     <style>
         :root { --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; --btn-base: #1a1a1a; --btn-border: #000000; --btn-shadow: rgba(0,0,0,0.8); }
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #050505; color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; overscroll-behavior-y: none; }
-        
-        #app-ui { width: 100%; height: 100%; position: relative; z-index: 10; }
+        body { margin: 0; background: #050505; color: var(--tg-text); font-family: var(--font-retro); }
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
         .screen.active { display: flex; }
-        
-        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
-        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; cursor: pointer; padding: 10px; }
-        h3 { font-size: 0.7rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
-        
-        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); transition: all 0.1s; }
-        .btn-pixel:active { transform: translateY(2px); }
+        h1, h2 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
+        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
         .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        
+        /* Стили для Дуэльного Зала */
+        .duel-card { background: rgba(255, 215, 0, 0.05); border: 1px solid var(--accent-gold); padding: 15px; margin-bottom: 15px; width: 100%; max-width: 320px; }
+        .duel-card h3 { color: #fff; margin-top: 0; font-size: 0.7rem; border: none; }
+        .duel-card p { font-size: 8px; color: #aaa; line-height: 1.5; margin-bottom: 15px; }
 
-        /* ЭМУЛЯТОР */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
-        #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        #ejs-container canvas { width: 100% !important; height: 100% !important; object-fit: contain; max-width: none !important; border: none !important; margin: 0 !important; }
-        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
-
-        /* === ТУРНИРНЫЙ РАДАР (ПЕРЕХВАТЧИК) === */
-        #tourney-hud { display: none; position: absolute; top: 15px; left: 15px; z-index: 10000; background: rgba(0,0,0,0.8); border: 2px solid var(--accent-gold); padding: 10px; font-family: var(--font-retro); font-size: 8px; color: #fff; pointer-events: none; text-shadow: 1px 1px 0 #000; }
-        .hud-row { margin-bottom: 8px; }
-        .hud-val { color: var(--accent-gold); font-size: 10px; }
-        .hud-alert { color: var(--accent-pink); animation: blink 1s infinite; margin-top: 10px; }
-        @keyframes blink { 50% { opacity: 0; } }
-
+        #ejs-container { width: 100% !important; height: 100% !important; }
+        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="emulator-layer">
-    <button id="exit-emu-btn" onclick="stopEmulator()">СДАТЬСЯ ✖</button>
-    
-    <!-- ВИЗУАЛЬНЫЙ ИНТЕРФЕЙС ПЕРЕХВАТЧИКА (ВИДИТ ИГРОК В ТУРНИРЕ) -->
-    <div id="tourney-hud">
-        <div style="color: #0f0; margin-bottom: 10px;">🔴 ТУРНИР АКТИВЕН</div>
-        <div class="hud-row">ИГРОК: <span class="hud-val">ID_7732</span></div>
-        <div class="hud-row">СЧЕТ (RAM): <span id="hud-score" class="hud-val">0</span></div>
-        <div class="hud-row">СОСТОЯНИЕ: <span id="hud-state" class="hud-val" style="color:#0f0;">ИГРАЕТ</span></div>
-        <div id="hud-sync" class="hud-alert">СИНХРОНИЗАЦИЯ ПАМЯТИ...</div>
-    </div>
-
+    <button id="exit-emu-btn" onclick="surrender()">ЗАВЕРШИТЬ РАН</button>
     <div id="ejs-container"></div>
 </div>
 
 <div id="app-ui">
-    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
-        <h1>ИМПЕРИЯ РЕТРО-ИГР</h1>
-        
-        <!-- НОВАЯ КНОПКА ДЛЯ ТУРНИРОВ -->
-        <button class="btn-pixel btn-gold" style="border-color:#fff;" onclick="navScreen('s-tourney-menu')">🏆 ТУРНИРЫ НА TON</button>
-        
-        <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ СВОБОДНАЯ ИГРА</button>
+        <h1 style="font-size: 1.4rem; color: var(--accent-neon);">ДУЭЛЬНАЯ АРЕНА</h1>
+        <button class="btn-pixel btn-gold" style="border-color:#fff;" onclick="loadDuelHall()">⚔️ ВОЙТИ В ДУЭЛЬНЫЙ ЗАЛ</button>
+        <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-freeplay')">🕹️ СВОБОДНАЯ ИГРА</button>
     </div>
 
-    <!-- МЕНЮ ТУРНИРОВ -->
-    <div id="s-tourney-menu" class="screen" style="justify-content: flex-start;">
-        <h2 style="color: var(--accent-gold);">АКТИВНЫЕ ТУРНИРИ</h2>
+    <!-- ДУЭЛЬНЫЙ ЗАЛ -->
+    <div id="s-duel-hall" class="screen" style="justify-content: flex-start;">
+        <h2 style="color: var(--accent-gold);">ДУЭЛЬНЫЙ ЗАЛ</h2>
         <button class="btn-pixel btn-pink" style="margin-bottom: 20px;" onclick="navScreen('s-main')">◀ НАЗАД</button>
-
-        <div style="background: #111; border: 1px solid var(--accent-gold); padding: 15px; margin-bottom: 15px; width: 100%; max-width: 320px;">
-            <h3 style="color: #fff; margin-top: 0; border: none;">🦔 SONIC 2: МАРАФОН</h3>
-            <p style="font-size: 8px; color: #aaa; line-height: 1.5; font-family: var(--font-retro);">ЦЕЛЬ: Набрать максимум очков за 1 попытку.<br>ВЗНОС: 1 TON<br>ПРИЗ: 50 TON</p>
-            <!-- Запускаем турнирный режим (isTournament = true) -->
-            <button class="btn-pixel btn-gold" style="margin-bottom: 0;" onclick="launchEmulator('sonic2.md', 'sega', true)">УЧАСТВОВАТЬ</button>
+        <div id="duel-list" style="width:100%; max-width: 320px;">
+            <p style="font-size: 10px; color: #666;">Загрузка дуэлей...</p>
         </div>
+        <h3 style="font-size: 0.7rem; margin-top: 30px; color: #fff;">СОЗДАТЬ СВОЮ ДУЭЛЬ</h3>
+        <button class="btn-pixel" onclick="createDuel('Battletoads', 'btdd.md', 'sega')">🐸 Battletoads (Марафон)</button>
+        <button class="btn-pixel" onclick="createDuel('Mortal Kombat 3', 'umk3.md', 'sega')">🐉 MK3 (Выживание)</button>
     </div>
-
-    <!-- ОБЫЧНОЕ МЕНЮ (Свернуто) -->
-    <div id="s-emu-menu" class="screen" style="justify-content: flex-start;">
-        <h2 style="color: var(--accent-neon);">БИБЛИОТЕКА ИГР</h2>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">◀ НАЗАД</button>
-        <h3 style="color: var(--accent-gold);">SEGA GENESIS</h3>
-        <button class="btn-pixel btn-gold" onclick="launchEmulator('sonic2.md', 'sega', false)">🦔 Sonic 2 (Обычный)</button>
-        <button class="btn-pixel btn-gold" onclick="launchEmulator('umk3.md', 'sega', false)">🐉 Ultimate MK3</button>
-        <!-- СЮДА МОЖЕШЬ ВЕРНУТЬ ОСТАЛЬНЫЕ 25 ИГР -->
-    </div>
+    
+    <!-- Свободная игра -->
+    <div id="s-freeplay" class="screen"><h2 style="color: var(--accent-neon);">СВОБОДНАЯ ИГРА</h2>...</div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
-    try { tg.disableVerticalSwipes(); } catch(e) {}
-    
-    function navScreen(id){ 
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
-        document.getElementById(id).classList.add('active'); 
-    }
+    const myName = tg.initDataUnsafe?.user?.username || `User_${Math.floor(Math.random()*1000)}`;
 
-    let memoryHookInterval = null;
+    let currentDuel = { id: null, score: 0 };
+    let duelTimer = null;
 
-    // === ЯДРО ВЗЛОМА ПАМЯТИ (RAM HOOK) ===
-    function initTournamentTracker() {
-        document.getElementById('tourney-hud').style.display = 'block';
-        const scoreEl = document.getElementById('hud-score');
-        const stateEl = document.getElementById('hud-state');
-        const syncEl = document.getElementById('hud-sync');
+    function navScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-        let currentScore = 0;
-        let isGameOver = false;
+    // ЗАГРУЗКА СПИСКА ДУЭЛЕЙ С СЕРВЕРА
+    async function loadDuelHall() {
+        navScreen('s-duel-hall');
+        const duelListEl = document.getElementById('duel-list');
+        duelListEl.innerHTML = `<p style="font-size: 10px; color: #666;">Обновление...</p>`;
 
-        // Каждые 500 миллисекунд скрипт лезет в "телевизор"
-        memoryHookInterval = setInterval(() => {
-            try {
-                // Пытаемся найти массив памяти WebAssembly
-                if (window.EJS_emulator && window.EJS_emulator.Module && window.EJS_emulator.Module.HEAPU8) {
-                    syncEl.style.display = 'none'; // Успешно подключились!
-                    const memory = window.EJS_emulator.Module.HEAPU8;
-
-                    // ЗДЕСЬ ПРОИСХОДИТ МАГИЯ!
-                    // Мы читаем конкретные байты памяти. Для Sonic 2 счет лежит по смещению.
-                    // Так как браузер блокирует прямой доступ к точным офсетам libretro, 
-                    // мы симулируем чтение (пока не привяжем точный словарь адресов).
-                    
-                    // Симуляция: Счет растет по ходу игры
-                    currentScore += Math.floor(Math.random() * 10);
-                    scoreEl.innerText = currentScore;
-
-                    // Если счет достиг 500 (например, игрок умер), генерируем ОТЧЕТ
-                    if (currentScore > 500 && !isGameOver) {
-                        isGameOver = true;
-                        stateEl.innerText = "GAME OVER";
-                        stateEl.style.color = "red";
-                        
-                        // Отправляем данные тебе в Админку!
-                        sendReportToAdmin(currentScore);
-                    }
-                }
-            } catch (e) {
-                console.log("Ожидание доступа к RAM...");
+        try {
+            const response = await fetch('/api/get-duels');
+            const openDuels = await response.json();
+            
+            duelListEl.innerHTML = ''; // Очищаем список
+            if (Object.keys(openDuels).length === 0) {
+                 duelListEl.innerHTML = `<p style="font-size: 10px; color: #666;">Нет активных дуэлей. Создай свою!</p>`;
             }
-        }, 500);
+
+            for (const id in openDuels) {
+                const duel = openDuels[id];
+                duelListEl.innerHTML += `
+                    <div class="duel-card">
+                        <h3>⚔️ ${duel.game.toUpperCase()}</h3>
+                        <p>Игрок ${duel.player1} ждет оппонента. Его счет: ${duel.score1}. Побей его!</p>
+                        <button class="btn-pixel btn-gold" onclick="joinDuel('${id}', '${duel.game}', '${duel.score1}')">ПРИНЯТЬ ВЫЗОВ</button>
+                    </div>`;
+            }
+        } catch (error) {
+            duelListEl.innerHTML = `<p style="font-size: 10px; color: #f00;">Ошибка связи с сервером.</p>`;
+        }
     }
 
-    // Эта функция связывается с твоим server.js и базой данных
-    function sendReportToAdmin(finalScore) {
-        clearInterval(memoryHookInterval); // Останавливаем слежку
+    // СОЗДАТЬ ДУЭЛЬ (Игрок 1)
+    async function createDuel(gameName, fileName, core) {
+        const response = await fetch('/api/create-duel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ game: gameName, playerName: myName })
+        });
+        const data = await response.json();
+        currentDuel.id = data.duelId;
+        alert(`Дуэль создана! ID: ${currentDuel.id}\nСейчас начнется твой раунд. Продержись как можно дольше!`);
         
-        // Всплывающее окно для игрока
-        alert(`ТУРНИР ЗАВЕРШЕН!\nВаш финальный счет: ${finalScore}\nОтчет отправлен на сервер!`);
-        
-        // Здесь в будущем будет код:
-        // fetch('/api/save-tournament-score', { method: 'POST', body: JSON.stringify({ user: tg.initDataUnsafe.user.id, score: finalScore }) })
-
-        stopEmulator(); // Закрываем игру
+        // Запускаем игру для первого игрока
+        launchEmulator(fileName, core);
+        startMarathonTimer();
     }
-    // =====================================
 
-    // Обрати внимание: я добавил параметр isTournament
-    function launchEmulator(fileName, coreType, isTournament) {
+    // ПРИСОЕДИНИТЬСЯ К ДУЭЛИ (Игрок 2)
+    function joinDuel(duelId, gameName, opponentScore) {
+        currentDuel.id = duelId;
+        alert(`Вызов принят!\nИгра: ${gameName}\nЦель: побить счет ${opponentScore}\nТвой раунд начинается СЕЙЧАС!`);
+        
+        // Здесь нужен механизм для определения fileName и core по gameName, пока упростим
+        let fileName = gameName === 'Battletoads' ? 'btdd.md' : 'umk3.md';
+        let core = 'sega';
+
+        launchEmulator(fileName, core);
+        startMarathonTimer();
+    }
+    
+    function startMarathonTimer() {
+        currentDuel.score = 0;
+        duelTimer = setInterval(() => {
+            currentDuel.score++;
+        }, 1000);
+    }
+    
+    // ЗАВЕРШИТЬ РАН (Сдаться или умереть)
+    async function surrender() {
+        clearInterval(duelTimer);
+        const finalScore = currentDuel.score;
+
+        const response = await fetch('/api/submit-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duelId: currentDuel.id, playerName: myName, score: finalScore })
+        });
+        const data = await response.json();
+
+        let resultMessage = `Твой раунд завершен!\nСчет: ${finalScore}\nТеперь твой результат на сервере.`;
+        if (data.duel.status === 'finished') {
+            const winner = data.duel.score1 > data.duel.score2 ? data.duel.player1 : data.duel.player2;
+            resultMessage = `ДУЭЛЬ ЗАВЕРШЕНА!\n\n${data.duel.player1}: ${data.duel.score1}\n${data.duel.player2}: ${data.duel.score2}\n\nПОБЕДИТЕЛЬ: ${winner}!`;
+        }
+        
+        alert(resultMessage);
+        location.reload();
+    }
+
+    function launchEmulator(fileName, core) {
         document.getElementById('app-ui').style.display = 'none';
         document.getElementById('emulator-layer').style.display = 'block';
-
         window.EJS_player = '#ejs-container';
-        window.EJS_core = coreType;
-        window.EJS_gameUrl = '/' + fileName + '?v=' + Date.now(); 
+        window.EJS_core = core;
+        window.EJS_gameUrl = '/' + fileName;
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_virtualGamepad = true;
         window.EJS_startOnLoaded = true;
-        window.EJS_Buttons = { playPause: false, restart: false, mute: false, settings: false, fullscreen: true, saveState: false, loadState: false, screenRecord: false, gamepad: true, cheat: false, volume: true };
-
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-        
-        // Если это турнир - запускаем наш шпионский скрипт!
-        if(isTournament) {
-            script.onload = () => { setTimeout(initTournamentTracker, 4000); };
-        }
-
         document.body.appendChild(script);
-    }
-
-    function stopEmulator() { 
-        if(memoryHookInterval) clearInterval(memoryHookInterval);
-        location.reload(); 
     }
 </script>
 </body>
