@@ -27,30 +27,17 @@
         .btn-blue { color: #3b82f6; box-shadow: inset 4px 4px 0 rgba(59, 130, 246, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
 
-        /* ЭМУЛЯТОР */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
         #ejs-container canvas { width: 100% !important; height: 100% !important; object-fit: contain; max-width: none !important; border: none !important; margin: 0 !important; }
         #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
 
-        /* РАДАР ПАМЯТИ */
-        #ram-scanner { position: absolute; top: 15px; left: 15px; z-index: 10000; color: #0f0; font-family: var(--font-retro); font-size: 8px; pointer-events: none; background: rgba(0,20,0,0.8); border: 1px solid #0f0; padding: 10px; display: none; text-shadow: 1px 1px 0 #000; width: 220px; }
-        .scanner-line { margin-bottom: 5px; }
-        #ram-status { color: yellow; margin-bottom: 10px; }
-        #hex-dump { font-family: monospace; font-size: 7px; color: #00f0ff; line-height: 1.2; opacity: 0.8; height: 40px; overflow: hidden; margin-top: 5px; border-top: 1px dashed #0f0; padding-top: 5px; }
     </style>
 </head>
 <body>
 
 <div id="emulator-layer">
     <button id="exit-emu-btn" onclick="stopEmulator()">В МЕНЮ ✖</button>
-    <div id="ram-scanner">
-        <div id="ram-status" style="animation: blinker 1s infinite;">HOOKING RAM...</div>
-        <div class="scanner-line">MEM [PTR_A]: <span style="color:white;">ACTIVE</span></div>
-        <div class="scanner-line">MEM [PTR_B]: <span style="color:white;">SYNCED</span></div>
-        <div class="scanner-line" style="color:#ff0055; font-size: 6px; margin-top: 10px;">CPU RAW STREAM (<span id="cpu-type">M68K</span>):</div>
-        <div id="hex-dump"></div>
-    </div>
     <div id="ejs-container"></div>
 </div>
 
@@ -58,9 +45,6 @@
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>ИМПЕРИЯ РЕТРО-ИГР</h1>
         <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
-        <div style="font-size: 8px; color:#666; margin-top: 20px; text-align: center; line-height: 1.5;">
-            > ЭМУЛЯЦИЯ: SEGA, NES, NDS, SNES<br>> ИГР В БАЗЕ: 24
-        </div>
     </div>
 
     <div id="s-emu-menu" class="screen" style="justify-content: flex-start;">
@@ -108,20 +92,6 @@
     try { tg.disableVerticalSwipes(); } catch(e) {}
     function navScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-    let memoryScannerInterval = null, hexStreamInterval = null;
-
-    function startRAMScanner(coreType) {
-        document.getElementById('ram-scanner').style.display = 'block';
-        const statusEl = document.getElementById('ram-status'), dumpEl = document.getElementById('hex-dump');
-        let cpuName = "M68K";
-        if(coreType === 'nes') cpuName = "MOS 6502";
-        if(coreType === 'snes') cpuName = "RICOH 5A22";
-        if(coreType === 'nds') cpuName = "ARM9/ARM7";
-        document.getElementById('cpu-type').innerText = cpuName;
-        hexStreamInterval = setInterval(() => { let stream = ""; for(let i=0; i<4; i++) { stream += Array.from({length: 8}, () => Math.floor(Math.random()*256).toString(16).padStart(2, '0').toUpperCase()).join(' ') + "<br>"; } dumpEl.innerHTML = stream; }, 50);
-        memoryScannerInterval = setInterval(() => { try { if (window.EJS_emulator && window.EJS_emulator.Module && window.EJS_emulator.Module.HEAPU8) { statusEl.innerText = "SYSTEM HOOKED [WASM BLOCKED]"; statusEl.style.color = "#ff0055"; statusEl.style.animation = "none"; } } catch (e) {} }, 1000);
-    }
-
     function launchEmulator(fileName, coreType) {
         document.getElementById('app-ui').style.display = 'none';
         const emuLayer = document.getElementById('emulator-layer');
@@ -137,13 +107,10 @@
 
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-        script.onload = () => { setTimeout(() => startRAMScanner(coreType), 3000); };
         document.body.appendChild(script);
     }
 
     function stopEmulator() { 
-        if(memoryScannerInterval) clearInterval(memoryScannerInterval);
-        if(hexStreamInterval) clearInterval(hexStreamInterval);
         location.reload(); 
     }
 </script>
