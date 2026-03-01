@@ -76,14 +76,11 @@
 
         .btn-retro { 
             background: linear-gradient(180deg, #161b2e 0%, #0b0e1a 100%);
-            color: var(--neon-cyan); 
-            border: 2px solid var(--neon-cyan); 
-            padding: 18px; width: 100%; 
-            font-size: 0.7rem; font-family: var(--font-retro); text-transform: uppercase; 
-            cursor: pointer; margin-bottom: 12px; border-radius: 12px;
+            color: var(--neon-cyan); border: 2px solid var(--neon-cyan); 
+            padding: 18px; width: 100%; font-size: 0.7rem; font-family: var(--font-retro); 
+            text-transform: uppercase; cursor: pointer; margin-bottom: 12px; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(0, 240, 255, 0.1); 
-            text-shadow: 1px 1px 0 #000;
-            transition: all 0.15s ease;
+            text-shadow: 1px 1px 0 #000; transition: all 0.15s ease;
             display: flex; justify-content: center; align-items: center; gap: 10px;
         }
         .btn-retro:active { transform: translateY(3px) scale(0.98); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); background: #0b0e1a; }
@@ -102,8 +99,9 @@
         }
         select optgroup { font-family: var(--font-modern); background: #111; color: #fff; }
 
+        /* ЭМУЛЯТОР */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
-        #ejs-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        #ejs-container { width: 100vw !important; height: 100vh !important; display: block; }
         
         #exit-emu-btn { 
             position: absolute; top: 20px; right: 20px; z-index: 10000; padding: 12px 15px; 
@@ -116,7 +114,7 @@
         #emu-tournament-ui { 
             display: none; position: absolute; top: 20px; left: 20px; z-index: 10000; padding: 12px; 
             background: rgba(0,0,0,0.7); border: 2px solid var(--neon-gold); color: var(--neon-gold); 
-            font-family: var(--font-retro); font-size: 8px; border-radius: 8px; text-shadow: 1px 1px 0 #000; backdrop-filter: blur(5px);
+            font-family: var(--font-retro); font-size: 8px; border-radius: 8px; text-shadow: 1px 1px 0 #000; backdrop-filter: blur(5px); pointer-events: none;
         }
 
         .hint-text { font-size: 0.9rem; color: #8892b0; text-align: center; margin-bottom: 20px; line-height: 1.4; }
@@ -125,12 +123,14 @@
 </head>
 <body>
 
+<!-- СЛОЙ ДЛЯ ЭМУЛЯТОРА -->
 <div id="emulator-layer">
     <div id="emu-tournament-ui">СЧЕТ: <span id="emu-score">0</span></div>
     <button id="exit-emu-btn" onclick="stopEmulator()">ВЫХОД</button>
     <div id="ejs-container"></div>
 </div>
 
+<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
 <div id="app">
     <div id="s-main" class="screen active" style="justify-content: center;">
         <div class="panel">
@@ -186,7 +186,6 @@
         </div>
     </div>
 
-    <!-- ИГРА С ДРУГОМ -->
     <div id="s-friend" class="screen" style="justify-content:center;">
         <div class="panel">
             <h2>ИГРА С ДРУГОМ</h2>
@@ -217,7 +216,6 @@
         </div>
     </div>
 
-    <!-- ТУРНИРЫ -->
     <div id="s-tournaments" class="screen">
         <div class="panel">
             <h2>ТУРНИРЫ</h2>
@@ -256,7 +254,6 @@
         </div>
     </div>
 
-    <!-- ОЖИДАНИЕ -->
     <div id="s-waiting" class="screen" style="justify-content:center;">
         <div class="panel">
             <h2 style="color:var(--neon-gold)">ОЖИДАНИЕ ИГРОКА</h2>
@@ -270,7 +267,6 @@
     </div>
     <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
 
-    <!-- ПРОФИЛЬ -->
     <div id="s-profile" class="screen" style="justify-content:center;">
         <div class="panel">
             <h2>ПРОФИЛЬ ИГРОКА</h2>
@@ -281,7 +277,6 @@
         </div>
     </div>
 
-    <!-- ЭКРАН HTML5 ИГР -->
     <div id="s-game" class="screen" style="padding:0; justify-content:center;">
         <div style="display:flex; justify-content:space-between; width:240px; margin-bottom:10px; font-family:var(--font-retro); font-size:10px;">
             <span id="g-score-label">SCORE:</span> <span id="g-score" style="color:var(--neon-gold)">0</span>
@@ -304,7 +299,7 @@
         <h2 style="color:var(--neon-pink)">ИГРА ОКОНЧЕНА</h2>
         <p class="hint-text" style="color:#fff;">Твой результат:<br><br><span id="end-score" class="highlight" style="font-size:1.5rem;">0</span></p>
         <p id="end-msg" class="hint-text" style="color:var(--neon-cyan); margin-bottom:20px;"></p>
-        <button class="btn-retro" onclick="backToMenu()">В ГЛАВНОЕ МЕНЮ</button>
+        <button class="btn-retro" onclick="location.reload()">В ГЛАВНОЕ МЕНЮ</button>
     </div>
 </div>
 
@@ -375,7 +370,9 @@
         
         if (t.startsWith('emu_')) {
             const fileName = t.replace('emu_', '');
-            let core = 'genesis';
+            
+            // ВАЖНО: возвращено ядро 'sega', как в твоем 100% рабочем коде
+            let core = 'sega';
             if (fileName.endsWith('.nes')) core = 'nes';
             else if (fileName.endsWith('.sfc')) core = 'snes'; 
 
@@ -402,39 +399,33 @@
     }
 
     // =================================================================
-    // АБСОЛЮТНЫЙ ПУТЬ К IFRAME (РЕШЕНИЕ ОШИБКИ ТЕЛЕГРАМА)
+    // ВЕРНУЛ ТВОЙ ОРИГИНАЛЬНЫЙ РАБОЧИЙ МЕТОД (БЕЗ IFRAME)
     // =================================================================
     function launchEmulator(fileName, coreType) {
         document.getElementById('emulator-layer').style.display = 'block';
-        const container = document.getElementById('ejs-container');
-        
-        // Получаем чистый URL сервера (например, https://my-app.onrender.com)
-        const currentUrl = window.location.href.split('?')[0].split('#')[0];
-        let baseUrl = currentUrl;
-        if(baseUrl.endsWith('/index.html')) baseUrl = baseUrl.replace('/index.html', '');
-        if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+        window.EJS_player = '#ejs-container';
+        window.EJS_core = coreType;
+        window.EJS_gameUrl = '/' + fileName;
+        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+        window.EJS_virtualGamepad = true;
+        window.EJS_startOnLoaded = true;
+        window.EJS_Buttons = { saveState: !isRanked, loadState: !isRanked, fullscreen: true, restart: true }; 
 
-        // Формируем 100% точный путь к game.html
-        const iframeSrc = `${baseUrl}/game.html?core=${coreType}&game=${encodeURIComponent(fileName)}`;
-
-        // Вставляем Iframe
-        container.innerHTML = `<iframe src="${iframeSrc}" style="width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;" allow="autoplay; fullscreen"></iframe>`;
+        const script = document.createElement('script');
+        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+        document.body.appendChild(script);
     }
 
     async function stopEmulator() {
         if (isRanked || lobby) {
-            tg.showConfirm('Завершить матч? Твой текущий счет будет сохранен.', async c => {
+            tg.showConfirm('Точно завершить матч? Твой текущий счет будет отправлен оппоненту.', async c => {
                 if(c) {
-                    document.getElementById('ejs-container').innerHTML = '';
                     await gameOver();
+                    location.reload(); // Hard reset to kill audio
                 }
             });
         } else {
-            document.getElementById('ejs-container').innerHTML = '';
-            document.getElementById('emulator-layer').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            navScreen('s-single');
-            if(emuTimerInterval) { clearInterval(emuTimerInterval); emuTimerInterval = null; }
+            location.reload(); // Hard reset to kill audio
         }
     }
 
@@ -442,7 +433,6 @@
         if(loop) cancelAnimationFrame(loop); loop = null;
         if(emuTimerInterval) { clearInterval(emuTimerInterval); emuTimerInterval = null; }
         
-        document.getElementById('ejs-container').innerHTML = ''; 
         document.getElementById('emulator-layer').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         document.getElementById('modal-over').style.display='flex';
@@ -452,8 +442,7 @@
         await fetch(API+'/api/submit-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,game:gameType,score:score,lobbyId:lobby?lobby.lobbyId:null})})
     }
 
-    function quitGame(){tg.showConfirm('Сдаться?',async c=>{if(!c)return;if(lobby)await fetch(API+'/api/forfeit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,lobbyId:lobby.lobbyId})}); backToMenu(); })}
-    function backToMenu() { document.getElementById('modal-over').style.display='none'; navScreen('s-main'); }
+    function quitGame(){tg.showConfirm('Сдаться?',async c=>{if(!c)return;if(lobby)await fetch(API+'/api/forfeit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,lobbyId:lobby.lobbyId})}); location.reload(); })}
     function switchGame(t){if(t==='sonic')runSonic();else if(t==='tetris')runTetris();else if(t==='bomber')runBomber();else if(t==='gold')runGoldMiner();else if(t==='snake')runSnake();else if(t==='battleCity')runBattleCity();else if(t==='roadFighter')runRoadFighter();else if(t==='spaceInvaders')runSpaceInvaders();else if(t==='airHockey')runAirHockey()}
     
     // =================================================================
