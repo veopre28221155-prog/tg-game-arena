@@ -12,10 +12,13 @@
         body { margin: 0; background: #050505; color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; }
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
         .screen.active { display: flex; }
-        h1, h2 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
+        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
+        h3 { font-size: 0.7rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
         .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
         .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-green { color: #0f0; box-shadow: inset 4px 4px 0 rgba(0, 255, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .duel-card { background: rgba(255, 215, 0, 0.05); border: 1px solid var(--accent-gold); padding: 15px; margin-bottom: 15px; width: 100%; max-width: 320px; }
         .duel-card h3 { color: #fff; margin-top: 0; font-size: 0.7rem; border: none; }
         .duel-card p { font-size: 8px; color: #aaa; line-height: 1.5; margin-bottom: 15px; }
@@ -32,7 +35,6 @@
 </div>
 
 <div id="app-ui">
-    <!-- ЭТОТ ЭКРАН ТЕПЕРЬ АКТИВЕН ПО УМОЛЧАНИЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1 style="font-size: 1.4rem; color: var(--accent-neon);">ДУЭЛЬНАЯ АРЕНА</h1>
         <button class="btn-pixel btn-gold" style="border-color:#fff;" onclick="loadDuelHall()">⚔️ ВОЙТИ В ДУЭЛЬНЫЙ ЗАЛ</button>
@@ -43,22 +45,42 @@
         <h2 style="color: var(--accent-gold);">ДУЭЛЬНЫЙ ЗАЛ</h2>
         <button class="btn-pixel btn-pink" style="margin-bottom: 20px;" onclick="navScreen('s-main')">◀ НАЗАД</button>
         <div id="duel-list" style="width:100%; max-width: 320px;"></div>
-        <h3 style="font-size: 0.7rem; margin-top: 30px; color: #fff; border-bottom: 1px dashed #666; padding-bottom: 10px;">СОЗДАТЬ СВОЮ ДУЭЛЬ</h3>
-        <button class="btn-pixel" onclick="createDuel('Battletoads DD', 'btdd.md', 'sega')">🐸 Battletoads DD</button>
+        <h3 style="font-size: 0.7rem; margin-top: 30px; color: #fff; border-bottom: 1px dashed #666; padding-bottom: 10px;">СОЗДАТЬ ДУЭЛЬ (Марафон)</h3>
+        <button class="btn-pixel" onclick="createDuel('Sonic 2', 'sonic2.md', 'sega')">🦔 Sonic 2</button>
         <button class="btn-pixel" onclick="createDuel('Mortal Kombat 3', 'umk3.md', 'sega')">🐉 Mortal Kombat 3</button>
+        <button class="btn-pixel" onclick="createDuel('Battletoads DD', 'btdd.md', 'sega')">🐸 Battletoads DD</button>
         <button class="btn-pixel" onclick="createDuel('Road Rash', 'roadrash.md', 'sega')">🏍 Road Rash</button>
+        <button class="btn-pixel" onclick="createDuel('Tanks', 'tanks.nes', 'nes')">🚜 Tanks (Dendy)</button>
     </div>
     
-    <!-- ПОЛНОЦЕННЫЙ ЭКРАН СВОБОДНОЙ ИГРЫ -->
     <div id="s-freeplay" class="screen" style="justify-content: flex-start;">
-        <h2 style="color: var(--accent-neon);">СВОБОДНАЯ ИГРА</h2>
+        <h2 style="color: var(--accent-neon);">БИБЛИОТЕКА ИГР</h2>
         <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">◀ НАЗАД</button>
-        <p style="font-size: 10px; color: #666; text-align: center; margin-bottom: 20px;">В этом режиме нет турниров.<br>Просто играй в свое удовольствие.</p>
-        <!-- Здесь твоя полная библиотека -->
-        <button class="btn-pixel" onclick="launchEmulator('sonic2.md', 'sega')">🦔 Sonic 2</button>
-        <button class="btn-pixel" onclick="launchEmulator('umk3.md', 'sega')">🐉 Ultimate MK3</button>
-        <button class="btn-pixel" onclick="launchEmulator('tanks.nes', 'nes')">🚜 Battle City</button>
-        <!-- Добавь сюда остальные 22 игры, если нужно -->
+        
+        <h3 style="color: var(--accent-gold);">SEGA GENESIS (16-BIT)</h3>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('sonic2.md', 'sega')">🦔 Sonic 2</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('umk3.md', 'sega')">🐉 Ultimate Mortal Kombat 3</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('btdd.md', 'sega')">🐸 Battletoads Double Dragon</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('battletoads.md', 'sega')">🐸 Battletoads</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('comix.md', 'sega')">💥 Comix Zone</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('jurassic.md', 'sega')">🦖 Jurassic Park</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('lionking.md', 'sega')">🦁 The Lion King</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('roadrash.md', 'sega')">🏍 Road Rash</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('simpsons.md', 'sega')">🍩 The Simpsons</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('sunset.md', 'sega')">🤠 Sunset Riders</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('tinytoon_sega.md', 'sega')">🐰 Tiny Toon (SEGA)</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('tmnt.md', 'sega')">🐢 TMNT</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('xmen2.md', 'sega')">❌ X-Men 2</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('sonic.bin', 'sega')">🦔 Sonic 1 (старый .bin)</button>
+
+        <h3 style="color: #0f0;">DENDY / NES (8-BIT)</h3>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tanks.nes', 'nes')">🚜 Battle City (Танчики)</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon1.nes', 'nes')">🐰 Tiny Toon 1</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon2.nes', 'nes')">🐰 Tiny Toon 2</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('1200in1.nes', 'nes')">📼 1200-in-1</button>
+
+        <h3 style="color: #b0f;">SUPER NINTENDO (SNES)</h3>
+        <button class="btn-pixel btn-purple" onclick="launchEmulator('realmonsters.sfc', 'snes')">👹 Aaahh!!! Real Monsters</button>
     </div>
 </div>
 
@@ -85,6 +107,7 @@
 
             for (const id in openDuels) {
                 const duel = openDuels[id];
+                // ВАЖНО: Теперь мы передаем все данные об игре для второго игрока
                 duelListEl.innerHTML += `
                     <div class="duel-card">
                         <h3>⚔️ ${duel.game.toUpperCase()}</h3>
@@ -139,7 +162,7 @@
 
             let resultMessage = `Твой раунд завершен! Счет: ${finalScore}.`;
             if (data.duel.status === 'finished') {
-                const winner = data.duel.score1 > data.duel.score2 ? data.duel.player1 : data.duel.player2;
+                const winner = data.duel.score1 >= data.duel.score2 ? data.duel.player1 : data.duel.player2;
                 resultMessage = `ДУЭЛЬ ЗАВЕРШЕНА!\n\n${data.duel.player1}: ${data.duel.score1}\n${data.duel.player2}: ${data.duel.score2}\n\nПОБЕДИТЕЛЬ: ${winner}!`;
             }
             alert(resultMessage);
