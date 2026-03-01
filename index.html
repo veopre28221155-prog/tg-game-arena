@@ -8,19 +8,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root { --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; --btn-base: #1a1a1a; --btn-border: #000000; --btn-shadow: rgba(0,0,0,0.8); }
-        body { margin: 0; background: #050505; color: var(--tg-text); font-family: var(--font-retro); }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #050505; color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; }
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
         .screen.active { display: flex; }
         h1, h2 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
         .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
         .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
-        
-        /* Стили для Дуэльного Зала */
         .duel-card { background: rgba(255, 215, 0, 0.05); border: 1px solid var(--accent-gold); padding: 15px; margin-bottom: 15px; width: 100%; max-width: 320px; }
         .duel-card h3 { color: #fff; margin-top: 0; font-size: 0.7rem; border: none; }
         .duel-card p { font-size: 8px; color: #aaa; line-height: 1.5; margin-bottom: 15px; }
-
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100% !important; height: 100% !important; }
         #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; }
@@ -34,48 +32,53 @@
 </div>
 
 <div id="app-ui">
+    <!-- ЭТОТ ЭКРАН ТЕПЕРЬ АКТИВЕН ПО УМОЛЧАНИЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1 style="font-size: 1.4rem; color: var(--accent-neon);">ДУЭЛЬНАЯ АРЕНА</h1>
         <button class="btn-pixel btn-gold" style="border-color:#fff;" onclick="loadDuelHall()">⚔️ ВОЙТИ В ДУЭЛЬНЫЙ ЗАЛ</button>
         <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-freeplay')">🕹️ СВОБОДНАЯ ИГРА</button>
     </div>
 
-    <!-- ДУЭЛЬНЫЙ ЗАЛ -->
     <div id="s-duel-hall" class="screen" style="justify-content: flex-start;">
         <h2 style="color: var(--accent-gold);">ДУЭЛЬНЫЙ ЗАЛ</h2>
         <button class="btn-pixel btn-pink" style="margin-bottom: 20px;" onclick="navScreen('s-main')">◀ НАЗАД</button>
-        <div id="duel-list" style="width:100%; max-width: 320px;">
-            <p style="font-size: 10px; color: #666;">Загрузка дуэлей...</p>
-        </div>
-        <h3 style="font-size: 0.7rem; margin-top: 30px; color: #fff;">СОЗДАТЬ СВОЮ ДУЭЛЬ</h3>
-        <button class="btn-pixel" onclick="createDuel('Battletoads', 'btdd.md', 'sega')">🐸 Battletoads (Марафон)</button>
-        <button class="btn-pixel" onclick="createDuel('Mortal Kombat 3', 'umk3.md', 'sega')">🐉 MK3 (Выживание)</button>
+        <div id="duel-list" style="width:100%; max-width: 320px;"></div>
+        <h3 style="font-size: 0.7rem; margin-top: 30px; color: #fff; border-bottom: 1px dashed #666; padding-bottom: 10px;">СОЗДАТЬ СВОЮ ДУЭЛЬ</h3>
+        <button class="btn-pixel" onclick="createDuel('Battletoads DD', 'btdd.md', 'sega')">🐸 Battletoads DD</button>
+        <button class="btn-pixel" onclick="createDuel('Mortal Kombat 3', 'umk3.md', 'sega')">🐉 Mortal Kombat 3</button>
+        <button class="btn-pixel" onclick="createDuel('Road Rash', 'roadrash.md', 'sega')">🏍 Road Rash</button>
     </div>
     
-    <!-- Свободная игра -->
-    <div id="s-freeplay" class="screen"><h2 style="color: var(--accent-neon);">СВОБОДНАЯ ИГРА</h2>...</div>
+    <!-- ПОЛНОЦЕННЫЙ ЭКРАН СВОБОДНОЙ ИГРЫ -->
+    <div id="s-freeplay" class="screen" style="justify-content: flex-start;">
+        <h2 style="color: var(--accent-neon);">СВОБОДНАЯ ИГРА</h2>
+        <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">◀ НАЗАД</button>
+        <p style="font-size: 10px; color: #666; text-align: center; margin-bottom: 20px;">В этом режиме нет турниров.<br>Просто играй в свое удовольствие.</p>
+        <!-- Здесь твоя полная библиотека -->
+        <button class="btn-pixel" onclick="launchEmulator('sonic2.md', 'sega')">🦔 Sonic 2</button>
+        <button class="btn-pixel" onclick="launchEmulator('umk3.md', 'sega')">🐉 Ultimate MK3</button>
+        <button class="btn-pixel" onclick="launchEmulator('tanks.nes', 'nes')">🚜 Battle City</button>
+        <!-- Добавь сюда остальные 22 игры, если нужно -->
+    </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     const myName = tg.initDataUnsafe?.user?.username || `User_${Math.floor(Math.random()*1000)}`;
-
     let currentDuel = { id: null, score: 0 };
     let duelTimer = null;
 
     function navScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-    // ЗАГРУЗКА СПИСКА ДУЭЛЕЙ С СЕРВЕРА
     async function loadDuelHall() {
         navScreen('s-duel-hall');
         const duelListEl = document.getElementById('duel-list');
-        duelListEl.innerHTML = `<p style="font-size: 10px; color: #666;">Обновление...</p>`;
-
+        duelListEl.innerHTML = `<p style="font-size: 10px; color: #666;">Загрузка дуэлей с сервера...</p>`;
         try {
             const response = await fetch('/api/get-duels');
             const openDuels = await response.json();
             
-            duelListEl.innerHTML = ''; // Очищаем список
+            duelListEl.innerHTML = '';
             if (Object.keys(openDuels).length === 0) {
                  duelListEl.innerHTML = `<p style="font-size: 10px; color: #666;">Нет активных дуэлей. Создай свою!</p>`;
             }
@@ -86,75 +89,70 @@
                     <div class="duel-card">
                         <h3>⚔️ ${duel.game.toUpperCase()}</h3>
                         <p>Игрок ${duel.player1} ждет оппонента. Его счет: ${duel.score1}. Побей его!</p>
-                        <button class="btn-pixel btn-gold" onclick="joinDuel('${id}', '${duel.game}', '${duel.score1}')">ПРИНЯТЬ ВЫЗОВ</button>
+                        <button class="btn-pixel btn-gold" onclick="joinDuel('${id}', '${duel.fileName}', '${duel.core}', '${duel.score1}')">ПРИНЯТЬ ВЫЗОВ</button>
                     </div>`;
             }
         } catch (error) {
-            duelListEl.innerHTML = `<p style="font-size: 10px; color: #f00;">Ошибка связи с сервером.</p>`;
+            console.error("Fetch error:", error);
+            duelListEl.innerHTML = `<p style="font-size: 10px; color: #f00;">Ошибка связи с сервером. Попробуй позже.</p>`;
         }
     }
 
-    // СОЗДАТЬ ДУЭЛЬ (Игрок 1)
     async function createDuel(gameName, fileName, core) {
-        const response = await fetch('/api/create-duel', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ game: gameName, playerName: myName })
-        });
-        const data = await response.json();
-        currentDuel.id = data.duelId;
-        alert(`Дуэль создана! ID: ${currentDuel.id}\nСейчас начнется твой раунд. Продержись как можно дольше!`);
-        
-        // Запускаем игру для первого игрока
-        launchEmulator(fileName, core);
-        startMarathonTimer();
+        try {
+            const response = await fetch('/api/create-duel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ game: gameName, fileName, core, playerName: myName })
+            });
+            const data = await response.json();
+            currentDuel.id = data.duelId;
+            alert(`Дуэль создана! Сейчас начнется твой раунд. Продержись как можно дольше!`);
+            launchEmulator(fileName, core, true);
+            startMarathonTimer();
+        } catch(e) { alert('Не удалось создать дуэль. Сервер недоступен.'); }
     }
 
-    // ПРИСОЕДИНИТЬСЯ К ДУЭЛИ (Игрок 2)
-    function joinDuel(duelId, gameName, opponentScore) {
+    function joinDuel(duelId, fileName, core, opponentScore) {
         currentDuel.id = duelId;
-        alert(`Вызов принят!\nИгра: ${gameName}\nЦель: побить счет ${opponentScore}\nТвой раунд начинается СЕЙЧАС!`);
-        
-        // Здесь нужен механизм для определения fileName и core по gameName, пока упростим
-        let fileName = gameName === 'Battletoads' ? 'btdd.md' : 'umk3.md';
-        let core = 'sega';
-
-        launchEmulator(fileName, core);
+        alert(`Вызов принят!\nЦель: побить счет ${opponentScore}\nТвой раунд начинается СЕЙЧАС!`);
+        launchEmulator(fileName, core, true);
         startMarathonTimer();
     }
     
     function startMarathonTimer() {
         currentDuel.score = 0;
-        duelTimer = setInterval(() => {
-            currentDuel.score++;
-        }, 1000);
+        duelTimer = setInterval(() => { currentDuel.score++; }, 1000);
     }
     
-    // ЗАВЕРШИТЬ РАН (Сдаться или умереть)
     async function surrender() {
         clearInterval(duelTimer);
         const finalScore = currentDuel.score;
 
-        const response = await fetch('/api/submit-score', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ duelId: currentDuel.id, playerName: myName, score: finalScore })
-        });
-        const data = await response.json();
+        try {
+            const response = await fetch('/api/submit-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ duelId: currentDuel.id, playerName: myName, score: finalScore })
+            });
+            const data = await response.json();
 
-        let resultMessage = `Твой раунд завершен!\nСчет: ${finalScore}\nТеперь твой результат на сервере.`;
-        if (data.duel.status === 'finished') {
-            const winner = data.duel.score1 > data.duel.score2 ? data.duel.player1 : data.duel.player2;
-            resultMessage = `ДУЭЛЬ ЗАВЕРШЕНА!\n\n${data.duel.player1}: ${data.duel.score1}\n${data.duel.player2}: ${data.duel.score2}\n\nПОБЕДИТЕЛЬ: ${winner}!`;
-        }
+            let resultMessage = `Твой раунд завершен! Счет: ${finalScore}.`;
+            if (data.duel.status === 'finished') {
+                const winner = data.duel.score1 > data.duel.score2 ? data.duel.player1 : data.duel.player2;
+                resultMessage = `ДУЭЛЬ ЗАВЕРШЕНА!\n\n${data.duel.player1}: ${data.duel.score1}\n${data.duel.player2}: ${data.duel.score2}\n\nПОБЕДИТЕЛЬ: ${winner}!`;
+            }
+            alert(resultMessage);
+        } catch(e) { alert('Не удалось отправить результат. Проверь соединение.'); }
         
-        alert(resultMessage);
         location.reload();
     }
 
-    function launchEmulator(fileName, core) {
+    function launchEmulator(fileName, core, isDuel = false) {
         document.getElementById('app-ui').style.display = 'none';
         document.getElementById('emulator-layer').style.display = 'block';
+        document.getElementById('exit-emu-btn').style.display = isDuel ? 'block' : 'none';
+
         window.EJS_player = '#ejs-container';
         window.EJS_core = core;
         window.EJS_gameUrl = '/' + fileName;
