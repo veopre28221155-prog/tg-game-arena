@@ -5,209 +5,325 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --tg-bg: #050505; --tg-text: #ffffff;
-            --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700;
+            --bg-dark: #070913;
+            --panel-bg: rgba(12, 16, 33, 0.85);
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff0055;
+            --neon-gold: #ffd700;
             --font-retro: 'Press Start 2P', cursive;
-            --btn-base: #1a1a1a; --btn-border: #000000;
-            --btn-highlight: rgba(255,255,255,0.2); --btn-shadow: rgba(0,0,0,0.8);
+            --font-modern: 'Rajdhani', sans-serif;
         }
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #050505; background-image: radial-gradient(circle at center, #111424 0%, #000000 100%); color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; }
-        
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
-        .screen.active { display: flex; }
-        
-        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; line-height: 1.4; }
-        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; }
-        h3 { font-size: 0.7rem; color: #fff; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
-        
-        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 16px; width: 100%; max-width: 320px; font-size: 0.7rem; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 12px; position: relative; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(0, 240, 255, 0.2); text-shadow: 2px 2px 0 #000; }
-        .btn-pixel:active { box-shadow: inset 4px 4px 0 var(--btn-shadow); transform: translateY(2px); }
-        .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(255, 215, 0, 0.2); }
-        .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(255, 0, 85, 0.2); }
-        .btn-green { color: #0f0; box-shadow: inset 4px 4px 0 rgba(0, 255, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
-        .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
-        .btn-sm { padding: 10px; font-size: 0.6rem; }
 
-        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 1000; }
-        #ejs-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
-        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 1010; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; box-shadow: 0 0 10px #f05; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        #emu-tournament-ui { display: none; position: absolute; top: 15px; left: 15px; z-index: 1010; padding: 10px; background: rgba(0,0,0,0.8); border: 2px solid var(--accent-gold); color: var(--accent-gold); font-family: var(--font-retro); font-size: 8px; text-shadow: 1px 1px 0 #000; pointer-events: none;}
+        body { 
+            margin: 0; 
+            background-color: var(--bg-dark);
+            /* Киберпанк сетка на фоне */
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: center;
+            color: #fff; 
+            font-family: var(--font-modern); 
+            height: 100vh; width: 100vw; 
+            overflow: hidden; user-select: none; touch-action: manipulation; 
+        }
+        
+        /* Анимированный градиент поверх сетки для глубины */
+        body::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 0%, #000000 100%);
+            z-index: -1; pointer-events: none;
+        }
+
+        .screen { 
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            flex-direction: column; align-items: center; overflow-y: auto; 
+            padding: 20px; padding-bottom: 50px; z-index: 10;
+        }
+        .screen.active { display: flex; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Стеклянные панели (Glassmorphism) */
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 16px;
+            padding: 25px 20px;
+            width: 100%; max-width: 340px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0, 240, 255, 0.05);
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        h1, h2, h3 { text-align: center; text-transform: uppercase; margin: 0 0 20px 0; font-family: var(--font-retro); line-height: 1.4; }
+        h1 { 
+            font-size: 1.3rem; color: var(--neon-cyan); 
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.6), 3px 3px 0 rgba(0,0,0,0.8); 
+            margin-bottom: 30px; letter-spacing: 1px;
+        }
+        h2 { font-size: 1rem; color: #fff; text-shadow: 2px 2px 0 #000; }
+        h3 { 
+            font-size: 0.6rem; color: rgba(255,255,255,0.6); 
+            margin-top: 25px; margin-bottom: 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; width: 100%; letter-spacing: 2px;
+        }
+
+        /* Современные Ретро-Кнопки */
+        .btn-retro { 
+            background: linear-gradient(180deg, #161b2e 0%, #0b0e1a 100%);
+            color: var(--neon-cyan); 
+            border: 2px solid var(--neon-cyan); 
+            padding: 18px; width: 100%; 
+            font-size: 0.7rem; font-family: var(--font-retro); text-transform: uppercase; 
+            cursor: pointer; margin-bottom: 12px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(0, 240, 255, 0.1); 
+            text-shadow: 1px 1px 0 #000;
+            transition: all 0.15s ease;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-retro:active { transform: translateY(3px) scale(0.98); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); background: #0b0e1a; }
+        
+        .btn-gold { 
+            color: var(--neon-gold); border-color: var(--neon-gold); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255, 215, 0, 0.1); 
+        }
+        .btn-gold:active { box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+        
+        .btn-pink { 
+            color: var(--neon-pink); border-color: var(--neon-pink); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255, 0, 85, 0.1); 
+        }
+        .btn-pink:active { box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
+
+        .btn-sm { padding: 14px; font-size: 0.55rem; border-radius: 8px; border-width: 1px; margin-bottom: 8px; }
+
+        /* Элементы форм */
+        select, input {
+            background: #000; color: var(--neon-cyan); font-family: var(--font-modern); font-size: 1rem; font-weight: bold;
+            border: 2px solid rgba(0, 240, 255, 0.5); padding: 15px; border-radius: 10px; width: 100%; margin-bottom: 15px; outline: none;
+        }
+        select optgroup { font-family: var(--font-modern); background: #111; color: #fff; }
+
+        /* ЭМУЛЯТОР НА ВЕСЬ ЭКРАН */
+        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
+        #ejs-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        
+        #exit-emu-btn { 
+            position: absolute; top: 20px; right: 20px; z-index: 10000; padding: 12px 15px; 
+            background: rgba(0,0,0,0.7); border: 2px solid var(--neon-pink); color: var(--neon-pink); 
+            font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 8px; 
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); backdrop-filter: blur(5px);
+        }
+        #exit-emu-btn:active { background: var(--neon-pink); color: #000; }
+        
+        #emu-tournament-ui { 
+            display: none; position: absolute; top: 20px; left: 20px; z-index: 10000; padding: 12px; 
+            background: rgba(0,0,0,0.7); border: 2px solid var(--neon-gold); color: var(--neon-gold); 
+            font-family: var(--font-retro); font-size: 8px; border-radius: 8px; text-shadow: 1px 1px 0 #000; backdrop-filter: blur(5px);
+        }
+
+        /* Текст подсказок */
+        .hint-text { font-size: 0.9rem; color: #8892b0; text-align: center; margin-bottom: 20px; line-height: 1.4; }
+        .highlight { color: var(--neon-gold); font-weight: bold; font-family: var(--font-retro); font-size: 0.7rem; }
     </style>
 </head>
 <body>
 
+<!-- СЛОЙ ДЛЯ ЭМУЛЯТОРА -->
 <div id="emulator-layer">
     <div id="emu-tournament-ui">СЧЕТ: <span id="emu-score">0</span></div>
     <button id="exit-emu-btn" onclick="stopEmulator()">ВЫХОД</button>
     <div id="ejs-container"></div>
 </div>
 
+<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
 <div id="app">
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
-        <h1>RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="navScreen('s-single')">🎮 ОДИНОЧНАЯ ИГРА</button>
-        <button class="btn-pixel" onclick="navScreen('s-friend')">🤝 ИГРА С ДРУГОМ</button>
-        <button class="btn-pixel btn-gold" onclick="openTournaments()">⚔️ ТУРНИРЫ (PVP)</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
+        <div class="panel">
+            <h1>RETRO ARENA</h1>
+            <button class="btn-retro" onclick="navScreen('s-single')">🎮 ОДИНОЧНАЯ ИГРА</button>
+            <button class="btn-retro" onclick="navScreen('s-friend')">🤝 ИГРА С ДРУГОМ</button>
+            <button class="btn-retro btn-gold" onclick="openTournaments()">⚔️ ТУРНИРЫ (PVP)</button>
+            <button class="btn-retro btn-pink" onclick="navScreen('s-profile')" style="margin-top: 10px;">👤 ПРОФИЛЬ</button>
+        </div>
     </div>
 
     <!-- ОДИНОЧНАЯ ИГРА -->
     <div id="s-single" class="screen">
-        <h2>СВОБОДНАЯ ИГРА</h2>
-        <div style="width: 100%; max-width:320px; flex-grow:1;">
+        <div class="panel" style="max-width: 360px;">
+            <h2>СВОБОДНАЯ ИГРА</h2>
             
-            <h3>HTML5 ИГРЫ</h3>
-            <button class="btn-pixel btn-sm" onclick="launchGame('sonic', false)">🦔 SONIC 16-BIT (HTML5)</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('tetris', false)">🧱 TETRIS</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('bomber', false)">💣 BOMBER ARENA</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('gold', false)">⚓ GOLD MINER</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('snake', false)">🐍 CLASSIC SNAKE</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('battleCity', false)">🚜 BATTLE CITY</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('spaceInvaders', false)">👾 SPACE INVADERS</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('roadFighter', false)">🏎 ROAD FIGHTER</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('airHockey', false)">🏒 AIR HOCKEY</button>
+            <h3>⚡ HTML5 ИГРЫ</h3>
+            <button class="btn-retro btn-sm" onclick="launchGame('sonic', false)">🦔 SONIC 16-BIT</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('tetris', false)">🧱 TETRIS</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('bomber', false)">💣 BOMBER ARENA</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('gold', false)">⚓ GOLD MINER</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('snake', false)">🐍 CLASSIC SNAKE</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('battleCity', false)">🚜 BATTLE CITY</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('spaceInvaders', false)">👾 SPACE INVADERS</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('roadFighter', false)">🏎 ROAD FIGHTER</button>
+            <button class="btn-retro btn-sm" onclick="launchGame('airHockey', false)">🏒 AIR HOCKEY</button>
 
-            <h3 style="color: var(--accent-gold);">SEGA GENESIS (16-BIT)</h3>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic2.md', false)">🦔 Sonic 2</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_umk3.md', false)">🐉 U.M.K. 3</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_comix.md', false)">💥 Comix Zone</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_btdd.md', false)">🐸 Battletoads DD</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_battletoads.md', false)">🐸 Battletoads</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_roadrash.md', false)">🏍 Road Rash</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_tmnt.md', false)">🐢 TMNT</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_xmen2.md', false)">❌ X-Men 2</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_jurassic.md', false)">🦖 Jurassic Park</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_lionking.md', false)">🦁 The Lion King</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_simpsons.md', false)">🍩 The Simpsons</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sunset.md', false)">🤠 Sunset Riders</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_tinytoon_sega.md', false)">🐰 Tiny Toon</button>
+            <h3 style="color: var(--neon-gold); border-color: rgba(255, 215, 0, 0.2);">🟡 SEGA GENESIS (16-BIT)</h3>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_sonic2.md', false)">🦔 Sonic 2</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_umk3.md', false)">🐉 U.M.K. 3</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_comix.md', false)">💥 Comix Zone</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_btdd.md', false)">🐸 Battletoads DD</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_battletoads.md', false)">🐸 Battletoads</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_roadrash.md', false)">🏍 Road Rash</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_tmnt.md', false)">🐢 TMNT</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_xmen2.md', false)">❌ X-Men 2</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_jurassic.md', false)">🦖 Jurassic Park</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_lionking.md', false)">🦁 The Lion King</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_simpsons.md', false)">🍩 The Simpsons</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_sunset.md', false)">🤠 Sunset Riders</button>
+            <button class="btn-retro btn-gold btn-sm" onclick="launchGame('emu_tinytoon_sega.md', false)">🐰 Tiny Toon</button>
 
-            <h3 style="color: var(--accent-pink);">DENDY / NES (8-BIT)</h3>
-            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tanks.nes', false)">🚜 Танчики (Battle City)</button>
-            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_1200in1.nes', false)">📼 1200-in-1</button>
-            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tinytoon1.nes', false)">🐰 Tiny Toon 1</button>
-            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tinytoon2.nes', false)">🐰 Tiny Toon 2</button>
+            <h3 style="color: var(--neon-pink); border-color: rgba(255, 0, 85, 0.2);">🔴 DENDY / NES (8-BIT)</h3>
+            <button class="btn-retro btn-pink btn-sm" onclick="launchGame('emu_tanks.nes', false)">🚜 Танчики</button>
+            <button class="btn-retro btn-pink btn-sm" onclick="launchGame('emu_1200in1.nes', false)">📼 1200-in-1</button>
+            <button class="btn-retro btn-pink btn-sm" onclick="launchGame('emu_tinytoon1.nes', false)">🐰 Tiny Toon 1</button>
+            <button class="btn-retro btn-pink btn-sm" onclick="launchGame('emu_tinytoon2.nes', false)">🐰 Tiny Toon 2</button>
 
-            <h3 style="color: #b0f;">SUPER NINTENDO (SNES)</h3>
-            <button class="btn-pixel btn-purple btn-sm" onclick="launchGame('emu_realmonsters.sfc', false)">👹 Aaahh!!! Real Monsters</button>
+            <h3 style="color: #b0f; border-color: rgba(187, 0, 255, 0.2);">🟣 SNES</h3>
+            <button class="btn-retro btn-sm" style="color:#b0f; border-color:#b0f;" onclick="launchGame('emu_realmonsters.sfc', false)">👹 Real Monsters</button>
+            
+            <button class="btn-retro btn-pink" style="margin-top: 25px;" onclick="navScreen('s-main')">НАЗАД В МЕНЮ</button>
         </div>
-        <button class="btn-pixel btn-pink" style="margin-top: 15px; flex-shrink: 0;" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
     <!-- ИГРА С ДРУГОМ -->
-    <div id="s-friend" class="screen">
-        <h2>ИГРА С ДРУГОМ</h2>
-        <p style="font-size: 8px; color: #888; text-align: center; margin-bottom: 20px;">Режим "Марафон". Кто дольше продержится в игре, тот и победил!</p>
-        <select id="friend-game" class="btn-pixel" style="background:#000; color:#fff;">
-            <optgroup label="ЛУЧШИЕ РЕТРО-ИГРЫ">
-                <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
-                <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
-                <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
-                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
-                <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
-                <option value="emu_xmen2.md">❌ X-Men 2 (SEGA)</option>
-                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
-                <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
-                <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
-                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
-                <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
-                <option value="emu_tinytoon1.nes">🐰 Tiny Toon 1 (Dendy)</option>
-            </optgroup>
-            <optgroup label="HTML5 ИГРЫ">
-                <option value="sonic">Sonic 16-bit (HTML5)</option>
-                <option value="tetris">Tetris</option>
-                <option value="airHockey">Air Hockey</option>
-            </optgroup>
-        </select>
-        <button class="btn-pixel btn-gold" onclick="createFriendLobby()">СОЗДАТЬ КОМНАТУ</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
+    <div id="s-friend" class="screen" style="justify-content:center;">
+        <div class="panel">
+            <h2>ИГРА С ДРУГОМ</h2>
+            <p class="hint-text">Режим "Марафон".<br>Кто дольше продержится в игре, тот и победил!</p>
+            <select id="friend-game">
+                <optgroup label="ЛУЧШИЕ РЕТРО-ИГРЫ">
+                    <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
+                    <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
+                    <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
+                    <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
+                    <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
+                    <option value="emu_xmen2.md">❌ X-Men 2 (SEGA)</option>
+                    <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
+                    <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
+                    <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
+                    <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
+                    <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
+                    <option value="emu_tinytoon1.nes">🐰 Tiny Toon 1 (Dendy)</option>
+                </optgroup>
+                <optgroup label="HTML5 ИГРЫ">
+                    <option value="sonic">Sonic 16-bit (HTML5)</option>
+                    <option value="tetris">Tetris</option>
+                    <option value="airHockey">Air Hockey</option>
+                </optgroup>
+            </select>
+            <button class="btn-retro btn-gold" onclick="createFriendLobby()">СОЗДАТЬ КОМНАТУ</button>
+            <button class="btn-retro btn-pink" style="margin-top:10px;" onclick="navScreen('s-main')">НАЗАД</button>
+        </div>
     </div>
 
     <!-- ТУРНИРЫ -->
     <div id="s-tournaments" class="screen">
-        <h2>ТУРНИРЫ</h2>
-        <button class="btn-pixel btn-gold" onclick="navScreen('s-create-lobby')">СОЗДАТЬ СВОЙ ТУРНИР</button>
-        <div id="lobby-list" style="width:100%; max-width:320px; margin-top:20px;"></div>
-        <button class="btn-pixel btn-pink" style="margin-top: 20px;" onclick="navScreen('s-main')">НАЗАД</button>
+        <div class="panel">
+            <h2>ТУРНИРЫ</h2>
+            <button class="btn-retro btn-gold" onclick="navScreen('s-create-lobby')">+ НОВЫЙ ТУРНИР</button>
+            <div id="lobby-list" style="width:100%; margin-top:15px;"></div>
+            <button class="btn-retro btn-pink" style="margin-top: 20px;" onclick="navScreen('s-main')">НАЗАД</button>
+        </div>
     </div>
 
     <!-- СОЗДАНИЕ ТУРНИРА -->
-    <div id="s-create-lobby" class="screen">
-        <h2>НОВЫЙ ТУРНИР</h2>
-        <p style="font-size: 8px; color: var(--accent-gold); text-align: center; margin-bottom: 20px;">Побеждает тот, кто наберет больше очков (для эмуляторов счет = время выживания в секундах).</p>
-        <select id="lobby-game" class="btn-pixel" style="background:#000; color:#fff;">
-            <optgroup label="ТУРНИРНЫЕ ХИТЫ">
-                <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
-                <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
-                <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
-                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
-                <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
-                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
-                <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
-                <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
-                <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
-                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
-            </optgroup>
-            <optgroup label="HTML5 ИГРЫ">
-                <option value="sonic">Sonic 16-bit</option>
-                <option value="tetris">Tetris</option>
-                <option value="bomber">Bomber Arena</option>
-            </optgroup>
-        </select>
-        <input type="number" id="lobby-bet" class="btn-pixel" style="background:#000; color:#fff;" placeholder="Ставка (Stars)" value="10">
-        <button class="btn-pixel btn-gold" onclick="createPublicLobby()">СОЗДАТЬ</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-tournaments')">НАЗАД</button>
-    </div>
-
-    <!-- ОСТАЛЬНЫЕ ЭКРАНЫ -->
-    <div id="s-waiting" class="screen" style="justify-content:center;">
-        <h2 style="color:var(--accent-gold)">ОЖИДАНИЕ ИГРОКА...</h2>
-        <div id="share-block" style="display:none; text-align:center;">
-            <p style="font-size:10px;">Отправь ссылку другу:</p>
-            <button class="btn-pixel btn-gold" onclick="shareLobbyLink()">📤 ОТПРАВИТЬ ПРИГЛАШЕНИЕ</button>
+    <div id="s-create-lobby" class="screen" style="justify-content:center;">
+        <div class="panel">
+            <h2>СОЗДАТЬ ТУРНИР</h2>
+            <p class="hint-text">Побеждает тот, кто наберет больше очков (в эмуляторах счет = время выживания в секундах).</p>
+            <select id="lobby-game">
+                <optgroup label="ТУРНИРНЫЕ ХИТЫ">
+                    <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
+                    <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
+                    <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
+                    <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
+                    <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
+                    <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
+                    <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
+                    <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
+                    <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
+                    <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
+                </optgroup>
+                <optgroup label="HTML5 ИГРЫ">
+                    <option value="sonic">Sonic 16-bit</option>
+                    <option value="tetris">Tetris</option>
+                    <option value="bomber">Bomber Arena</option>
+                </optgroup>
+            </select>
+            <input type="number" id="lobby-bet" placeholder="Ставка (Stars)" value="10">
+            <button class="btn-retro btn-gold" onclick="createPublicLobby()">ОТКРЫТЬ ЛОББИ</button>
+            <button class="btn-retro btn-pink" style="margin-top:10px;" onclick="navScreen('s-tournaments')">ОТМЕНА</button>
         </div>
-        <button class="btn-pixel btn-pink" style="margin-top:40px;" onclick="cancelLobby()">ОТМЕНА</button>
     </div>
 
-    <div id="s-profile" class="screen">
-        <h2>ПРОФИЛЬ</h2>
-        <p>Баланс: <span id="p-bal" style="color:var(--accent-gold)">0</span> ⭐️</p>
-        <button class="btn-pixel btn-gold" onclick="buyStars(50)">КУПИТЬ 50 ⭐️</button>
-        <button class="btn-pixel btn-green" onclick="depositCrypto('USDT', 1, 100)">ПОПОЛНИТЬ 1 USDT</button>
-        <button class="btn-pixel btn-pink" style="margin-top:20px;" onclick="navScreen('s-main')">НАЗАД</button>
+    <!-- ОЖИДАНИЕ -->
+    <div id="s-waiting" class="screen" style="justify-content:center;">
+        <div class="panel">
+            <h2 style="color:var(--neon-gold)">ОЖИДАНИЕ ИГРОКА</h2>
+            <div id="share-block" style="display:none; text-align:center; width: 100%;">
+                <p class="hint-text" style="margin-top:10px;">Отправь ссылку другу для дуэли:</p>
+                <button class="btn-retro btn-gold" onclick="shareLobbyLink()">📤 ОТПРАВИТЬ ПРИГЛАШЕНИЕ</button>
+            </div>
+            <div style="margin: 20px 0; width: 40px; height: 40px; border: 4px solid var(--neon-cyan); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <button class="btn-retro btn-pink" style="margin-top:10px;" onclick="cancelLobby()">ОТМЕНИТЬ ПОИСК</button>
+        </div>
+    </div>
+    <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+
+    <!-- ПРОФИЛЬ -->
+    <div id="s-profile" class="screen" style="justify-content:center;">
+        <div class="panel">
+            <h2>ПРОФИЛЬ ИГРОКА</h2>
+            <p class="hint-text" style="font-size: 1.2rem; color: #fff;">Баланс: <span id="p-bal" class="highlight">0</span> ⭐️</p>
+            <button class="btn-retro btn-gold" style="margin-top: 15px;" onclick="buyStars(50)">КУПИТЬ 50 ⭐️</button>
+            <button class="btn-retro" style="color:#0f0; border-color:#0f0;" onclick="depositCrypto('USDT', 1, 100)">ПОПОЛНИТЬ 1 USDT</button>
+            <button class="btn-retro btn-pink" style="margin-top:20px;" onclick="navScreen('s-main')">НАЗАД</button>
+        </div>
     </div>
 
     <!-- ЭКРАН HTML5 ИГР -->
     <div id="s-game" class="screen" style="padding:0; justify-content:center;">
-        <div style="display:flex; justify-content:space-between; width:240px; margin-bottom:5px; font-size:10px;">
-            <span id="g-score-label">SCORE:</span> <span id="g-score" style="color:var(--accent-gold)">0</span>
-            <span id="g-time-box" style="display:none;">TIME: <span id="g-time" style="color:var(--accent-pink)">60</span></span>
+        <div style="display:flex; justify-content:space-between; width:240px; margin-bottom:10px; font-family:var(--font-retro); font-size:10px;">
+            <span id="g-score-label">SCORE:</span> <span id="g-score" style="color:var(--neon-gold)">0</span>
+            <span id="g-time-box" style="display:none;">TIME: <span id="g-time" style="color:var(--neon-pink)">60</span></span>
         </div>
-        <canvas id="gameCanvas" width="240" height="400" style="background:#000; border:2px solid #333; box-shadow:0 0 10px #000;"></canvas>
-        <div style="margin-top:20px; display:grid; grid-template-columns: 60px 60px 60px; gap:10px;">
-            <div></div><button class="btn-pixel btn-sm" onmousedown="press('up',true)" onmouseup="press('up',false)" ontouchstart="press('up',true)" ontouchend="press('up',false)">▲</button><div></div>
-            <button class="btn-pixel btn-sm" onmousedown="press('left',true)" onmouseup="press('left',false)" ontouchstart="press('left',true)" ontouchend="press('left',false)">◀</button>
-            <button class="btn-pixel btn-sm" onmousedown="press('down',true)" onmouseup="press('down',false)" ontouchstart="press('down',true)" ontouchend="press('down',false)">▼</button>
-            <button class="btn-pixel btn-sm" onmousedown="press('right',true)" onmouseup="press('right',false)" ontouchstart="press('right',true)" ontouchend="press('right',false)">▶</button>
+        <canvas id="gameCanvas" width="240" height="400" style="background:#000; border:4px solid var(--panel-bg); border-radius:10px; box-shadow:0 0 20px rgba(0,240,255,0.3);"></canvas>
+        <div style="margin-top:25px; display:grid; grid-template-columns: 60px 60px 60px; gap:12px;">
+            <div></div><button class="btn-retro btn-sm" onmousedown="press('up',true)" onmouseup="press('up',false)" ontouchstart="press('up',true)" ontouchend="press('up',false)">▲</button><div></div>
+            <button class="btn-retro btn-sm" onmousedown="press('left',true)" onmouseup="press('left',false)" ontouchstart="press('left',true)" ontouchend="press('left',false)">◀</button>
+            <button class="btn-retro btn-sm" onmousedown="press('down',true)" onmouseup="press('down',false)" ontouchstart="press('down',true)" ontouchend="press('down',false)">▼</button>
+            <button class="btn-retro btn-sm" onmousedown="press('right',true)" onmouseup="press('right',false)" ontouchstart="press('right',true)" ontouchend="press('right',false)">▶</button>
         </div>
-        <button class="btn-pixel btn-gold" style="margin-top:20px; width:200px; padding:20px;" onmousedown="press('action',true)" onmouseup="press('action',false)" ontouchstart="press('action',true)" ontouchend="press('action',false)">ACTION / JUMP</button>
-        <button class="btn-pixel btn-pink btn-sm" style="margin-top:10px; width:100px;" onclick="quitGame()">СДАТЬСЯ</button>
+        <button class="btn-retro btn-gold" style="margin-top:20px; width:220px; padding:20px;" onmousedown="press('action',true)" onmouseup="press('action',false)" ontouchstart="press('action',true)" ontouchend="press('action',false)">ACTION / JUMP</button>
+        <button class="btn-retro btn-pink btn-sm" style="margin-top:15px; width:120px;" onclick="quitGame()">СДАТЬСЯ</button>
     </div>
 </div>
 
-<div id="modal-over" class="screen" style="background:rgba(0,0,0,0.9); justify-content:center; z-index:2000;">
-    <h2 style="color:var(--accent-pink)">ИГРА ОКОНЧЕНА</h2>
-    <p>Твой результат: <span id="end-score" style="color:var(--accent-gold)">0</span></p>
-    <p id="end-msg" style="font-size:10px; color:#0ff; margin-bottom:20px;"></p>
-    <button class="btn-pixel" onclick="backToMenu()">В ГЛАВНОЕ МЕНЮ</button>
+<div id="modal-over" class="screen" style="background:rgba(0,0,0,0.9); backdrop-filter:blur(10px); justify-content:center; z-index:20000;">
+    <div class="panel">
+        <h2 style="color:var(--neon-pink)">ИГРА ОКОНЧЕНА</h2>
+        <p class="hint-text" style="color:#fff;">Твой результат:<br><br><span id="end-score" class="highlight" style="font-size:1.5rem;">0</span></p>
+        <p id="end-msg" class="hint-text" style="color:var(--neon-cyan); margin-bottom:20px;"></p>
+        <button class="btn-retro" onclick="backToMenu()">В ГЛАВНОЕ МЕНЮ</button>
+    </div>
 </div>
 
 <script>
@@ -235,11 +351,21 @@
     async function buyStars(a){const r=await fetch(API+'/api/buy-stars',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,amount:a})});const d=await r.json();if(d.invoiceUrl)tg.openInvoice(d.invoiceUrl,s=>{if(s==='paid')setTimeout(init,2000)})}
     async function depositCrypto(a,ca,sa){const r=await fetch(API+'/api/deposit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,asset:a,amount:ca,stars:sa})});const d=await r.json();if(d.payUrl)tg.openTelegramLink(d.payUrl)}
     
-    async function openTournaments(){navScreen('s-tournaments');const list=document.getElementById('lobby-list');list.innerHTML='Загрузка...';const r=await fetch(API+'/api/lobbies');const lobbies=await r.json();list.innerHTML=lobbies.length===0?'Нет комнат':lobbies.map(l=>{
-        let displayGame = l.gameType;
-        if(displayGame.startsWith('emu_')) displayGame = displayGame.replace('emu_', '').replace('.md', '').replace('.bin', '').replace('.nes', '').replace('.sfc', '').toUpperCase();
-        return `<div class="lobby-item" style="border: 1px solid #ffd700; padding: 10px; margin-bottom: 10px; background: rgba(255,215,0,0.1);"><div style="margin-bottom: 10px;"><span style="color:#0ff; text-transform:uppercase;">ИГРА: ${displayGame}</span><br><span style="color:gold; font-size: 10px;">Ставка: ${l.betAmount}⭐️</span></div><button class="btn-pixel btn-sm btn-gold" onclick="joinLobby('${l.lobbyId}')">ВОЙТИ</button></div>`
-    }).join('')}
+    async function openTournaments(){
+        navScreen('s-tournaments');
+        const list=document.getElementById('lobby-list');
+        list.innerHTML='<p class="hint-text">Загрузка...</p>';
+        const r=await fetch(API+'/api/lobbies');
+        const lobbies=await r.json();
+        list.innerHTML=lobbies.length===0?'<p class="hint-text">Нет активных комнат</p>':lobbies.map(l=>{
+            let displayGame = l.gameType;
+            if(displayGame.startsWith('emu_')) displayGame = displayGame.replace('emu_', '').replace('.md', '').replace('.bin', '').replace('.nes', '').replace('.sfc', '').toUpperCase();
+            return `<div style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-gold); border-radius: 10px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 10px rgba(255,215,0,0.1);">
+                <div><div style="color:var(--neon-cyan); font-family:var(--font-retro); font-size:0.55rem; margin-bottom:5px;">${displayGame}</div><div style="color:var(--neon-gold); font-family:var(--font-modern); font-weight:bold; font-size:0.9rem;">Ставка: ${l.betAmount}⭐️</div></div>
+                <button class="btn-retro btn-gold" style="width:auto; padding:10px 15px; margin:0;" onclick="joinLobby('${l.lobbyId}')">ВОЙТИ</button>
+            </div>`
+        }).join('')
+    }
     
     async function createPublicLobby(){await reqLobbyCreate(document.getElementById('lobby-game').value,parseInt(document.getElementById('lobby-bet').value),false)}
     async function createFriendLobby(){await reqLobbyCreate(document.getElementById('friend-game').value,0,true)}
@@ -267,7 +393,7 @@
         
         if (t.startsWith('emu_')) {
             const fileName = t.replace('emu_', '');
-            let core = 'genesis'; // для EmulatorJS v3 SEGA это genesis
+            let core = 'genesis';
             if (fileName.endsWith('.nes')) core = 'nes';
             else if (fileName.endsWith('.sfc')) core = 'snes'; 
 
@@ -293,23 +419,95 @@
         startCountdown(t);
     }
 
-    // ИСПРАВЛЕН ПУТЬ: теперь src="game.html" вместо src="/game.html"
+    // =================================================================
+    // ГЕНЕРАЦИЯ ЭМУЛЯТОРА НА ЛЕТУ (100% РАБОЧИЙ МЕТОД)
+    // =================================================================
     function launchEmulator(fileName, coreType) {
         document.getElementById('emulator-layer').style.display = 'block';
         const container = document.getElementById('ejs-container');
-        container.innerHTML = `<iframe src="game.html?core=${coreType}&game=${fileName}" style="width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;" allow="autoplay; fullscreen"></iframe>`;
+        container.innerHTML = ''; // Очищаем
+
+        // Вычисляем абсолютный путь к ROM
+        const romUrl = new URL(fileName, window.location.href).href;
+
+        // Создаем Iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = "width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;";
+        iframe.setAttribute('allow', 'autoplay; fullscreen');
+        container.appendChild(iframe);
+
+        // Инжектим красивый код плеера
+        const emuHTML = `
+        <!DOCTYPE html>
+        <html lang="ru">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+            <style>
+                body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #070913; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+                #game-container { width: 100vw; height: 100vh; display: none; }
+                #overlay { 
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+                    background-image: linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
+                    background-size: 30px 30px; z-index: 10; text-align: center;
+                }
+                #overlay::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, transparent 0%, #000000 100%); z-index: -1; }
+                .btn-massive { 
+                    width: 80vw; max-width: 300px; padding: 30px 20px; 
+                    background: linear-gradient(180deg, #161b2e 0%, #0b0e1a 100%); 
+                    color: #00f0ff; border: 2px solid #00f0ff; 
+                    font-family: 'Press Start 2P', cursive; font-size: 16px; line-height: 1.5;
+                    cursor: pointer; border-radius: 16px; 
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 2px 15px rgba(0, 240, 255, 0.2); 
+                    text-transform: uppercase; transition: transform 0.1s;
+                }
+                .btn-massive:active { transform: scale(0.95); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); }
+                .hint { margin-top: 30px; font-size: 12px; color: #8892b0; font-family: sans-serif; text-transform: uppercase; letter-spacing: 2px; }
+            </style>
+        </head>
+        <body>
+            <div id="overlay">
+                <button class="btn-massive" onclick="start()">▶ ЗАПУСК ИГРЫ</button>
+                <p class="hint">Нажми для активации звука</p>
+            </div>
+            <div id="game-container"></div>
+            <script>
+                function start() {
+                    document.getElementById('overlay').style.display = 'none';
+                    document.getElementById('game-container').style.display = 'block';
+                    
+                    window.EmuJS = {
+                        dataUrl: "https://cdn.emulatorjs.org/stable/data/",
+                        gameUrl: "${romUrl}",
+                        core: "${coreType}",
+                        autoStart: true,
+                        container: "#game-container"
+                    };
+                    const script = document.createElement('script');
+                    script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+                    document.body.appendChild(script);
+                }
+            <\/script>
+        </body>
+        </html>`;
+
+        iframe.contentWindow.document.open();
+        iframe.contentWindow.document.write(emuHTML);
+        iframe.contentWindow.document.close();
     }
 
     async function stopEmulator() {
         if (isRanked || lobby) {
-            tg.showConfirm('Точно завершить матч? Твой текущий счет будет отправлен оппоненту.', async c => {
+            tg.showConfirm('Завершить матч? Твой текущий счет будет сохранен.', async c => {
                 if(c) {
-                    document.getElementById('ejs-container').innerHTML = ''; // Убиваем Iframe и звук
+                    document.getElementById('ejs-container').innerHTML = '';
                     await gameOver();
                 }
             });
         } else {
-            document.getElementById('ejs-container').innerHTML = ''; // Убиваем Iframe и звук
+            document.getElementById('ejs-container').innerHTML = '';
             document.getElementById('emulator-layer').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             navScreen('s-single');
@@ -321,24 +519,18 @@
         if(loop) cancelAnimationFrame(loop); loop = null;
         if(emuTimerInterval) { clearInterval(emuTimerInterval); emuTimerInterval = null; }
         
-        document.getElementById('ejs-container').innerHTML = ''; // Гарантия отключения звука
-
+        document.getElementById('ejs-container').innerHTML = ''; 
         document.getElementById('emulator-layer').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         document.getElementById('modal-over').style.display='flex';
         document.getElementById('end-score').innerText=score;
-        document.getElementById('end-msg').innerText=lobby?'Ожидание оппонента (он тоже должен закончить игру)...':'';
+        document.getElementById('end-msg').innerText=lobby?'Ожидание оппонента...':'';
         
         await fetch(API+'/api/submit-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,game:gameType,score:score,lobbyId:lobby?lobby.lobbyId:null})})
     }
 
     function quitGame(){tg.showConfirm('Сдаться?',async c=>{if(!c)return;if(lobby)await fetch(API+'/api/forfeit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,lobbyId:lobby.lobbyId})}); backToMenu(); })}
-    
-    function backToMenu() {
-        document.getElementById('modal-over').style.display='none';
-        navScreen('s-main');
-    }
-
+    function backToMenu() { document.getElementById('modal-over').style.display='none'; navScreen('s-main'); }
     function switchGame(t){if(t==='sonic')runSonic();else if(t==='tetris')runTetris();else if(t==='bomber')runBomber();else if(t==='gold')runGoldMiner();else if(t==='snake')runSnake();else if(t==='battleCity')runBattleCity();else if(t==='roadFighter')runRoadFighter();else if(t==='spaceInvaders')runSpaceInvaders();else if(t==='airHockey')runAirHockey()}
     
     // =================================================================
