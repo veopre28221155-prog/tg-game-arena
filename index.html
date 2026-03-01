@@ -61,7 +61,7 @@
         <button class="btn-pixel btn-pink" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ / КОШЕЛЕК</button>
     </div>
 
-    <!-- ОДИНОЧНАЯ ИГРА: ПОЛНЫЙ СПИСОК ТВОИХ ИГР -->
+    <!-- ОДИНОЧНАЯ ИГРА: ПОЛНЫЙ СПИСОК -->
     <div id="s-single" class="screen">
         <h2>СВОБОДНАЯ ИГРА</h2>
         <div style="width: 100%; max-width:320px; flex-grow:1;">
@@ -106,17 +106,19 @@
         <button class="btn-pixel btn-pink" style="margin-top: 15px; flex-shrink: 0;" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- ИГРА С ДРУГОМ -->
+    <!-- ИГРА С ДРУГОМ: РАСШИРЕННЫЙ СПИСОК -->
     <div id="s-friend" class="screen">
         <h2>ИГРА С ДРУГОМ</h2>
         <p style="font-size: 8px; color: #888; text-align: center; margin-bottom: 20px;">Режим "Марафон". Кто дольше продержится в игре или быстрее пройдет уровень, тот и победил!</p>
         <select id="friend-game" class="btn-pixel" style="background:#000; color:#fff;">
-            <optgroup label="ЭМУЛЯТОРЫ SEGA/DENDY/SNES">
+            <optgroup label="ЛУЧШИЕ РЕТРО-ИГРЫ">
                 <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
-                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
+                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
                 <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
                 <option value="emu_xmen2.md">❌ X-Men 2 (SEGA)</option>
+                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
+                <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
                 <option value="emu_tinytoon1.nes">🐰 Tiny Toon 1 (Dendy)</option>
             </optgroup>
@@ -130,7 +132,7 @@
         <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- ТУРНИРЫ -->
+    <!-- ТУРНИРЫ: РАСШИРЕННЫЙ СПИСОК -->
     <div id="s-tournaments" class="screen">
         <h2>ТУРНИРЫ</h2>
         <button class="btn-pixel btn-gold" onclick="navScreen('s-create-lobby')">СОЗДАТЬ СВОЙ ТУРНИР</button>
@@ -142,11 +144,12 @@
         <h2>НОВЫЙ ТУРНИР</h2>
         <p style="font-size: 8px; color: var(--accent-gold); text-align: center; margin-bottom: 20px;">Побеждает тот, кто наберет больше очков (для эмуляторов счет = время выживания в секундах).</p>
         <select id="lobby-game" class="btn-pixel" style="background:#000; color:#fff;">
-            <optgroup label="ЭМУЛЯТОРЫ (Марафон)">
+            <optgroup label="ТУРНИРНЫЕ ХИТЫ">
                 <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
-                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
+                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
                 <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
+                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
             </optgroup>
             <optgroup label="HTML5 ИГРЫ">
