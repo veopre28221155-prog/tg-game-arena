@@ -9,27 +9,27 @@
     
     <style>
         :root {
-            --tg-bg: #070913; 
-            --tg-text: #ffffff;
+            --bg-dark: #070913; 
+            --text-light: #e0e6f1;
             --accent-neon: #00f0ff; 
             --accent-pink: #ff0055; 
             --accent-gold: #ffd700;
             --font-retro: 'Press Start 2P', cursive;
             --font-modern: 'Rajdhani', sans-serif;
-            --btn-bg: linear-gradient(145deg, rgba(16, 20, 30, 0.9) 0%, rgba(5, 7, 12, 0.9) 100%);
+            --btn-bg: linear-gradient(145deg, rgba(20, 25, 40, 0.9) 0%, rgba(8, 10, 18, 0.9) 100%);
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body { 
             margin: 0; 
-            background-color: var(--tg-bg); 
+            background-color: var(--bg-dark); 
             background-image: 
-                radial-gradient(circle at center, rgba(0, 240, 255, 0.05) 0%, transparent 60%),
-                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 30px 30px, 30px 30px;
-            color: var(--tg-text); 
+                radial-gradient(circle at center, rgba(0, 240, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+            background-size: 100% 100%, 35px 35px, 35px 35px;
+            color: var(--text-light); 
             font-family: var(--font-modern); 
             height: 100vh; width: 100vw; 
             overflow: hidden; user-select: none; touch-action: none; overscroll-behavior-y: none;
@@ -54,16 +54,12 @@
         }
         .btn-pixel:active { transform: scale(0.97); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2); }
         
-        .btn-gold { color: var(--accent-gold); border-color: var(--accent-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 0 8px rgba(255, 215, 0, 0.1); }
-        .btn-gold:active { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
-        .btn-pink { color: var(--accent-pink); border-color: var(--accent-pink); box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 0 8px rgba(255, 0, 85, 0.1); }
-        .btn-pink:active { box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
-        
+        .btn-gold { color: var(--accent-gold); border-color: var(--accent-gold); }
+        .btn-pink { color: var(--accent-pink); border-color: var(--accent-pink); }
         .btn-green { color: #0f0; border-color: #0f0; }
         .btn-blue { color: #3b82f6; border-color: #3b82f6; }
         .btn-purple { color: #b0f; border-color: #b0f; }
 
-        /* ЭМУЛЯТОР (ОРИГИНАЛЬНЫЙ КОД) */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
         #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
@@ -79,7 +75,7 @@
 <div id="app-ui">
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>ИМПЕРИЯ РЕТРО-ИГР</h1>
-        <button class="btn-pixel" style="background:#0055ff; border-color:#fff; color:#fff; padding: 20px;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
+        <button class="btn-pixel" style="background:#0055ff; border-color:#fff; color:#fff; padding: 20px; font-size: 0.7rem;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
     </div>
 
     <div id="s-emu-menu" class="screen" style="justify-content: flex-start;">
@@ -144,7 +140,7 @@
         window.EJS_Buttons = { playPause: false, restart: false, mute: false, settings: false, fullscreen: true, saveState: true, loadState: true, screenRecord: false, gamepad: true, cheat: false, volume: true };
 
         const script = document.createElement('script');
-        // Добавляем взломщик кэша и сюда тоже, на всякий случай
+        // Добавляем взломщик кэша и сюда тоже, чтобы гарантированно сработало
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js?v=' + Date.now();
         document.body.appendChild(script);
     }
