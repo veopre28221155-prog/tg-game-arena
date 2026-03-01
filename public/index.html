@@ -33,7 +33,6 @@
         .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-sm { padding: 10px; font-size: 0.6rem; }
 
-        /* ЭМУЛЯТОР НА ВЕСЬ ЭКРАН */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 1000; }
         #ejs-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
         #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 1010; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; box-shadow: 0 0 10px #f05; }
@@ -43,15 +42,12 @@
 </head>
 <body>
 
-<!-- СЛОЙ ДЛЯ ЭМУЛЯТОРА -->
 <div id="emulator-layer">
     <div id="emu-tournament-ui">СЧЕТ: <span id="emu-score">0</span></div>
     <button id="exit-emu-btn" onclick="stopEmulator()">ВЫХОД</button>
-    <!-- Сюда инжектится Iframe -->
     <div id="ejs-container"></div>
 </div>
 
-<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
 <div id="app">
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
@@ -62,7 +58,7 @@
         <button class="btn-pixel btn-pink" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
     </div>
 
-    <!-- ОДИНОЧНАЯ ИГРА: ПОЛНЫЙ СПИСОК -->
+    <!-- ОДИНОЧНАЯ ИГРА -->
     <div id="s-single" class="screen">
         <h2>СВОБОДНАЯ ИГРА</h2>
         <div style="width: 100%; max-width:320px; flex-grow:1;">
@@ -106,7 +102,7 @@
         <button class="btn-pixel btn-pink" style="margin-top: 15px; flex-shrink: 0;" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- ИГРА С ДРУГОМ: ПОЛНЫЙ СПИСОК -->
+    <!-- ИГРА С ДРУГОМ -->
     <div id="s-friend" class="screen">
         <h2>ИГРА С ДРУГОМ</h2>
         <p style="font-size: 8px; color: #888; text-align: center; margin-bottom: 20px;">Режим "Марафон". Кто дольше продержится в игре, тот и победил!</p>
@@ -114,18 +110,28 @@
             <optgroup label="ЛУЧШИЕ РЕТРО-ИГРЫ">
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
                 <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
+                <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
+                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
+                <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
+                <option value="emu_xmen2.md">❌ X-Men 2 (SEGA)</option>
+                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
+                <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
+                <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
+                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
+                <option value="emu_tinytoon1.nes">🐰 Tiny Toon 1 (Dendy)</option>
             </optgroup>
             <optgroup label="HTML5 ИГРЫ">
                 <option value="sonic">Sonic 16-bit (HTML5)</option>
                 <option value="tetris">Tetris</option>
+                <option value="airHockey">Air Hockey</option>
             </optgroup>
         </select>
         <button class="btn-pixel btn-gold" onclick="createFriendLobby()">СОЗДАТЬ КОМНАТУ</button>
         <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- ТУРНИРЫ: ПОЛНЫЙ СПИСОК -->
+    <!-- ТУРНИРЫ -->
     <div id="s-tournaments" class="screen">
         <h2>ТУРНИРЫ</h2>
         <button class="btn-pixel btn-gold" onclick="navScreen('s-create-lobby')">СОЗДАТЬ СВОЙ ТУРНИР</button>
@@ -133,17 +139,27 @@
         <button class="btn-pixel btn-pink" style="margin-top: 20px;" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
+    <!-- СОЗДАНИЕ ТУРНИРА -->
     <div id="s-create-lobby" class="screen">
         <h2>НОВЫЙ ТУРНИР</h2>
+        <p style="font-size: 8px; color: var(--accent-gold); text-align: center; margin-bottom: 20px;">Побеждает тот, кто наберет больше очков (для эмуляторов счет = время выживания в секундах).</p>
         <select id="lobby-game" class="btn-pixel" style="background:#000; color:#fff;">
             <optgroup label="ТУРНИРНЫЕ ХИТЫ">
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
                 <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
+                <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
+                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
+                <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
+                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
+                <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
+                <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
+                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
             </optgroup>
             <optgroup label="HTML5 ИГРЫ">
                 <option value="sonic">Sonic 16-bit</option>
                 <option value="tetris">Tetris</option>
+                <option value="bomber">Bomber Arena</option>
             </optgroup>
         </select>
         <input type="number" id="lobby-bet" class="btn-pixel" style="background:#000; color:#fff;" placeholder="Ставка (Stars)" value="10">
@@ -277,11 +293,11 @@
         startCountdown(t);
     }
 
-    // Вставляем Iframe размером на весь экран
+    // ИСПРАВЛЕН ПУТЬ: теперь src="game.html" вместо src="/game.html"
     function launchEmulator(fileName, coreType) {
         document.getElementById('emulator-layer').style.display = 'block';
         const container = document.getElementById('ejs-container');
-        container.innerHTML = `<iframe src="/game.html?core=${coreType}&game=${fileName}" style="width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;" allow="autoplay; fullscreen"></iframe>`;
+        container.innerHTML = `<iframe src="game.html?core=${coreType}&game=${fileName}" style="width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;" allow="autoplay; fullscreen"></iframe>`;
     }
 
     async function stopEmulator() {
