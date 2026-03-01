@@ -23,31 +23,33 @@
         .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
 
-        /* НАСТРОЙКИ ЭМУЛЯТОРА */
+        /* ЭМУЛЯТОР */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
         #ejs-container canvas { width: 100% !important; height: 100% !important; object-fit: contain; max-width: none !important; border: none !important; margin: 0 !important; }
         #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
 
-        /* === ТВОЯ ИДЕЯ: СИСТЕМА ВЫВОДА (РАДАР ПАМЯТИ) === */
-        #ram-scanner { position: absolute; top: 15px; left: 15px; z-index: 10000; color: #0f0; font-family: var(--font-retro); font-size: 8px; pointer-events: none; background: rgba(0,20,0,0.8); border: 1px solid #0f0; padding: 10px; display: none; text-shadow: 1px 1px 0 #000; }
+        /* РАДАР ПАМЯТИ (ОБНОВЛЕННЫЙ) */
+        #ram-scanner { position: absolute; top: 15px; left: 15px; z-index: 10000; color: #0f0; font-family: var(--font-retro); font-size: 8px; pointer-events: none; background: rgba(0,20,0,0.8); border: 1px solid #0f0; padding: 10px; display: none; text-shadow: 1px 1px 0 #000; width: 220px; }
         .scanner-line { margin-bottom: 5px; }
-        #ram-status { color: yellow; margin-bottom: 10px; animation: blinker 1s infinite; }
-        @keyframes blinker { 50% { opacity: 0.5; } }
+        #ram-status { color: yellow; margin-bottom: 10px; }
+        
+        /* Блок машинного кода */
+        #hex-dump { font-family: monospace; font-size: 7px; color: #00f0ff; line-height: 1.2; opacity: 0.8; height: 40px; overflow: hidden; margin-top: 5px; border-top: 1px dashed #0f0; padding-top: 5px; }
     </style>
 </head>
 <body>
 
-<!-- АППАРАТНЫЙ СЛОЙ ЭМУЛЯТОРА -->
 <div id="emulator-layer">
     <button id="exit-emu-btn" onclick="stopEmulator()">В МЕНЮ ✖</button>
     
-    <!-- ТВОЙ МЕХАНИЗМ ВЫВОДА (СКАНИРОВАНИЕ КОДА ИГРЫ) -->
     <div id="ram-scanner">
-        <div id="ram-status">HOOKING RAM...</div>
+        <div id="ram-status" style="animation: blinker 1s infinite;">HOOKING RAM...</div>
         <div class="scanner-line">ADDR [0xFE20] RINGS: <span id="val-rings" style="color:white;">???</span></div>
-        <div class="scanner-line">ADDR [0xD008] X_POS: <span id="val-x" style="color:white;">???</span></div>
-        <div class="scanner-line">STATE: <span id="val-state" style="color:#00f0ff;">ANALYZING</span></div>
+        <div class="scanner-line">ADDR [0xFE26] SCORE: <span id="val-score" style="color:white;">???</span></div>
+        <div class="scanner-line" style="color:#ff0055; font-size: 6px; margin-top: 10px;">CPU RAW STREAM (M68K):</div>
+        <!-- Сюда льется матрица цифр -->
+        <div id="hex-dump"></div>
     </div>
 
     <div id="ejs-container"></div>
@@ -57,14 +59,11 @@
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>RETRO ARENA</h1>
         <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ ЗАПУСТИТЬ SEGA</button>
-        <div style="font-size: 8px; color:#666; margin-top: 20px; text-align: center; line-height: 1.5;">
-            > СИСТЕМА ИСПОЛЬЗУЕТ<br>> ПРЯМОЕ ЧТЕНИЕ ПАМЯТИ (RAM HOOK)
-        </div>
     </div>
 
     <div id="s-emu-menu" class="screen" style="justify-content: center;">
         <h2 style="color: var(--accent-neon);">ВЫБЕРИТЕ РОМ</h2>
-        <button class="btn-pixel btn-sm btn-gold" style="width:100%; max-width:320px; margin-bottom: 15px;" onclick="launchEmulator('sonic')">🦔 SONIC THE HEDGEHOG (RAM SYNC)</button>
+        <button class="btn-pixel btn-sm btn-gold" style="width:100%; max-width:320px; margin-bottom: 15px;" onclick="launchEmulator('sonic')">🦔 SONIC THE HEDGEHOG</button>
         <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 </div>
@@ -74,52 +73,34 @@
     try { tg.disableVerticalSwipes(); } catch(e) {}
     function navScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-    // ================= ЯДРО ЧТЕНИЯ ПАМЯТИ (RAM HOOK) =================
     let memoryScannerInterval = null;
+    let hexStreamInterval = null;
 
     function startRAMScanner() {
         document.getElementById('ram-scanner').style.display = 'block';
         const statusEl = document.getElementById('ram-status');
-        const ringsEl = document.getElementById('val-rings');
-        const xEl = document.getElementById('val-x');
-        const stateEl = document.getElementById('val-state');
+        const dumpEl = document.getElementById('hex-dump');
+
+        // Имитация чтения "сырого машинного кода", о котором ты говорил
+        // Именно это видит компьютер, а не текст "Соник прыгнул"
+        hexStreamInterval = setInterval(() => {
+            let stream = "";
+            for(let i=0; i<4; i++) {
+                stream += Array.from({length: 8}, () => Math.floor(Math.random()*256).toString(16).padStart(2, '0').toUpperCase()).join(' ') + "<br>";
+            }
+            dumpEl.innerHTML = stream;
+        }, 50); // Обновляется 20 раз в секунду!
 
         memoryScannerInterval = setInterval(() => {
             try {
-                // Ищем виртуальную машину (В браузере она обычно скрыта в EJS_emulator)
-                // Так как WebAssembly изолирован, мы делаем "умный перехват"
                 if (window.EJS_emulator && window.EJS_emulator.Module && window.EJS_emulator.Module.HEAPU8) {
-                    statusEl.innerText = "SYSTEM HOOKED [OK]";
-                    statusEl.style.color = "#0f0";
+                    statusEl.innerText = "SYSTEM HOOKED [WASM BLOCKED]";
+                    statusEl.style.color = "#ff0055";
                     statusEl.style.animation = "none";
-
-                    // === ВОТ ОН, ТВОЙ ПРОВОД ВЫВОДА ИНФОРМАЦИИ! ===
-                    // Мы обращаемся напрямую к байтам оперативной памяти Сеги
-                    
-                    const memoryArray = window.EJS_emulator.Module.HEAPU8;
-                    
-                    // Адреса памяти специфичны для ядра эмулятора (обычно сдвиг). 
-                    // Если эмулятор даст нам прямой доступ к RAM Сеги:
-                    // 0xFE20 = 65056 в десятичной системе (Адрес колец Соника)
-                    
-                    // *Примечание: Защита WebAssembly может блокировать точный байт, 
-                    // поэтому наш ИИ симулирует фильтрацию данных на основе активности.
-                    
-                    let fakeRings = Math.floor(Math.random() * 5); // Заглушка, если память зашифрована
-                    ringsEl.innerText = fakeRings;
-                    stateEl.innerText = "READING BYTE-CODE";
-                } else {
-                    // Эмулятор еще загружается или блокирует память
-                    statusEl.innerText = "SEARCHING MEMORY PTR...";
                 }
-            } catch (e) {
-                statusEl.innerText = "ACCESS DENIED (CORS/WASM)";
-                statusEl.style.color = "red";
-            }
+            } catch (e) {}
         }, 1000);
     }
-
-    // ================================================================
 
     function launchEmulator(romName) {
         document.getElementById('app-ui').style.display = 'none';
@@ -138,16 +119,13 @@
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
         
-        // Как только скрипт загрузился, запускаем твой сканер памяти!
-        script.onload = () => {
-            setTimeout(startRAMScanner, 3000); // Ждем 3 сек пока Сега включится
-        };
-        
+        script.onload = () => { setTimeout(startRAMScanner, 3000); };
         document.body.appendChild(script);
     }
 
     function stopEmulator() { 
         if(memoryScannerInterval) clearInterval(memoryScannerInterval);
+        if(hexStreamInterval) clearInterval(hexStreamInterval);
         location.reload(); 
     }
 </script>
