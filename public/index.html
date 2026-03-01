@@ -78,6 +78,7 @@
             <button class="btn-pixel btn-sm" onclick="launchGame('airHockey', false)">🏒 AIR HOCKEY</button>
 
             <h3 style="color: var(--accent-gold);">SEGA GENESIS (16-BIT)</h3>
+            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1 (Classic)</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic2.md', false)">🦔 Sonic 2</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_umk3.md', false)">🐉 Ultimate Mortal Kombat 3</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_comix.md', false)">💥 Comix Zone</button>
@@ -91,7 +92,6 @@
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_simpsons.md', false)">🍩 The Simpsons</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sunset.md', false)">🤠 Sunset Riders</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_tinytoon_sega.md', false)">🐰 Tiny Toon (SEGA)</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1 (Classic)</button>
 
             <h3 style="color: var(--accent-pink);">DENDY / NES (8-BIT)</h3>
             <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tanks.nes', false)">🚜 Танчики (Battle City)</button>
@@ -109,10 +109,11 @@
     <!-- ИГРА С ДРУГОМ: ПОЛНЫЙ СПИСОК -->
     <div id="s-friend" class="screen">
         <h2>ИГРА С ДРУГОМ</h2>
-        <p style="font-size: 8px; color: #888; text-align: center; margin-bottom: 20px;">Режим "Марафон". Кто дольше продержится в игре или быстрее пройдет уровень, тот и победил!</p>
+        <p style="font-size: 8px; color: #888; text-align: center; margin-bottom: 20px;">Режим "Марафон". Кто дольше продержится в игре, тот и победил!</p>
         <select id="friend-game" class="btn-pixel" style="background:#000; color:#fff;">
             <optgroup label="ЛУЧШИЕ РЕТРО-ИГРЫ">
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
+                <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
                 <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
                 <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
                 <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
@@ -120,6 +121,7 @@
                 <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
                 <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
                 <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
+                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
                 <option value="emu_tinytoon1.nes">🐰 Tiny Toon 1 (Dendy)</option>
             </optgroup>
@@ -147,6 +149,7 @@
         <select id="lobby-game" class="btn-pixel" style="background:#000; color:#fff;">
             <optgroup label="ТУРНИРНЫЕ ХИТЫ">
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
+                <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
                 <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
                 <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
                 <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
@@ -154,6 +157,7 @@
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
                 <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
                 <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
+                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
             </optgroup>
             <optgroup label="HTML5 ИГРЫ">
                 <option value="sonic">Sonic 16-bit</option>
@@ -236,7 +240,7 @@
     
     async function openTournaments(){navScreen('s-tournaments');const list=document.getElementById('lobby-list');list.innerHTML='Загрузка...';const r=await fetch(API+'/api/lobbies');const lobbies=await r.json();list.innerHTML=lobbies.length===0?'Нет комнат':lobbies.map(l=>{
         let displayGame = l.gameType;
-        if(displayGame.startsWith('emu_')) displayGame = displayGame.replace('emu_', '').replace('.md', '').replace('.nes', '').replace('.sfc', '').toUpperCase();
+        if(displayGame.startsWith('emu_')) displayGame = displayGame.replace('emu_', '').replace('.md', '').replace('.bin', '').replace('.nes', '').replace('.sfc', '').toUpperCase();
         return `<div class="lobby-item" style="border: 1px solid #ffd700; padding: 10px; margin-bottom: 10px; background: rgba(255,215,0,0.1);"><div style="margin-bottom: 10px;"><span style="color:#0ff; text-transform:uppercase;">ИГРА: ${displayGame}</span><br><span style="color:gold; font-size: 10px;">Ставка: ${l.betAmount}⭐️</span></div><button class="btn-pixel btn-sm btn-gold" onclick="joinLobby('${l.lobbyId}')">ВОЙТИ</button></div>`
     }).join('')}
     
