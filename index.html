@@ -15,17 +15,28 @@
         #app-ui { width: 100%; height: 100%; position: relative; z-index: 10; }
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
         .screen.active { display: flex; }
+        
         h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
-        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; }
+        
+        /* ГЛАВНЫЙ ЗАГОЛОВОК - ТЕПЕРЬ СЕКРЕТНАЯ КНОПКА */
+        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; cursor: pointer; padding: 10px; }
+        
         h3 { font-size: 0.7rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
         
-        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); transition: all 0.1s; }
         .btn-pixel:active { transform: translateY(2px); }
         .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-green { color: #0f0; box-shadow: inset 4px 4px 0 rgba(0, 255, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-blue { color: #3b82f6; box-shadow: inset 4px 4px 0 rgba(59, 130, 246, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+
+        /* СТИЛИ АДМИНКИ */
+        .admin-input { background: #000; border: 2px solid #f00; color: #f00; font-family: var(--font-retro); padding: 15px; width: 100%; max-width: 320px; text-align: center; margin-bottom: 20px; font-size: 1rem; outline: none; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+        .admin-stat-box { background: rgba(0, 20, 0, 0.8); border: 1px solid #0f0; padding: 15px; width: 100%; max-width: 320px; margin-bottom: 15px; text-align: left; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.6rem; color: #aaa; }
+        .stat-value { color: #0f0; font-size: 0.7rem; }
+        .stat-value.money { color: var(--accent-gold); text-shadow: 0 0 5px var(--accent-gold); }
 
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -42,11 +53,17 @@
 </div>
 
 <div id="app-ui">
+    <!-- ГЛАВНЫЙ ЭКРАН -->
     <div id="s-main" class="screen active" style="justify-content: center;">
-        <h1>ИМПЕРИЯ РЕТРО-ИГР</h1>
+        <!-- ВОТ ПАСХАЛКА ДЛЯ ВХОДА В АДМИНКУ -->
+        <h1 onclick="secretTap()">ИМПЕРИЯ РЕТРО-ИГР</h1>
         <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
+        <div style="font-size: 8px; color:#666; margin-top: 20px; text-align: center; line-height: 1.5;">
+            > ЭМУЛЯЦИЯ: SEGA, NES, SNES, NDS<br>> ИГР В БАЗЕ: 25
+        </div>
     </div>
 
+    <!-- МЕНЮ ИГР (ВСЕ ТВОИ ИГРЫ ЗДЕСЬ) -->
     <div id="s-emu-menu" class="screen" style="justify-content: flex-start;">
         <h2 style="color: var(--accent-neon);">БИБЛИОТЕКА ИГР</h2>
         <button class="btn-pixel btn-pink" style="margin-bottom: 20px;" onclick="navScreen('s-main')">◀ В ГЛАВНОЕ МЕНЮ</button>
@@ -72,7 +89,6 @@
         <button class="btn-pixel btn-gold" onclick="launchEmulator('tinytoon_sega.md', 'sega')">🐰 Tiny Toon (SEGA)</button>
 
         <h3 style="color: #0f0;">DENDY / NES (8-BIT)</h3>
-        <!-- ВОТ ОНА, НОВАЯ КНОПКА -->
         <button class="btn-pixel btn-green" onclick="launchEmulator('tanks.nes', 'nes')">🚜 Battle City (Танчики)</button>
         <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon1.nes', 'nes')">🐰 Tiny Toon Adventures 1</button>
         <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon2.nes', 'nes')">🐰 Tiny Toon 2</button>
@@ -87,12 +103,75 @@
         
         <div style="height: 50px;"></div>
     </div>
+
+    <!-- СЕКРЕТНЫЙ ЭКРАН ВВОДА ПАРОЛЯ -->
+    <div id="s-admin-login" class="screen" style="justify-content: center;">
+        <h2 style="color: #f00; text-shadow: 0 0 10px #f00;">[ ROOT ACCESS ]</h2>
+        <p style="font-size: 0.6rem; color: #888; margin-bottom: 20px;">SYSTEM LOCKED</p>
+        
+        <input type="password" id="admin-pass" class="admin-input" placeholder="PIN CODE">
+        
+        <button class="btn-pixel" style="color: #f00; border-color: #f00;" onclick="checkAdmin()">ВЗЛОМАТЬ</button>
+        <button class="btn-pixel" style="color: #666; border-color: #333;" onclick="navScreen('s-main')">ОТМЕНА</button>
+    </div>
+
+    <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ВЛАДЕЛЬЦА -->
+    <div id="s-admin-dash" class="screen" style="justify-content: flex-start;">
+        <h2 style="color: #0f0; margin-top: 20px;">SYSTEM ADMIN</h2>
+        
+        <div class="admin-stat-box">
+            <div style="color: #fff; font-size: 0.8rem; margin-bottom: 15px; border-bottom: 1px solid #0f0; padding-bottom: 5px;">СТАТИСТИКА СЕРВЕРА</div>
+            <div class="stat-row">ИГРОКОВ В БОТЕ: <span class="stat-value">1,204</span></div>
+            <div class="stat-row">ЗАПУСКОВ ИГР: <span class="stat-value">8,430</span></div>
+            <div class="stat-row">ОНЛАЙН СЕЙЧАС: <span class="stat-value" style="animation: blinker 2s infinite;">42</span></div>
+        </div>
+
+        <div class="admin-stat-box" style="border-color: var(--accent-gold);">
+            <div style="color: #fff; font-size: 0.8rem; margin-bottom: 15px; border-bottom: 1px solid var(--accent-gold); padding-bottom: 5px;">ФИНАНСЫ</div>
+            <div class="stat-row">ДОХОД С КОМИССИЙ: <span class="stat-value money">142.50 TON</span></div>
+            <div class="stat-row">ГОТОВО К ВЫВОДУ: <span class="stat-value money">80.00 TON</span></div>
+        </div>
+
+        <button class="btn-pixel btn-gold" onclick="alert('Модуль вывода TON Connect в разработке!')">💸 ВЫВЕСТИ КРИПТУ</button>
+        <button class="btn-pixel" style="background: #220000; color: #f00; border-color: #f00; margin-top: 20px;" onclick="navScreen('s-main')">ВЫЙТИ ИЗ СИСТЕМЫ</button>
+        
+        <div style="height: 50px;"></div>
+    </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
     try { tg.disableVerticalSwipes(); } catch(e) {}
-    function navScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    
+    function navScreen(id){ 
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+        document.getElementById(id).classList.add('active'); 
+    }
+
+    // === ЛОГИКА СЕКРЕТНОГО ВХОДА ===
+    let taps = 0;
+    let tapTimer;
+
+    function secretTap() {
+        taps++;
+        if (taps >= 5) { 
+            taps = 0;
+            document.getElementById('admin-pass').value = ""; 
+            navScreen('s-admin-login'); 
+        }
+        clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => { taps = 0; }, 1000);
+    }
+
+    function checkAdmin() {
+        const pass = document.getElementById('admin-pass').value;
+        if (pass === "1991") { // ПАРОЛЬ ОТ АДМИНКИ!
+            navScreen('s-admin-dash');
+        } else {
+            alert("ОШИБКА ДОСТУПА. СИСТЕМА ЗАБЛОКИРОВАНА.");
+        }
+    }
+    // =================================
 
     function launchEmulator(fileName, coreType) {
         document.getElementById('app-ui').style.display = 'none';
