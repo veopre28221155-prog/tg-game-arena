@@ -23,7 +23,6 @@
         body { 
             margin: 0; 
             background-color: var(--bg-dark);
-            /* Киберпанк сетка на фоне */
             background-image: 
                 linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
@@ -35,7 +34,6 @@
             overflow: hidden; user-select: none; touch-action: manipulation; 
         }
         
-        /* Анимированный градиент поверх сетки для глубины */
         body::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, transparent 0%, #000000 100%);
@@ -51,7 +49,6 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Стеклянные панели (Glassmorphism) */
         .panel {
             background: var(--panel-bg);
             backdrop-filter: blur(10px);
@@ -77,7 +74,6 @@
             border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; width: 100%; letter-spacing: 2px;
         }
 
-        /* Современные Ретро-Кнопки */
         .btn-retro { 
             background: linear-gradient(180deg, #161b2e 0%, #0b0e1a 100%);
             color: var(--neon-cyan); 
@@ -92,28 +88,20 @@
         }
         .btn-retro:active { transform: translateY(3px) scale(0.98); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); background: #0b0e1a; }
         
-        .btn-gold { 
-            color: var(--neon-gold); border-color: var(--neon-gold); 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255, 215, 0, 0.1); 
-        }
+        .btn-gold { color: var(--neon-gold); border-color: var(--neon-gold); box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255, 215, 0, 0.1); }
         .btn-gold:active { box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
         
-        .btn-pink { 
-            color: var(--neon-pink); border-color: var(--neon-pink); 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255, 0, 85, 0.1); 
-        }
+        .btn-pink { color: var(--neon-pink); border-color: var(--neon-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255, 0, 85, 0.1); }
         .btn-pink:active { box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
 
         .btn-sm { padding: 14px; font-size: 0.55rem; border-radius: 8px; border-width: 1px; margin-bottom: 8px; }
 
-        /* Элементы форм */
         select, input {
             background: #000; color: var(--neon-cyan); font-family: var(--font-modern); font-size: 1rem; font-weight: bold;
             border: 2px solid rgba(0, 240, 255, 0.5); padding: 15px; border-radius: 10px; width: 100%; margin-bottom: 15px; outline: none;
         }
         select optgroup { font-family: var(--font-modern); background: #111; color: #fff; }
 
-        /* ЭМУЛЯТОР НА ВЕСЬ ЭКРАН */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
         
@@ -131,23 +119,19 @@
             font-family: var(--font-retro); font-size: 8px; border-radius: 8px; text-shadow: 1px 1px 0 #000; backdrop-filter: blur(5px);
         }
 
-        /* Текст подсказок */
         .hint-text { font-size: 0.9rem; color: #8892b0; text-align: center; margin-bottom: 20px; line-height: 1.4; }
         .highlight { color: var(--neon-gold); font-weight: bold; font-family: var(--font-retro); font-size: 0.7rem; }
     </style>
 </head>
 <body>
 
-<!-- СЛОЙ ДЛЯ ЭМУЛЯТОРА -->
 <div id="emulator-layer">
     <div id="emu-tournament-ui">СЧЕТ: <span id="emu-score">0</span></div>
     <button id="exit-emu-btn" onclick="stopEmulator()">ВЫХОД</button>
     <div id="ejs-container"></div>
 </div>
 
-<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
 <div id="app">
-    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active" style="justify-content: center;">
         <div class="panel">
             <h1>RETRO ARENA</h1>
@@ -158,7 +142,6 @@
         </div>
     </div>
 
-    <!-- ОДИНОЧНАЯ ИГРА -->
     <div id="s-single" class="screen">
         <div class="panel" style="max-width: 360px;">
             <h2>СВОБОДНАЯ ИГРА</h2>
@@ -224,7 +207,7 @@
                     <option value="emu_tinytoon1.nes">🐰 Tiny Toon 1 (Dendy)</option>
                 </optgroup>
                 <optgroup label="HTML5 ИГРЫ">
-                    <option value="sonic">Sonic 16-bit (HTML5)</option>
+                    <option value="sonic">Sonic 16-bit</option>
                     <option value="tetris">Tetris</option>
                     <option value="airHockey">Air Hockey</option>
                 </optgroup>
@@ -244,11 +227,10 @@
         </div>
     </div>
 
-    <!-- СОЗДАНИЕ ТУРНИРА -->
     <div id="s-create-lobby" class="screen" style="justify-content:center;">
         <div class="panel">
             <h2>СОЗДАТЬ ТУРНИР</h2>
-            <p class="hint-text">Побеждает тот, кто наберет больше очков (в эмуляторах счет = время выживания в секундах).</p>
+            <p class="hint-text">Побеждает тот, кто наберет больше очков.</p>
             <select id="lobby-game">
                 <optgroup label="ТУРНИРНЫЕ ХИТЫ">
                     <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
@@ -420,82 +402,23 @@
     }
 
     // =================================================================
-    // ГЕНЕРАЦИЯ ЭМУЛЯТОРА НА ЛЕТУ (100% РАБОЧИЙ МЕТОД)
+    // АБСОЛЮТНЫЙ ПУТЬ К IFRAME (РЕШЕНИЕ ОШИБКИ ТЕЛЕГРАМА)
     // =================================================================
     function launchEmulator(fileName, coreType) {
         document.getElementById('emulator-layer').style.display = 'block';
         const container = document.getElementById('ejs-container');
-        container.innerHTML = ''; // Очищаем
+        
+        // Получаем чистый URL сервера (например, https://my-app.onrender.com)
+        const currentUrl = window.location.href.split('?')[0].split('#')[0];
+        let baseUrl = currentUrl;
+        if(baseUrl.endsWith('/index.html')) baseUrl = baseUrl.replace('/index.html', '');
+        if(baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
 
-        // Вычисляем абсолютный путь к ROM
-        const romUrl = new URL(fileName, window.location.href).href;
+        // Формируем 100% точный путь к game.html
+        const iframeSrc = `${baseUrl}/game.html?core=${coreType}&game=${encodeURIComponent(fileName)}`;
 
-        // Создаем Iframe
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = "width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;";
-        iframe.setAttribute('allow', 'autoplay; fullscreen');
-        container.appendChild(iframe);
-
-        // Инжектим красивый код плеера
-        const emuHTML = `
-        <!DOCTYPE html>
-        <html lang="ru">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-            <style>
-                body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #070913; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-                #game-container { width: 100vw; height: 100vh; display: none; }
-                #overlay { 
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                    display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                    background-image: linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
-                    background-size: 30px 30px; z-index: 10; text-align: center;
-                }
-                #overlay::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, transparent 0%, #000000 100%); z-index: -1; }
-                .btn-massive { 
-                    width: 80vw; max-width: 300px; padding: 30px 20px; 
-                    background: linear-gradient(180deg, #161b2e 0%, #0b0e1a 100%); 
-                    color: #00f0ff; border: 2px solid #00f0ff; 
-                    font-family: 'Press Start 2P', cursive; font-size: 16px; line-height: 1.5;
-                    cursor: pointer; border-radius: 16px; 
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 2px 15px rgba(0, 240, 255, 0.2); 
-                    text-transform: uppercase; transition: transform 0.1s;
-                }
-                .btn-massive:active { transform: scale(0.95); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); }
-                .hint { margin-top: 30px; font-size: 12px; color: #8892b0; font-family: sans-serif; text-transform: uppercase; letter-spacing: 2px; }
-            </style>
-        </head>
-        <body>
-            <div id="overlay">
-                <button class="btn-massive" onclick="start()">▶ ЗАПУСК ИГРЫ</button>
-                <p class="hint">Нажми для активации звука</p>
-            </div>
-            <div id="game-container"></div>
-            <script>
-                function start() {
-                    document.getElementById('overlay').style.display = 'none';
-                    document.getElementById('game-container').style.display = 'block';
-                    
-                    window.EmuJS = {
-                        dataUrl: "https://cdn.emulatorjs.org/stable/data/",
-                        gameUrl: "${romUrl}",
-                        core: "${coreType}",
-                        autoStart: true,
-                        container: "#game-container"
-                    };
-                    const script = document.createElement('script');
-                    script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
-                    document.body.appendChild(script);
-                }
-            <\/script>
-        </body>
-        </html>`;
-
-        iframe.contentWindow.document.open();
-        iframe.contentWindow.document.write(emuHTML);
-        iframe.contentWindow.document.close();
+        // Вставляем Iframe
+        container.innerHTML = `<iframe src="${iframeSrc}" style="width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;" allow="autoplay; fullscreen"></iframe>`;
     }
 
     async function stopEmulator() {
