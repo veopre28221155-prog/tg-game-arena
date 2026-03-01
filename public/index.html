@@ -33,20 +33,21 @@
         .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-sm { padding: 10px; font-size: 0.6rem; }
 
-        /* ЭМУЛЯТОР */
-        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 100; }
-        #ejs-container { width: 100% !important; height: 100% !important; }
-        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 101; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; }
+        /* ЭМУЛЯТОР НА ВЕСЬ ЭКРАН */
+        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 1000; }
+        #ejs-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 1010; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; box-shadow: 0 0 10px #f05; }
         
-        #emu-tournament-ui { display: none; position: absolute; top: 15px; left: 15px; z-index: 101; padding: 10px; background: rgba(0,0,0,0.8); border: 2px solid var(--accent-gold); color: var(--accent-gold); font-family: var(--font-retro); font-size: 8px; text-shadow: 1px 1px 0 #000; pointer-events: none;}
+        #emu-tournament-ui { display: none; position: absolute; top: 15px; left: 15px; z-index: 1010; padding: 10px; background: rgba(0,0,0,0.8); border: 2px solid var(--accent-gold); color: var(--accent-gold); font-family: var(--font-retro); font-size: 8px; text-shadow: 1px 1px 0 #000; pointer-events: none;}
     </style>
 </head>
 <body>
 
 <!-- СЛОЙ ДЛЯ ЭМУЛЯТОРА -->
 <div id="emulator-layer">
-    <div id="emu-tournament-ui">СЧЕТ (ВРЕМЯ): <span id="emu-score">0</span></div>
-    <button id="exit-emu-btn" onclick="stopEmulator()">ЗАВЕРШИТЬ МАТЧ</button>
+    <div id="emu-tournament-ui">СЧЕТ: <span id="emu-score">0</span></div>
+    <button id="exit-emu-btn" onclick="stopEmulator()">ВЫХОД</button>
+    <!-- Сюда инжектится Iframe -->
     <div id="ejs-container"></div>
 </div>
 
@@ -56,9 +57,9 @@
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>RETRO ARENA</h1>
         <button class="btn-pixel" onclick="navScreen('s-single')">🎮 ОДИНОЧНАЯ ИГРА</button>
-        <button class="btn-pixel" onclick="navScreen('s-friend')">🤝 ИГРА С ДРУГОМ (FREE)</button>
+        <button class="btn-pixel" onclick="navScreen('s-friend')">🤝 ИГРА С ДРУГОМ</button>
         <button class="btn-pixel btn-gold" onclick="openTournaments()">⚔️ ТУРНИРЫ (PVP)</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ / КОШЕЛЕК</button>
+        <button class="btn-pixel btn-pink" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
     </div>
 
     <!-- ОДИНОЧНАЯ ИГРА: ПОЛНЫЙ СПИСОК -->
@@ -72,17 +73,17 @@
             <button class="btn-pixel btn-sm" onclick="launchGame('bomber', false)">💣 BOMBER ARENA</button>
             <button class="btn-pixel btn-sm" onclick="launchGame('gold', false)">⚓ GOLD MINER</button>
             <button class="btn-pixel btn-sm" onclick="launchGame('snake', false)">🐍 CLASSIC SNAKE</button>
-            <button class="btn-pixel btn-sm" onclick="launchGame('battleCity', false)">🚜 BATTLE CITY (HTML5)</button>
+            <button class="btn-pixel btn-sm" onclick="launchGame('battleCity', false)">🚜 BATTLE CITY</button>
             <button class="btn-pixel btn-sm" onclick="launchGame('spaceInvaders', false)">👾 SPACE INVADERS</button>
             <button class="btn-pixel btn-sm" onclick="launchGame('roadFighter', false)">🏎 ROAD FIGHTER</button>
             <button class="btn-pixel btn-sm" onclick="launchGame('airHockey', false)">🏒 AIR HOCKEY</button>
 
             <h3 style="color: var(--accent-gold);">SEGA GENESIS (16-BIT)</h3>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1 (Classic)</button>
+            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic2.md', false)">🦔 Sonic 2</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_umk3.md', false)">🐉 Ultimate Mortal Kombat 3</button>
+            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_umk3.md', false)">🐉 U.M.K. 3</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_comix.md', false)">💥 Comix Zone</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_btdd.md', false)">🐸 Battletoads Double Dragon</button>
+            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_btdd.md', false)">🐸 Battletoads DD</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_battletoads.md', false)">🐸 Battletoads</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_roadrash.md', false)">🏍 Road Rash</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_tmnt.md', false)">🐢 TMNT</button>
@@ -91,17 +92,16 @@
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_lionking.md', false)">🦁 The Lion King</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_simpsons.md', false)">🍩 The Simpsons</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sunset.md', false)">🤠 Sunset Riders</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_tinytoon_sega.md', false)">🐰 Tiny Toon (SEGA)</button>
+            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_tinytoon_sega.md', false)">🐰 Tiny Toon</button>
 
             <h3 style="color: var(--accent-pink);">DENDY / NES (8-BIT)</h3>
             <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tanks.nes', false)">🚜 Танчики (Battle City)</button>
-            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_1200in1.nes', false)">📼 1200-in-1 (Многоигровка)</button>
+            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_1200in1.nes', false)">📼 1200-in-1</button>
             <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tinytoon1.nes', false)">🐰 Tiny Toon 1</button>
             <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tinytoon2.nes', false)">🐰 Tiny Toon 2</button>
 
             <h3 style="color: #b0f;">SUPER NINTENDO (SNES)</h3>
             <button class="btn-pixel btn-purple btn-sm" onclick="launchGame('emu_realmonsters.sfc', false)">👹 Aaahh!!! Real Monsters</button>
-
         </div>
         <button class="btn-pixel btn-pink" style="margin-top: 15px; flex-shrink: 0;" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
@@ -114,21 +114,11 @@
             <optgroup label="ЛУЧШИЕ РЕТРО-ИГРЫ">
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
                 <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
-                <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
-                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
-                <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
-                <option value="emu_xmen2.md">❌ X-Men 2 (SEGA)</option>
-                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
-                <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
-                <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
-                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
-                <option value="emu_tinytoon1.nes">🐰 Tiny Toon 1 (Dendy)</option>
             </optgroup>
             <optgroup label="HTML5 ИГРЫ">
                 <option value="sonic">Sonic 16-bit (HTML5)</option>
                 <option value="tetris">Tetris</option>
-                <option value="airHockey">Air Hockey</option>
             </optgroup>
         </select>
         <button class="btn-pixel btn-gold" onclick="createFriendLobby()">СОЗДАТЬ КОМНАТУ</button>
@@ -145,24 +135,15 @@
 
     <div id="s-create-lobby" class="screen">
         <h2>НОВЫЙ ТУРНИР</h2>
-        <p style="font-size: 8px; color: var(--accent-gold); text-align: center; margin-bottom: 20px;">Побеждает тот, кто наберет больше очков (для эмуляторов счет = время выживания в секундах).</p>
         <select id="lobby-game" class="btn-pixel" style="background:#000; color:#fff;">
             <optgroup label="ТУРНИРНЫЕ ХИТЫ">
                 <option value="emu_umk3.md">🐉 Mortal Kombat 3 (SEGA)</option>
                 <option value="emu_sonic.bin">🦔 Sonic 1 (SEGA)</option>
-                <option value="emu_sonic2.md">🦔 Sonic 2 (SEGA)</option>
-                <option value="emu_sunset.md">🤠 Sunset Riders (SEGA)</option>
-                <option value="emu_btdd.md">🐸 Battletoads DD (SEGA)</option>
-                <option value="emu_roadrash.md">🏍 Road Rash (SEGA)</option>
                 <option value="emu_tanks.nes">🚜 Танчики (Dendy)</option>
-                <option value="emu_battletoads.md">🐸 Battletoads (SEGA)</option>
-                <option value="emu_tmnt.md">🐢 TMNT (SEGA)</option>
-                <option value="emu_comix.md">💥 Comix Zone (SEGA)</option>
             </optgroup>
             <optgroup label="HTML5 ИГРЫ">
                 <option value="sonic">Sonic 16-bit</option>
                 <option value="tetris">Tetris</option>
-                <option value="bomber">Bomber Arena</option>
             </optgroup>
         </select>
         <input type="number" id="lobby-bet" class="btn-pixel" style="background:#000; color:#fff;" placeholder="Ставка (Stars)" value="10">
@@ -184,10 +165,11 @@
         <h2>ПРОФИЛЬ</h2>
         <p>Баланс: <span id="p-bal" style="color:var(--accent-gold)">0</span> ⭐️</p>
         <button class="btn-pixel btn-gold" onclick="buyStars(50)">КУПИТЬ 50 ⭐️</button>
-        <button class="btn-pixel btn-green" onclick="depositCrypto('USDT', 1, 100)">ПОПОЛНИТЬ 1 USDT (CryptoPay)</button>
+        <button class="btn-pixel btn-green" onclick="depositCrypto('USDT', 1, 100)">ПОПОЛНИТЬ 1 USDT</button>
         <button class="btn-pixel btn-pink" style="margin-top:20px;" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
+    <!-- ЭКРАН HTML5 ИГР -->
     <div id="s-game" class="screen" style="padding:0; justify-content:center;">
         <div style="display:flex; justify-content:space-between; width:240px; margin-bottom:5px; font-size:10px;">
             <span id="g-score-label">SCORE:</span> <span id="g-score" style="color:var(--accent-gold)">0</span>
@@ -205,23 +187,22 @@
     </div>
 </div>
 
-<div id="modal-over" class="screen" style="background:rgba(0,0,0,0.9); justify-content:center; z-index:50;">
+<div id="modal-over" class="screen" style="background:rgba(0,0,0,0.9); justify-content:center; z-index:2000;">
     <h2 style="color:var(--accent-pink)">ИГРА ОКОНЧЕНА</h2>
     <p>Твой результат: <span id="end-score" style="color:var(--accent-gold)">0</span></p>
     <p id="end-msg" style="font-size:10px; color:#0ff; margin-bottom:20px;"></p>
-    <button class="btn-pixel" onclick="location.reload()">В ГЛАВНОЕ МЕНЮ</button>
+    <button class="btn-pixel" onclick="backToMenu()">В ГЛАВНОЕ МЕНЮ</button>
 </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
-    const API = "https://tg-game-arena.onrender.com"; 
-    
-    const BOT_USERNAME = "RetroBattleArena_bot"; 
-
+    const API = "https://tg-game-arena.onrender.com";      
+    const BOT_USERNAME = "RetroBattleArena_bot";  
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+    
     let user = null, lobby = null, poll = null, loop = null, gameType = '', score = 0, isRanked = false, timeLeft = 0, matchTimer = 0;
-    let emuTimerInterval = null; 
-
+    let emuTimerInterval = null;  
+    
     const keys = {left:false, right:false, up:false, down:false, action:false};
     window.press = (k,s) => { Reflect.set(keys,k,s); if(s&&window.onInput)window.onInput(k); };
     document.onkeydown=e=>{if(e.key==='ArrowLeft')press('left',true);if(e.key==='ArrowRight')press('right',true);if(e.key==='ArrowDown')press('down',true);if(e.key==='ArrowUp')press('up',true);if(e.key===' ')press('action',true);};
@@ -258,8 +239,10 @@
     
     function drawCountdownText(t){ctx.fillStyle='#000';ctx.fillRect(0,0,240,400);ctx.fillStyle='#fff';ctx.font='30px "Press Start 2P"';ctx.textAlign='center';ctx.fillText(t,120,200)}
     function startCountdown(t){let c=3;drawCountdownText(c);let i=setInterval(()=>{c--;if(c>0)drawCountdownText(c);else if(c===0)drawCountdownText('GO!');else{clearInterval(i);switchGame(t)}},1000)}
-    
-    // --- ГЛАВНАЯ ФУНКЦИЯ ЗАПУСКА ИГР ---
+
+    // =================================================================
+    // ЗАПУСК ИГР И ЭМУЛЯТОРОВ
+    // =================================================================
     function launchGame(t, r) {
         gameType = t;
         isRanked = r;
@@ -268,13 +251,11 @@
         
         if (t.startsWith('emu_')) {
             const fileName = t.replace('emu_', '');
-            
-            let core = 'sega';
+            let core = 'genesis'; // для EmulatorJS v3 SEGA это genesis
             if (fileName.endsWith('.nes')) core = 'nes';
             else if (fileName.endsWith('.sfc')) core = 'snes'; 
 
-            navScreen('s-game'); 
-            document.getElementById('app').style.display = 'none'; 
+            document.getElementById('app').style.display = 'none';
             
             if (isRanked) {
                 document.getElementById('emu-tournament-ui').style.display = 'block';
@@ -284,7 +265,7 @@
             }
             
             launchEmulator(fileName, core);
-            return; 
+            return;
         }
 
         timeLeft = r ? 60 : 0;
@@ -295,56 +276,57 @@
         if (loop) cancelAnimationFrame(loop);
         startCountdown(t);
     }
-    
-    function switchGame(t){if(t==='sonic')runSonic();else if(t==='tetris')runTetris();else if(t==='bomber')runBomber();else if(t==='gold')runGoldMiner();else if(t==='snake')runSnake();else if(t==='battleCity')runBattleCity();else if(t==='roadFighter')runRoadFighter();else if(t==='spaceInvaders')runSpaceInvaders();else if(t==='airHockey')runAirHockey()}
-    
-    async function gameOver(){
-        if(loop) cancelAnimationFrame(loop); loop = null;
-        if(emuTimerInterval) { clearInterval(emuTimerInterval); emuTimerInterval = null; }
-        
-        document.getElementById('emulator-layer').style.display = 'none'; 
-        document.getElementById('app').style.display = 'block'; 
-        document.getElementById('modal-over').style.display='flex';
-        document.getElementById('end-score').innerText=score;
-        document.getElementById('end-msg').innerText=lobby?'Ожидание оппонента (он тоже должен закончить игру)...':'';
-        
-        await fetch(API+'/api/submit-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,game:gameType,score:score,lobbyId:lobby?lobby.lobbyId:null})})
-    }
-    
-    function quitGame(){tg.showConfirm('Сдаться?',async c=>{if(!c)return;if(lobby)await fetch(API+'/api/forfeit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,lobbyId:lobby.lobbyId})});location.reload()})}
 
-    // =================================================================
-    // === ЛОГИКА ЭМУЛЯТОРОВ ===
-    // =================================================================
+    // Вставляем Iframe размером на весь экран
     function launchEmulator(fileName, coreType) {
         document.getElementById('emulator-layer').style.display = 'block';
-        window.EJS_player = '#ejs-container';
-        window.EJS_core = coreType;
-        window.EJS_gameUrl = '/' + fileName;
-        window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-        window.EJS_virtualGamepad = true;
-        window.EJS_startOnLoaded = true;
-        window.EJS_Buttons = { saveState: !isRanked, loadState: !isRanked, fullscreen: true, restart: true }; 
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-        document.body.appendChild(script);
+        const container = document.getElementById('ejs-container');
+        container.innerHTML = `<iframe src="/game.html?core=${coreType}&game=${fileName}" style="width:100vw; height:100vh; border:none; margin:0; padding:0; display:block;" allow="autoplay; fullscreen"></iframe>`;
     }
 
     async function stopEmulator() {
         if (isRanked || lobby) {
             tg.showConfirm('Точно завершить матч? Твой текущий счет будет отправлен оппоненту.', async c => {
                 if(c) {
+                    document.getElementById('ejs-container').innerHTML = ''; // Убиваем Iframe и звук
                     await gameOver();
                 }
             });
         } else {
-            location.reload();
+            document.getElementById('ejs-container').innerHTML = ''; // Убиваем Iframe и звук
+            document.getElementById('emulator-layer').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            navScreen('s-single');
+            if(emuTimerInterval) { clearInterval(emuTimerInterval); emuTimerInterval = null; }
         }
     }
 
+    async function gameOver(){
+        if(loop) cancelAnimationFrame(loop); loop = null;
+        if(emuTimerInterval) { clearInterval(emuTimerInterval); emuTimerInterval = null; }
+        
+        document.getElementById('ejs-container').innerHTML = ''; // Гарантия отключения звука
+
+        document.getElementById('emulator-layer').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('modal-over').style.display='flex';
+        document.getElementById('end-score').innerText=score;
+        document.getElementById('end-msg').innerText=lobby?'Ожидание оппонента (он тоже должен закончить игру)...':'';
+        
+        await fetch(API+'/api/submit-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,game:gameType,score:score,lobbyId:lobby?lobby.lobbyId:null})})
+    }
+
+    function quitGame(){tg.showConfirm('Сдаться?',async c=>{if(!c)return;if(lobby)await fetch(API+'/api/forfeit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telegramId:user.telegramId,lobbyId:lobby.lobbyId})}); backToMenu(); })}
+    
+    function backToMenu() {
+        document.getElementById('modal-over').style.display='none';
+        navScreen('s-main');
+    }
+
+    function switchGame(t){if(t==='sonic')runSonic();else if(t==='tetris')runTetris();else if(t==='bomber')runBomber();else if(t==='gold')runGoldMiner();else if(t==='snake')runSnake();else if(t==='battleCity')runBattleCity();else if(t==='roadFighter')runRoadFighter();else if(t==='spaceInvaders')runSpaceInvaders();else if(t==='airHockey')runAirHockey()}
+    
     // =================================================================
-    // === ДВИЖКИ HTML5 ИГР (Полный Код) ===
+    // HTML5 ДВИЖКИ ИГР
     // =================================================================
     function runSonic(){const ACCEL=0.046875,DECEL=0.5,FRICTION=0.046875,TOP=6,GRAVITY=0.21875,JUMP_FORCE=-6.5,JUMP_RELEASE=-4,SLOPE=0.125,SLOPE_ROLL=0.078125,ROLL_DECEL=0.125;let p={x:50,y:100,vx:0,vy:0,gspd:0,angle:0,radius:9,state:'idle',grounded:false,rings:0},cam={x:0,y:0},startTime=Date.now(),spinCharge=0,levelLength=6e3;const rings=[{x:300,y:180},{x:350,y:180},{x:400,y:180},{x:800,y:150},{x:850,y:130}];function getTerrain(x){if(x<0||x>levelLength)return{y:200,angle:0};let y=200;if(x>500&&x<1e3)y-=Math.sin((x-500)/500*Math.PI)*80;if(x>1200&&x<1500)y-=(x-1200)*.5;if(x>=1500&&x<1800)y-=150-(x-1500)*.5;let dx=2,y1=200;if(x+dx>500&&x+dx<1e3)y1-=Math.sin((x+dx-500)/500*Math.PI)*80;else if(x+dx>1200&&x+dx<1500)y1-=(x+dx-1200)*.5;else if(x+dx>=1500&&x+dx<1800)y1-=150-(x+dx-1500)*.5;return{y:y,angle:Math.atan2(y1-y,dx)}} window.onInput=k=>{if(k==='action'){if(keys.action){if(p.grounded){if(p.state==='crouch'){playRetroSound('spindash');spinCharge+=2;if(spinCharge>8)spinCharge=8}else{p.grounded=false;p.vy=JUMP_FORCE*Math.cos(p.angle)-p.gspd*Math.sin(p.angle);p.vx=p.gspd*Math.cos(p.angle)+JUMP_FORCE*Math.sin(p.angle);p.state='roll';playRetroSound('jump')}}}else if(!p.grounded&&p.vy<JUMP_RELEASE)p.vy=JUMP_RELEASE}};function tick(){if(!loop)return;score=Date.now()-startTime;updateScore();if(p.grounded){if(p.state==='crouch'&&!keys.down){p.gspd=(8+Math.floor(spinCharge)/2)*(p.vx>=0?1:-1);p.state='roll';spinCharge=0;playRetroSound('jump')} if(p.state!=='roll'&&p.state!=='crouch'){if(keys.left){if(p.gspd>0)p.gspd-=DECEL;else if(p.gspd>-TOP)p.gspd-=ACCEL;p.state='run'}else if(keys.right){if(p.gspd<0)p.gspd+=DECEL;else if(p.gspd<TOP)p.gspd+=ACCEL;p.state='run'}else{p.gspd-=Math.min(Math.abs(p.gspd),FRICTION)*Math.sign(p.gspd);p.state=p.gspd===0?'idle':'run'} if(keys.down&&Math.abs(p.gspd)<1)p.state='crouch';else if(keys.down&&Math.abs(p.gspd)>=1){p.state='roll';playRetroSound('spindash')}}else if(p.state==='roll'){if(keys.left&&p.gspd>0)p.gspd-=ROLL_DECEL;if(keys.right&&p.gspd<0)p.gspd+=ROLL_DECEL;p.gspd-=Math.min(Math.abs(p.gspd),FRICTION/2)*Math.sign(p.gspd);if(Math.abs(p.gspd)<.5)p.state='idle'} p.gspd-=Math.sin(p.angle)*(p.state==='roll'?Math.sign(p.gspd)===Math.sign(Math.sin(p.angle))?SLOPE_ROLL:SLOPE:SLOPE);p.vx=p.gspd*Math.cos(p.angle);p.vy=p.gspd*-Math.sin(p.angle)}else{if(keys.left)p.vx-=ACCEL*2;if(keys.right)p.vx+=ACCEL*2;p.vy+=GRAVITY} p.x+=p.vx;p.y+=p.vy;let terrain=getTerrain(p.x);if(p.y>=terrain.y-p.radius){p.y=terrain.y-p.radius;p.angle=terrain.angle;p.grounded=true;if(p.state==='roll'&&Math.abs(p.vx)<1)p.state='idle';else if(p.state!=='roll')p.state='run';p.gspd=p.vx}else{p.grounded=false;p.angle=0} for(let i=rings.length-1;i>=0;i--){let r=rings[i];if(Math.hypot(p.x-r.x,p.y-r.y)<p.radius+8){rings.splice(i,1);p.rings++;playRetroSound('ring')}} if(p.x>levelLength)return gameOver();cam.x=p.x-120;cam.y=p.y-200;if(cam.x<0)cam.x=0;if(cam.y>0)cam.y=0;ctx.fillStyle='#0066cc';ctx.fillRect(0,0,240,400);ctx.fillStyle='#1e90ff';ctx.fillRect(0,150-cam.y*.1,240,250);ctx.fillStyle='#0055aa';ctx.fillRect(0,200-cam.y*.2,240,200);ctx.fillStyle='#654321';ctx.strokeStyle='#228B22';ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(0-cam.x,400);for(let tx=Math.max(0,cam.x-20);tx<cam.x+260;tx+=10){ctx.lineTo(tx-cam.x,getTerrain(tx).y-cam.y)} ctx.lineTo(260,400);ctx.fill();ctx.stroke();ctx.strokeStyle='#ffd700';ctx.lineWidth=3;rings.forEach(r=>{if(r.x>cam.x-20&&r.x<cam.x+260){ctx.beginPath();ctx.arc(r.x-cam.x,r.y-cam.y,6,0,Math.PI*2);ctx.stroke()}});ctx.save();ctx.translate(p.x-cam.x,p.y-cam.y);ctx.rotate(p.angle);ctx.fillStyle='#00f0ff';if(p.state==='roll'){ctx.beginPath();ctx.arc(0,0,p.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(-4,-4,4,4)}else if(p.state==='crouch'){ctx.beginPath();ctx.arc(0,4,p.radius-4,0,Math.PI*2);ctx.fill()}else{ctx.fillRect(-p.radius,-p.radius,p.radius*2,p.radius*2);ctx.fillStyle='#ff0055';ctx.fillRect(-p.radius,p.radius-4,8,4)} ctx.restore();ctx.fillStyle='#fff';ctx.textAlign='left';ctx.fillText("RINGS: "+p.rings,10,20);loop=requestAnimationFrame(tick)}matchTimer=Date.now();loop=requestAnimationFrame(tick)}
     function runTetris(){const C=10,R=20,SQ=20;let bd=Array.from({length:R},()=>Array(C).fill(0));const SHAPES=[[],[[1,1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[1,1],[1,1]],[[0,1,1],[1,1,0]],[[0,1,0],[1,1,1]],[[1,1,0],[0,1,1]]],COLORS=[null,'#0ff','#00f','#fa0','#ff0','#0f0','#808','#f00'];let p=newPiece(),dropCounter=0,lastTime=Date.now();function newPiece(){return{m:SHAPES[Math.floor(Math.random()*7)+1],color:Math.floor(Math.random()*7)+1,x:3,y:0}} function draw(){ctx.fillStyle='#050505';ctx.fillRect(0,0,240,400);ctx.translate(20,0);ctx.strokeStyle='#333';for(let r=0;r<R;r++){for(let c=0;c<C;c++){ctx.strokeRect(c*SQ,r*SQ,SQ,SQ);if(bd[r][c]){ctx.fillStyle=COLORS[bd[r][c]];ctx.fillRect(c*SQ+1,r*SQ+1,SQ-2,SQ-2)}}} if(p){ctx.fillStyle=COLORS[p.color];for(let r=0;r<p.m.length;r++)for(let c=0;c<p.m[r].length;c++)if(p.m[r][c])ctx.fillRect((p.x+c)*SQ+1,(p.y+r)*SQ+1,SQ-2,SQ-2)} ctx.translate(-20,0)} function collide(m,ox,oy){for(let r=0;r<m.length;r++)for(let c=0;c<m[r].length;c++){if(!m[r][c])continue;let nx=p.x+c+ox,ny=p.y+r+oy;if(nx<0||nx>=C||ny>=R)return true;if(ny>=0&&bd[ny][nx])return true} return false} window.onInput=k=>{if(k==='left'&&!collide(p.m,-1,0))p.x--;if(k==='right'&&!collide(p.m,1,0))p.x++;if(k==='down'&&!collide(p.m,0,1))p.y++;if(k==='up'||k==='action'){let rot=[],m=p.m;for(let c=0;c<m[0].length;c++){let row=[];for(let r=m.length-1;r>=0;r--)row.push(m[r][c]);rot.push(row)} let offset=0;if(collide(rot,0,0)){offset=p.x>C/2?-1:1;if(collide(rot,offset,0))offset=0} if(offset!==0||!collide(rot,0,0)){p.x+=offset;p.m=rot}}};function tick(){if(checkTime()||!loop)return;let now=Date.now();dropCounter+=now-lastTime;lastTime=now;if(dropCounter>(isRanked?400:700)){if(!collide(p.m,0,1))p.y++;else{for(let r=0;r<p.m.length;r++)for(let c=0;c<p.m[r].length;c++)if(p.m[r][c]&&p.y+r>=0)bd[p.y+r][p.x+c]=p.color;let lines=0;for(let r=R-1;r>=0;r--)if(bd[r].every(v=>v!==0)){bd.splice(r,1);bd.unshift(Array(C).fill(0));lines++;r++} if(lines>0){score+=[0,40,100,300,1200][lines];updateScore();playRetroSound('ring')} p=newPiece();if(collide(p.m,0,0))return gameOver()} dropCounter=0} draw();loop=requestAnimationFrame(tick)}matchTimer=Date.now();loop=requestAnimationFrame(tick)}
