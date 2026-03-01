@@ -15,13 +15,16 @@
         #app-ui { width: 100%; height: 100%; position: relative; z-index: 10; }
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
         .screen.active { display: flex; }
-        h1, h2 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
+        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
         h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; }
+        h3 { font-size: 0.7rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
         
-        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 16px; width: 100%; max-width: 320px; font-size: 0.7rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 12px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
         .btn-pixel:active { transform: translateY(2px); }
         .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-green { color: #0f0; box-shadow: inset 4px 4px 0 rgba(0, 255, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-blue { color: #3b82f6; box-shadow: inset 4px 4px 0 rgba(59, 130, 246, 0.4), inset -4px -4px 0 var(--btn-shadow); }
 
         /* ЭМУЛЯТОР */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
@@ -29,12 +32,10 @@
         #ejs-container canvas { width: 100% !important; height: 100% !important; object-fit: contain; max-width: none !important; border: none !important; margin: 0 !important; }
         #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
 
-        /* РАДАР ПАМЯТИ (ОБНОВЛЕННЫЙ) */
+        /* РАДАР ПАМЯТИ */
         #ram-scanner { position: absolute; top: 15px; left: 15px; z-index: 10000; color: #0f0; font-family: var(--font-retro); font-size: 8px; pointer-events: none; background: rgba(0,20,0,0.8); border: 1px solid #0f0; padding: 10px; display: none; text-shadow: 1px 1px 0 #000; width: 220px; }
         .scanner-line { margin-bottom: 5px; }
         #ram-status { color: yellow; margin-bottom: 10px; }
-        
-        /* Блок машинного кода */
         #hex-dump { font-family: monospace; font-size: 7px; color: #00f0ff; line-height: 1.2; opacity: 0.8; height: 40px; overflow: hidden; margin-top: 5px; border-top: 1px dashed #0f0; padding-top: 5px; }
     </style>
 </head>
@@ -45,10 +46,9 @@
     
     <div id="ram-scanner">
         <div id="ram-status" style="animation: blinker 1s infinite;">HOOKING RAM...</div>
-        <div class="scanner-line">ADDR [0xFE20] RINGS: <span id="val-rings" style="color:white;">???</span></div>
-        <div class="scanner-line">ADDR [0xFE26] SCORE: <span id="val-score" style="color:white;">???</span></div>
-        <div class="scanner-line" style="color:#ff0055; font-size: 6px; margin-top: 10px;">CPU RAW STREAM (M68K):</div>
-        <!-- Сюда льется матрица цифр -->
+        <div class="scanner-line">MEM [PTR_A]: <span style="color:white;">ACTIVE</span></div>
+        <div class="scanner-line">MEM [PTR_B]: <span style="color:white;">SYNCED</span></div>
+        <div class="scanner-line" style="color:#ff0055; font-size: 6px; margin-top: 10px;">CPU RAW STREAM (<span id="cpu-type">M68K</span>):</div>
         <div id="hex-dump"></div>
     </div>
 
@@ -58,13 +58,46 @@
 <div id="app-ui">
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>RETRO ARENA</h1>
-        <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ ЗАПУСТИТЬ SEGA</button>
+        <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
+        <div style="font-size: 8px; color:#666; margin-top: 20px; text-align: center; line-height: 1.5;">
+            > ЭМУЛЯЦИЯ: SEGA, NES, NDS<br>> ИГР В БАЗЕ: 22
+        </div>
     </div>
 
-    <div id="s-emu-menu" class="screen" style="justify-content: center;">
-        <h2 style="color: var(--accent-neon);">ВЫБЕРИТЕ РОМ</h2>
-        <button class="btn-pixel btn-sm btn-gold" style="width:100%; max-width:320px; margin-bottom: 15px;" onclick="launchEmulator('sonic')">🦔 SONIC THE HEDGEHOG</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-main')">НАЗАД</button>
+    <!-- МУЛЬТИ-КОНСОЛЬНОЕ МЕНЮ (ПРОКРУЧИВАЕТСЯ) -->
+    <div id="s-emu-menu" class="screen" style="justify-content: flex-start;">
+        <h2 style="color: var(--accent-neon);">ВИГРУШЕЧНАЯ</h2>
+        <button class="btn-pixel btn-pink" style="margin-bottom: 20px;" onclick="navScreen('s-main')">◀ В ГЛАВНОЕ МЕНЮ</button>
+
+        <h3 style="color: var(--accent-gold);">SEGA GENESIS (16-BIT)</h3>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('sonic2.md', 'sega')">🦔 Sonic The Hedgehog 2</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('umk3.md', 'sega')">🐉 Ultimate Mortal Kombat 3</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('comix.md', 'sega')">💥 Comix Zone</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('tmnt.md', 'sega')">🐢 TMNT - Return of Shredder</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('btdd.md', 'sega')">🐸 Battletoads Double Dragon</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('battletoads.md', 'sega')">🐸 Battletoads</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('aladdin.md', 'sega')">🧞‍♂️ Aladdin</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('lionking.md', 'sega')">🦁 The Lion King</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('roadrash.md', 'sega')">🏍 Road Rash</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('sunset.md', 'sega')">🤠 Sunset Riders</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('xmen2.md', 'sega')">❌ X-Men 2: Clone Wars</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('hulk.md', 'sega')">🧟‍♂️ The Incredible Hulk</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('jurassic.md', 'sega')">🦖 Jurassic Park - Lost World</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('ghostbusters.md', 'sega')">👻 Ghostbusters</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('mickey.md', 'sega')">🐭 Mickey Mania</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('rangers.md', 'sega')">⚡ Mighty Morphin Power Rangers</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('simpsons.md', 'sega')">🍩 The Simpsons - Bart vs Space Mutants</button>
+
+        <h3 style="color: #0f0;">DENDY / NES (8-BIT)</h3>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon1.nes', 'nes')">🐰 Tiny Toon Adventures</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon2.nes', 'nes')">🐰 Tiny Toon 2 - Wackyland</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('homealone.nes', 'nes')">😱 Home Alone 2</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('1200in1.nes', 'nes')">📼 1200-in-1 (Multicart)</button>
+
+        <h3 style="color: #3b82f6;">NINTENDO DS (DUAL SCREEN)</h3>
+        <button class="btn-pixel btn-blue" onclick="launchEmulator('mario.nds', 'nds')">🍄 New Super Mario Bros</button>
+        
+        <div style="height: 50px;"></div> <!-- Отступ снизу -->
     </div>
 </div>
 
@@ -76,20 +109,23 @@
     let memoryScannerInterval = null;
     let hexStreamInterval = null;
 
-    function startRAMScanner() {
+    function startRAMScanner(coreType) {
         document.getElementById('ram-scanner').style.display = 'block';
         const statusEl = document.getElementById('ram-status');
         const dumpEl = document.getElementById('hex-dump');
+        
+        let cpuName = "M68K";
+        if(coreType === 'nes') cpuName = "MOS 6502";
+        if(coreType === 'nds') cpuName = "ARM9 / ARM7"; // Нинтендо ДС имеет два крутых процессора
+        document.getElementById('cpu-type').innerText = cpuName;
 
-        // Имитация чтения "сырого машинного кода", о котором ты говорил
-        // Именно это видит компьютер, а не текст "Соник прыгнул"
         hexStreamInterval = setInterval(() => {
             let stream = "";
             for(let i=0; i<4; i++) {
                 stream += Array.from({length: 8}, () => Math.floor(Math.random()*256).toString(16).padStart(2, '0').toUpperCase()).join(' ') + "<br>";
             }
             dumpEl.innerHTML = stream;
-        }, 50); // Обновляется 20 раз в секунду!
+        }, 50);
 
         memoryScannerInterval = setInterval(() => {
             try {
@@ -102,24 +138,24 @@
         }, 1000);
     }
 
-    function launchEmulator(romName) {
+    function launchEmulator(fileName, coreType) {
         document.getElementById('app-ui').style.display = 'none';
         const emuLayer = document.getElementById('emulator-layer');
         emuLayer.style.display = 'block';
 
         window.EJS_player = '#ejs-container';
-        window.EJS_core = 'sega';
-        window.EJS_gameUrl = '/' + romName + '.bin?v=' + Date.now(); 
+        window.EJS_core = coreType;
+        window.EJS_gameUrl = '/' + fileName + '?v=' + Date.now(); 
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_virtualGamepad = true;
         window.EJS_startOnLoaded = true;
         
-        window.EJS_Buttons = { playPause: false, restart: false, mute: false, settings: false, fullscreen: true, saveState: false, loadState: false, screenRecord: false, gamepad: true, cheat: false, volume: true };
+        window.EJS_Buttons = { playPause: false, restart: false, mute: false, settings: false, fullscreen: true, saveState: true, loadState: true, screenRecord: false, gamepad: true, cheat: false, volume: true };
 
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
         
-        script.onload = () => { setTimeout(startRAMScanner, 3000); };
+        script.onload = () => { setTimeout(() => startRAMScanner(coreType), 3000); };
         document.body.appendChild(script);
     }
 
