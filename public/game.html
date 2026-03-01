@@ -42,13 +42,12 @@
 <body>
     <div id="overlay">
         <button class="btn-massive" onclick="start()">▶ ИГРАТЬ</button>
-        <p class="hint">Нажми для активации звука</p>
+        <p class="hint">Нажми для активации звука и видео</p>
     </div>
 
     <div id="game-container"></div>
 
     <script>
-        // Получаем параметры игры из URL (которые передает index.html)
         const urlParams = new URLSearchParams(window.location.search);
         const core = urlParams.get('core') || 'genesis';
         const game = urlParams.get('game');
@@ -56,21 +55,20 @@
         function start() {
             if (!game) { alert("Ошибка: ROM файл не найден!"); return; }
 
-            // Прячем огромную кнопку и показываем контейнер игры на весь экран
             document.getElementById('overlay').style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
 
-            // Настройки EmulatorJS (v3)
+            // Используем относительный путь gameUrl: game (так как game.html и ромы лежат в одной папке)
             window.EmuJS = {
-                dataUrl: "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/",
-                gameUrl: window.location.origin + "/" + game,
+                dataUrl: "https://cdn.emulatorjs.org/stable/data/",
+                gameUrl: game,
                 core: core,
                 autoStart: true,
                 container: "#game-container"
             };
 
             const script = document.createElement('script');
-            script.src = "https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/loader.js";
+            script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
             document.body.appendChild(script);
         }
     </script>
