@@ -9,57 +9,36 @@
     
     <style>
         :root {
-            --bg-dark: #070913; 
-            --text-light: #e0e6f1;
-            --accent-neon: #00f0ff; 
-            --accent-pink: #ff0055; 
-            --accent-gold: #ffd700;
-            --font-retro: 'Press Start 2P', cursive;
-            --font-modern: 'Rajdhani', sans-serif;
+            --bg-dark: #070913; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700;
+            --font-retro: 'Press Start 2P', cursive; --font-modern: 'Rajdhani', sans-serif;
             --btn-bg: linear-gradient(145deg, rgba(20, 25, 40, 0.9) 0%, rgba(8, 10, 18, 0.9) 100%);
         }
-        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         body { 
-            margin: 0; 
-            background-color: var(--bg-dark); 
+            margin: 0; background-color: var(--bg-dark); 
             background-image: 
                 radial-gradient(circle at center, rgba(0, 240, 255, 0.05) 0%, transparent 50%),
                 linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
             background-size: 100% 100%, 35px 35px, 35px 35px;
-            color: var(--text-light); 
-            font-family: var(--font-modern); 
-            height: 100vh; width: 100vw; 
-            overflow: hidden; user-select: none; touch-action: none; overscroll-behavior-y: none;
+            color: #e0e6f1; font-family: var(--font-modern); 
+            height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; overscroll-behavior-y: none;
         }
-        
         #app-ui { width: 100%; height: 100%; position: relative; z-index: 10; }
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 25px 20px 80px 20px; }
         .screen.active { display: flex; animation: fade 0.3s ease; }
         @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-        
         h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; font-family: var(--font-retro); }
         h1 { font-size: 1.3rem; color: var(--accent-neon); text-shadow: 0 0 15px rgba(0, 240, 255, 0.6), 2px 2px 0 #000; margin-top: 10px; }
         h2 { color: var(--accent-neon); }
         h3 { font-size: 0.6rem; color: rgba(255,255,255,0.7); margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; width: 100%; max-width: 320px; letter-spacing: 1px; }
-
-        .btn-pixel { 
-            background: var(--btn-bg); color: var(--accent-neon); border: 1px solid var(--accent-neon); 
-            border-radius: 10px; padding: 16px; width: 100%; max-width: 320px; 
-            font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 12px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 0 8px rgba(0, 240, 255, 0.1); 
-            text-shadow: 1px 1px 0 #000; transition: transform 0.1s, box-shadow 0.1s;
-        }
-        .btn-pixel:active { transform: scale(0.97); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2); }
-        
+        .btn-pixel { background: var(--btn-bg); color: var(--accent-neon); border: 1px solid var(--accent-neon); border-radius: 10px; padding: 16px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.7), inset 0 0 8px rgba(0, 240, 255, 0.1); text-shadow: 1px 1px 0 #000; transition: transform 0.1s, box-shadow 0.1s; }
+        .btn-pixel:active { transform: scale(0.97); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
         .btn-gold { color: var(--accent-gold); border-color: var(--accent-gold); }
         .btn-pink { color: var(--accent-pink); border-color: var(--accent-pink); }
         .btn-green { color: #0f0; border-color: #0f0; }
         .btn-blue { color: #3b82f6; border-color: #3b82f6; }
         .btn-purple { color: #b0f; border-color: #b0f; }
-
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
         #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
@@ -124,7 +103,6 @@
     try { tg.disableVerticalSwipes(); } catch(e) {}
     function navScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-    // ТВОЙ ОРИГИНАЛЬНЫЙ РАБОЧИЙ КОД С ВЗЛОМЩИКОМ КЭША
     function launchEmulator(fileName, coreType) {
         document.getElementById('app-ui').style.display = 'none';
         const emuLayer = document.getElementById('emulator-layer');
@@ -132,15 +110,18 @@
 
         window.EJS_player = '#ejs-container';
         window.EJS_core = coreType;
-        // Ключевое исправление: добавляем ?v=... чтобы телефон не использовал старый кэш
-        window.EJS_gameUrl = '/' + fileName + '?v=' + Date.now(); 
+
+        // *** ГЛАВНОЕ ИСПРАВЛЕНИЕ ***
+        // Убираем слэш в начале. Теперь путь относительный, и телефон его найдет.
+        // Браузер запросит https://your-site.com/sonic2.md, а сервер найдет его в /public/sonic2.md
+        window.EJS_gameUrl = fileName + '?v=' + Date.now(); 
+        
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_virtualGamepad = true;
         window.EJS_startOnLoaded = true;
         window.EJS_Buttons = { playPause: false, restart: false, mute: false, settings: false, fullscreen: true, saveState: true, loadState: true, screenRecord: false, gamepad: true, cheat: false, volume: true };
 
         const script = document.createElement('script');
-        // Добавляем взломщик кэша и сюда тоже, чтобы гарантированно сработало
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js?v=' + Date.now();
         document.body.appendChild(script);
     }
