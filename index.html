@@ -25,6 +25,7 @@
         .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-green { color: #0f0; box-shadow: inset 4px 4px 0 rgba(0, 255, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-blue { color: #3b82f6; box-shadow: inset 4px 4px 0 rgba(59, 130, 246, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
 
         /* ЭМУЛЯТОР */
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
@@ -43,7 +44,6 @@
 
 <div id="emulator-layer">
     <button id="exit-emu-btn" onclick="stopEmulator()">В МЕНЮ ✖</button>
-    
     <div id="ram-scanner">
         <div id="ram-status" style="animation: blinker 1s infinite;">HOOKING RAM...</div>
         <div class="scanner-line">MEM [PTR_A]: <span style="color:white;">ACTIVE</span></div>
@@ -51,22 +51,20 @@
         <div class="scanner-line" style="color:#ff0055; font-size: 6px; margin-top: 10px;">CPU RAW STREAM (<span id="cpu-type">M68K</span>):</div>
         <div id="hex-dump"></div>
     </div>
-
     <div id="ejs-container"></div>
 </div>
 
 <div id="app-ui">
     <div id="s-main" class="screen active" style="justify-content: center;">
-        <h1>RETRO ARENA</h1>
+        <h1>ИМПЕРИЯ РЕТРО-ИГР</h1>
         <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
         <div style="font-size: 8px; color:#666; margin-top: 20px; text-align: center; line-height: 1.5;">
-            > ЭМУЛЯЦИЯ: SEGA, NES, NDS<br>> ИГР В БАЗЕ: 22
+            > ЭМУЛЯЦИЯ: SEGA, NES, NDS, SNES<br>> ИГР В БАЗЕ: 24
         </div>
     </div>
 
-    <!-- МУЛЬТИ-КОНСОЛЬНОЕ МЕНЮ (ПРОКРУЧИВАЕТСЯ) -->
     <div id="s-emu-menu" class="screen" style="justify-content: flex-start;">
-        <h2 style="color: var(--accent-neon);">ВИГРУШЕЧНАЯ</h2>
+        <h2 style="color: var(--accent-neon);">БИБЛИОТЕКА ИГР</h2>
         <button class="btn-pixel btn-pink" style="margin-bottom: 20px;" onclick="navScreen('s-main')">◀ В ГЛАВНОЕ МЕНЮ</button>
 
         <h3 style="color: var(--accent-gold);">SEGA GENESIS (16-BIT)</h3>
@@ -87,17 +85,21 @@
         <button class="btn-pixel btn-gold" onclick="launchEmulator('mickey.md', 'sega')">🐭 Mickey Mania</button>
         <button class="btn-pixel btn-gold" onclick="launchEmulator('rangers.md', 'sega')">⚡ Mighty Morphin Power Rangers</button>
         <button class="btn-pixel btn-gold" onclick="launchEmulator('simpsons.md', 'sega')">🍩 The Simpsons - Bart vs Space Mutants</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('tinytoon_sega.md', 'sega')">🐰 Tiny Toon (SEGA)</button>
 
         <h3 style="color: #0f0;">DENDY / NES (8-BIT)</h3>
-        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon1.nes', 'nes')">🐰 Tiny Toon Adventures</button>
-        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon2.nes', 'nes')">🐰 Tiny Toon 2 - Wackyland</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon1.nes', 'nes')">🐰 Tiny Toon Adventures 1</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon2.nes', 'nes')">🐰 Tiny Toon 2</button>
         <button class="btn-pixel btn-green" onclick="launchEmulator('homealone.nes', 'nes')">😱 Home Alone 2</button>
         <button class="btn-pixel btn-green" onclick="launchEmulator('1200in1.nes', 'nes')">📼 1200-in-1 (Multicart)</button>
+        
+        <h3 style="color: #b0f;">SUPER NINTENDO (SNES)</h3>
+        <button class="btn-pixel btn-purple" onclick="launchEmulator('realmonsters.sfc', 'snes')">👹 Aaahh!!! Real Monsters</button>
 
         <h3 style="color: #3b82f6;">NINTENDO DS (DUAL SCREEN)</h3>
         <button class="btn-pixel btn-blue" onclick="launchEmulator('mario.nds', 'nds')">🍄 New Super Mario Bros</button>
         
-        <div style="height: 50px;"></div> <!-- Отступ снизу -->
+        <div style="height: 50px;"></div>
     </div>
 </div>
 
@@ -106,36 +108,18 @@
     try { tg.disableVerticalSwipes(); } catch(e) {}
     function navScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-    let memoryScannerInterval = null;
-    let hexStreamInterval = null;
+    let memoryScannerInterval = null, hexStreamInterval = null;
 
     function startRAMScanner(coreType) {
         document.getElementById('ram-scanner').style.display = 'block';
-        const statusEl = document.getElementById('ram-status');
-        const dumpEl = document.getElementById('hex-dump');
-        
+        const statusEl = document.getElementById('ram-status'), dumpEl = document.getElementById('hex-dump');
         let cpuName = "M68K";
         if(coreType === 'nes') cpuName = "MOS 6502";
-        if(coreType === 'nds') cpuName = "ARM9 / ARM7"; // Нинтендо ДС имеет два крутых процессора
+        if(coreType === 'snes') cpuName = "RICOH 5A22";
+        if(coreType === 'nds') cpuName = "ARM9/ARM7";
         document.getElementById('cpu-type').innerText = cpuName;
-
-        hexStreamInterval = setInterval(() => {
-            let stream = "";
-            for(let i=0; i<4; i++) {
-                stream += Array.from({length: 8}, () => Math.floor(Math.random()*256).toString(16).padStart(2, '0').toUpperCase()).join(' ') + "<br>";
-            }
-            dumpEl.innerHTML = stream;
-        }, 50);
-
-        memoryScannerInterval = setInterval(() => {
-            try {
-                if (window.EJS_emulator && window.EJS_emulator.Module && window.EJS_emulator.Module.HEAPU8) {
-                    statusEl.innerText = "SYSTEM HOOKED [WASM BLOCKED]";
-                    statusEl.style.color = "#ff0055";
-                    statusEl.style.animation = "none";
-                }
-            } catch (e) {}
-        }, 1000);
+        hexStreamInterval = setInterval(() => { let stream = ""; for(let i=0; i<4; i++) { stream += Array.from({length: 8}, () => Math.floor(Math.random()*256).toString(16).padStart(2, '0').toUpperCase()).join(' ') + "<br>"; } dumpEl.innerHTML = stream; }, 50);
+        memoryScannerInterval = setInterval(() => { try { if (window.EJS_emulator && window.EJS_emulator.Module && window.EJS_emulator.Module.HEAPU8) { statusEl.innerText = "SYSTEM HOOKED [WASM BLOCKED]"; statusEl.style.color = "#ff0055"; statusEl.style.animation = "none"; } } catch (e) {} }, 1000);
     }
 
     function launchEmulator(fileName, coreType) {
@@ -149,12 +133,10 @@
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_virtualGamepad = true;
         window.EJS_startOnLoaded = true;
-        
         window.EJS_Buttons = { playPause: false, restart: false, mute: false, settings: false, fullscreen: true, saveState: true, loadState: true, screenRecord: false, gamepad: true, cheat: false, volume: true };
 
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-        
         script.onload = () => { setTimeout(() => startRAMScanner(coreType), 3000); };
         document.body.appendChild(script);
     }
