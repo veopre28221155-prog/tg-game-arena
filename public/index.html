@@ -22,14 +22,15 @@
 <body>
 
 <div id="emulator-layer">
-    <button onclick="sendFinish()" style="position:absolute; top:10px; right:10px; z-index:100; background:red; color:#fff; border:none; padding:8px; font-family:inherit;">FINISH</button>
+    <div style="position:absolute; top:10px; left:10px; color:gold;">SCORE: <span id="emu-score">0</span></div>
+    <button onclick="sendFinish()" style="position:absolute; top:10px; right:10px; background:red; color:#fff; border:none; padding:8px; font-family:inherit;">FINISH</button>
     <div id="ejs-container"></div>
 </div>
 
 <div id="app">
     <div id="s-main" class="screen active">
         <h1 style="color:var(--neon); font-size:12px;">RETRO ARENA</h1>
-        <div class="card">COINS: <span id="p-bal">0</span> 🪙</div>
+        <div class="card">BALANCE: <span id="p-bal">0</span> 🪙</div>
         <button class="btn" onclick="nav('s-single')">🕹️ ОДИНОЧНАЯ</button>
         <button class="btn btn-gold" onclick="nav('s-create')">🤝 СОЗДАТЬ ЛОББИ</button>
         <button class="btn" onclick="listRooms()">📋 НАЙТИ ИГРУ</button>
@@ -38,19 +39,18 @@
 
     <div id="s-single" class="screen">
         <h2>ИГРЫ</h2>
-        <button class="btn" onclick="startEmu('umk3.md', 'segaMD')">Mortal Kombat 3</button>
-        <button class="btn" onclick="startEmu('sonic2.md', 'segaMD')">Sonic 2</button>
-        <button class="btn" onclick="startEmu('tanks.nes', 'nes')">Battle City</button>
+        <button class="btn" onclick="startEmu('umk3.md', 'segaMD')">MK 3</button>
+        <button class="btn" onclick="startEmu('sonic2.md', 'segaMD')">SONIC 2</button>
         <button class="btn" onclick="nav('s-main')">НАЗАД</button>
     </div>
 
     <div id="s-create" class="screen">
-        <h2>НОВАЯ КОМНАТА</h2>
+        <h2>NEW LOBBY</h2>
         <select id="g-sel" class="btn"><option value="umk3.md">MK3</option><option value="tanks.nes">TANKS</option></select>
-        <input type="number" id="b-val" class="btn" placeholder="STAKE (0=FREE)" style="color:#fff">
-        <label><input type="checkbox" id="p-check"> СКРЫТАЯ</label>
-        <button class="btn btn-gold" onclick="createLobby()">СОЗДАТЬ</button>
-        <button class="btn" onclick="nav('s-main')">НАЗАД</button>
+        <input type="number" id="b-val" class="btn" placeholder="BET (0=FREE)" style="color:#fff">
+        <label><input type="checkbox" id="p-check"> HIDDEN</label>
+        <button class="btn btn-gold" onclick="createLobby()">CREATE</button>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 
     <div id="s-room" class="screen">
@@ -59,21 +59,21 @@
             <p>P1: <span id="r-p1">-</span> <span id="r-r1"></span></p>
             <p>P2: <span id="r-p2">-</span> <span id="r-r2"></span></p>
         </div>
-        <button class="btn btn-gold" id="btn-ready" onclick="setReady()">ГОТОВ</button>
-        <button class="btn" onclick="shareInv()">ПРИГЛАСИТЬ</button>
-        <button class="btn" onclick="location.reload()">ВЫЙТИ</button>
+        <button class="btn btn-gold" id="btn-ready" onclick="setReady()">READY</button>
+        <button class="btn" onclick="shareInv()">INVITE FRIEND</button>
+        <button class="btn" onclick="location.reload()">EXIT</button>
     </div>
 
     <div id="s-list" class="screen">
-        <h2>ONLINE</h2>
+        <h2>ONLINE GAMES</h2>
         <div id="l-render"></div>
-        <button class="btn" onclick="nav('s-main')">НАЗАД</button>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 
     <div id="s-profile" class="screen">
-        <h2>ПРОФИЛЬ</h2>
+        <h2>PROFILE</h2>
         <div class="card">ID: <span id="p-id"></span></div>
-        <button class="btn" onclick="nav('s-main')">НАЗАД</button>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 </div>
 
@@ -82,7 +82,6 @@
     let user, lobby, score = 0;
 
     async function init() {
-        tg.expand();
         const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
         user = await r.json();
         document.getElementById('p-bal').innerText = user.balance;
@@ -103,7 +102,7 @@
     async function listRooms() {
         nav('s-list');
         const r = await fetch('/api/lobby/list'); const list = await r.json();
-        document.getElementById('l-render').innerHTML = list.map(l => `<div class="card">${l.game} | ${l.bet}🪙 <button onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>`).join('');
+        document.getElementById('l-render').innerHTML = list.length? list.map(l => `<div class="card">${l.game} | ${l.bet}🪙 <button class="btn" style="width:80px" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>`).join('') : "NO GAMES FOUND";
     }
 
     async function joinLobby(lid) {
@@ -112,7 +111,7 @@
         if(res.success) { lobby = res.lobby; nav('s-room'); updateRoomUI(lobby); socket.emit('join-room', lid); }
     }
 
-    function setReady() { socket.emit('player-ready', { id: lobby.lobbyId, uid: user.telegramId }); document.getElementById('btn-ready').style.display='none'; }
+    function setReady() { socket.emit('player-ready', { rid: lobby.lobbyId, uid: user.telegramId }); document.getElementById('btn-ready').style.display='none'; }
     
     function updateRoomUI(l) {
         document.getElementById('r-p1').innerText = l.creatorName; document.getElementById('r-r1').innerText = l.r1?"✅":"⏳";
@@ -121,10 +120,10 @@
     }
 
     socket.on('lobby-update', (l) => { lobby = l; updateRoomUI(l); });
-    socket.on('start-game', (d) => startEmu(d.game, d.game.endsWith('.nes')?'nes':'segaMD', d.lid));
+    socket.on('start-match', (d) => startEmu(d.game, d.game.endsWith('.nes')?'nes':'segaMD', d.lid));
 
     function startEmu(file, core, rid) {
-        nav('none'); document.getElementById('emulator-layer').style.display='block';
+        document.getElementById('app').style.display='none'; document.getElementById('emulator-layer').style.display='block';
         window.EJS_player = '#ejs-container'; window.EJS_core = core; window.EJS_gameUrl = '/'+file;
         window.EJS_pathtodata = 'data/'; window.EJS_startOnLoaded = true;
         window.EJS_onGameStart = () => {
@@ -136,8 +135,9 @@
                 }
             }, 1000);
         };
-        window.addEventListener("keydown", (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', p: user.telegramId==lobby?.creatorId?0:1 }));
-        socket.on('p-input', (d) => { if(typeof EJS_emulator!=='undefined') EJS_emulator.gameManager.simulateInput(d.key, d.type, d.p==0?1:0); });
+        window.onkeydown = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', p: user.telegramId==lobby?.creatorId?0:1 });
+        window.onkeyup = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keyup', p: user.telegramId==lobby?.creatorId?0:1 });
+        socket.on('partner-input', (d) => { if(typeof EJS_emulator!=='undefined') EJS_emulator.gameManager.simulateInput(d.key, d.type, d.p==0?1:0); });
         const s = document.createElement('script'); s.src = 'data/loader.js'; document.body.appendChild(s);
     }
 
