@@ -2,112 +2,151 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Используем относительный путь для socket.io, так надежнее на Render -->
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --tg-bg: #050505; --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; }
-        body { margin: 0; background: #050505; color: white; font-family: var(--font-retro); height: 100vh; overflow: hidden; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        :root { --accent: #00f0ff; --gold: #ffd700; --font: 'Press Start 2P', cursive; }
+        body { margin: 0; background: #000; color: #fff; font-family: var(--font); overflow: hidden; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
-        .btn-pixel { background: #1a1a1a; color: var(--accent-neon); border: 4px solid #000; padding: 15px; width: 100%; max-width: 320px; margin-bottom: 10px; cursor: pointer; font-family: inherit; font-size: 10px; text-transform: uppercase; }
+        .btn { background: #1a1a1a; color: var(--accent); border: 4px solid #000; padding: 15px; width: 100%; max-width: 320px; margin-bottom: 10px; cursor: pointer; font-family: inherit; font-size: 10px; text-transform: uppercase; }
+        .btn-gold { color: var(--gold); border-color: var(--gold); }
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 100; }
-        #ejs-container { width: 100% !important; height: 100% !important; }
+        #ejs-container { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
 
 <div id="emulator-layer">
-    <div id="emu-ui" style="position:absolute; top:10px; left:10px; z-index:101; color:gold; font-size:10px;">SCORE: <span id="emu-score">0</span></div>
-    <button onclick="stopEmulator()" style="position:absolute; top:10px; right:10px; z-index:101; background:red; color:white; font-family:inherit; font-size:8px; border:none; padding:5px;">ВЫХОД</button>
+    <div style="position:absolute; top:10px; left:10px; z-index:101; color:gold; font-size:10px;">SCORE: <span id="emu-score">0</span></div>
+    <button onclick="stopEmulator()" style="position:absolute; top:10px; right:10px; z-index:101; background:red; color:#fff; padding:5px; font-family:inherit; font-size:8px;">ЗАВЕРШИТЬ</button>
     <div id="ejs-container"></div>
 </div>
 
 <div id="app">
+    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active">
-        <h1 style="color:var(--accent-neon); font-size: 14px;">RETRO ARENA</h1>
-        <button class="btn-pixel" onclick="navScreen('s-single')">🎮 ОДИНОЧНАЯ ИГРА</button>
-        <button class="btn-pixel" onclick="tg.showAlert('Скоро!')">🤝 ИГРА С ДРУГОМ</button>
-        <button class="btn-pixel" style="color:gold" onclick="tg.showAlert('Нужны Звезды!')">⚔️ ТУРНИРЫ</button>
-        <p id="debug-status" style="font-size:8px; color:#555;">Загрузка данных...</p>
+        <h1 style="color:var(--accent); font-size: 14px;">RETRO ARENA</h1>
+        <div id="user-bar" style="font-size: 8px; margin-bottom: 20px;">Загрузка...</div>
+        <button class="btn" onclick="navScreen('s-single')">🎮 ОДИНОЧНАЯ ИГРА</button>
+        <button class="btn" onclick="navScreen('s-tournaments')">⚔️ ТУРНИРЫ</button>
+        <button class="btn btn-gold" onclick="navScreen('s-profile')">👤 КОШЕЛЕК</button>
     </div>
 
+    <!-- ТУРНИРЫ -->
+    <div id="s-tournaments" class="screen">
+        <h2>ТУРНИРЫ</h2>
+        <button class="btn btn-gold" onclick="createLobby()">СОЗДАТЬ (10 Stars)</button>
+        <div id="lobby-list" style="width:100%; margin-top:20px;"></div>
+        <button class="btn" onclick="navScreen('s-main')">НАЗАД</button>
+    </div>
+
+    <!-- КОШЕЛЕК -->
+    <div id="s-profile" class="screen">
+        <h2>ПРОФИЛЬ</h2>
+        <p>Баланс: <span id="p-bal" style="color:gold">0</span> ⭐</p>
+        <button class="btn" onclick="buyStars(50)">ПОПОЛНИТЬ 50 ⭐</button>
+        <button class="btn" onclick="navScreen('s-main')">НАЗАД</button>
+    </div>
+
+    <!-- ВЫБОР ИГР -->
     <div id="s-single" class="screen">
-        <h2 style="font-size:10px;">ВЫБЕРИ ИГРУ</h2>
-        <button class="btn-pixel" onclick="launchEmulator('sonic.bin', 'segaMD', 'sonic')">SONIC 1</button>
-        <button class="btn-pixel" onclick="launchEmulator('umk3.md', 'segaMD', 'mk')">MK 3</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
+        <h2>ИГРЫ</h2>
+        <button class="btn" onclick="startEmu('sonic.bin', 'segaMD', 'sonic')">SONIC 1</button>
+        <button class="btn" onclick="startEmu('umk3.md', 'segaMD', 'mk')">MK 3</button>
+        <button class="btn" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    tg.expand();
-    
-    // Инициализация сокета с обработкой ошибки
-    let socket;
-    try {
-        socket = io();
-    } catch(e) {
-        console.error("Socket.io не загружен");
-    }
+    const socket = io();
+    let user = null, lobby = null, score = 0;
 
-    let user = null;
-    let score = 0;
+    async function init() {
+        tg.expand();
+        const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
+        user = await r.json();
+        updateUI();
+        refreshLobbies();
+    }
+    init();
+
+    function updateUI() {
+        document.getElementById('user-bar').innerText = `Игрок: ${tg.initDataUnsafe.user?.first_name} | ${user.balance} ⭐`;
+        document.getElementById('p-bal').innerText = user.balance;
+    }
 
     function navScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
     }
 
-    async function init() {
-        try {
-            const r = await fetch('/api/user-data', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({initData: tg.initData})
-            });
-            if (r.ok) {
-                user = await r.json();
-                document.getElementById('debug-status').innerText = "Данные загружены!";
-            } else {
-                document.getElementById('debug-status').innerText = "Ошибка сервера (Offline)";
-            }
-        } catch(e) {
-            document.getElementById('debug-status').innerText = "Сервер недоступен";
-        }
+    async function createLobby() {
+        const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, gameType: 'sonic', betAmount: 10}) });
+        const res = await r.json();
+        if(res.success) { lobby = res.lobby; navScreen('s-main'); tg.showAlert("Лобби создано! Ждем соперника."); }
     }
-    init();
 
-    function launchEmulator(fileName, core, gameKey) {
+    async function refreshLobbies() {
+        const r = await fetch('/api/lobbies');
+        const list = await r.json();
+        document.getElementById('lobby-list').innerHTML = list.map(l => `<button class="btn btn-gold" onclick="joinLobby('${l.lobbyId}')">JOIN ${l.betAmount} ⭐</button>`).join('');
+    }
+
+    async function joinLobby(id) {
+        const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, lobbyId: id}) });
+        const res = await r.json();
+        if(res.success) { lobby = res.lobby; startEmu('sonic.bin', 'segaMD', 'sonic'); }
+    }
+
+    function startEmu(file, core, type) {
         document.getElementById('emulator-layer').style.display = 'block';
+        if(lobby) socket.emit('join-room', lobby.lobbyId);
+
         window.EJS_player = '#ejs-container';
         window.EJS_core = core;
-        window.EJS_gameUrl = '/' + fileName;
-        window.EJS_pathtodata = 'data/'; 
+        window.EJS_gameUrl = '/' + file;
+        window.EJS_pathtodata = 'data/';
         window.EJS_startOnLoaded = true;
-        window.EJS_virtualGamepad = true;
 
         window.EJS_onGameStart = () => {
             setInterval(() => {
                 if (typeof EJS_emulator !== 'undefined') {
                     const ram = EJS_emulator.gameManager.getWRam();
-                    if (gameKey === 'sonic') score = ram[0xFE20] || 0;
+                    if (type === 'sonic') score = ram[0xFE20] || 0;
                     document.getElementById('emu-score').innerText = score;
                 }
             }, 1000);
         };
 
-        const script = document.createElement('script');
-        script.src = 'data/loader.js';
-        document.body.appendChild(script);
+        // ПЕРЕДАЧА КНОПОК
+        window.addEventListener("keydown", (e) => {
+            if(lobby) socket.emit('emu-input', { roomId: lobby.lobbyId, key: e.keyCode, type: 'keydown' });
+        });
+        socket.on('partner-input', (data) => {
+            if (typeof EJS_emulator !== 'undefined') EJS_emulator.gameManager.simulateInput(data.key, data.type, 1);
+        });
+
+        const s = document.createElement('script');
+        s.src = 'data/loader.js';
+        document.body.appendChild(s);
     }
 
-    function stopEmulator() {
+    async function stopEmulator() {
+        if(lobby) {
+            socket.emit('emu-game-over', { roomId: lobby.lobbyId, telegramId: user.telegramId, score: score });
+        }
         location.reload();
+    }
+
+    async function buyStars(amount) {
+        const r = await fetch('/api/buy-stars', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, amount}) });
+        const d = await r.json();
+        if(d.invoiceUrl) tg.openInvoice(d.invoiceUrl);
     }
 </script>
 </body>
