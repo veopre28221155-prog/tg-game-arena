@@ -5,98 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --bg-dark: #070913; --text-light: #e0e6f1; --accent-neon: #00f0ff; --accent-pink: #ff0055; 
-            --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive;
-            --btn-bg: linear-gradient(145deg, rgba(20, 25, 40, 0.9) 0%, rgba(8, 10, 18, 0.9) 100%);
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            margin: 0; background-color: var(--bg-dark); 
-            background-image: 
-                radial-gradient(circle at center, rgba(0, 240, 255, 0.05) 0%, transparent 50%),
-                linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
-            background-size: 100% 100%, 35px 35px, 35px 35px;
-            color: var(--text-light); font-family: 'Rajdhani', sans-serif; 
-            height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; overscroll-behavior-y: none;
-        }
+        :root { --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; --btn-base: #1a1a1a; --btn-border: #000000; --btn-shadow: rgba(0,0,0,0.8); }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #050505; color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; overscroll-behavior-y: none; }
+        
         #app-ui { width: 100%; height: 100%; position: relative; z-index: 10; }
-        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 25px 20px 80px 20px; }
-        .screen.active { display: flex; animation: fade 0.3s ease; }
-        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
+        .screen.active { display: flex; }
+        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
+        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; }
+        h3 { font-size: 0.7rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
         
-        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; font-family: var(--font-retro); }
-        h1 { font-size: 1.3rem; color: var(--accent-neon); text-shadow: 0 0 15px rgba(0, 240, 255, 0.6), 2px 2px 0 #000; margin-top: 10px; }
-        h2 { color: var(--accent-neon); }
-        h3 { font-size: 0.6rem; color: rgba(255,255,255,0.7); margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; width: 100%; max-width: 320px; letter-spacing: 1px; }
-
-        .btn-pixel { background: var(--btn-bg); color: var(--accent-neon); border: 1px solid var(--accent-neon); border-radius: 10px; padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.7); text-shadow: 1px 1px 0 #000; transition: transform 0.1s; }
-        .btn-pixel:active { transform: scale(0.97); }
-        
-        .btn-gold { color: var(--accent-gold); border-color: var(--accent-gold); }
-        .btn-pink { color: var(--accent-pink); border-color: var(--accent-pink); }
-        .btn-green { color: #0f0; border-color: #0f0; }
-        .btn-blue { color: #3b82f6; border-color: #3b82f6; }
-        .btn-purple { color: #b0f; border-color: #b0f; }
+        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-pixel:active { transform: translateY(2px); }
+        .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-green { color: #0f0; box-shadow: inset 4px 4px 0 rgba(0, 255, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-blue { color: #3b82f6; box-shadow: inset 4px 4px 0 rgba(59, 130, 246, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
 
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10001; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
+        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
 
-        /* === НОВЫЙ КОМФОРТНЫЙ ГЕЙМПАД === */
-        #virtual-gamepad {
-            display: none; /* Прячем по умолчанию */
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 160px; /* Высота панели управления */
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            z-index: 10000;
-            padding: 0 20px 20px 20px;
-            justify-content: space-between;
-            align-items: center;
-            -webkit-user-select: none; user-select: none;
-        }
-
-        .gamepad-cluster { display: grid; gap: 8px; }
-        
-        #d-pad { grid-template-areas: ". up ." "left . right" ". down ."; }
-        #action-buttons { grid-template-areas: ". y ." "x . b" ". a ."; }
-
-        .gamepad-btn {
-            width: 54px; height: 54px;
-            background-color: rgba(30,30,40,0.7);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 50%;
-            color: #fff;
-            font-size: 16px;
-            font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.1s;
-        }
-        .gamepad-btn:active {
-            background-color: var(--accent-neon);
-            color: #000;
-            transform: scale(0.95);
-            box-shadow: 0 0 15px var(--accent-neon);
-        }
-
-        [data-key="ArrowUp"] { grid-area: up; }
-        [data-key="ArrowDown"] { grid-area: down; }
-        [data-key="ArrowLeft"] { grid-area: left; }
-        [data-key="ArrowRight"] { grid-area: right; }
-        
-        [data-key="a"] { grid-area: a; background-color: rgba(50, 80, 200, 0.8); } /* Синий A */
-        [data-key="s"] { grid-area: x; background-color: rgba(200, 180, 50, 0.8); } /* Желтый B */
-        [data-key="d"] { grid-area: b; background-color: rgba(200, 50, 50, 0.8); } /* Красный C */
-
-        #start-btn-container { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); }
-        #start-btn { width: 80px; height: 25px; border-radius: 10px; background-color: rgba(50,50,60,0.8); font-size: 10px; font-family: var(--font-retro); }
     </style>
 </head>
 <body>
@@ -106,28 +40,10 @@
     <div id="ejs-container"></div>
 </div>
 
-<!-- НОВЫЙ КОНТЕЙНЕР ДЛЯ ГЕЙМПАДА -->
-<div id="virtual-gamepad">
-    <div id="d-pad" class="gamepad-cluster">
-        <button class="gamepad-btn" data-key="ArrowUp">▲</button>
-        <button class="gamepad-btn" data-key="ArrowLeft">◀</button>
-        <button class="gamepad-btn" data-key="ArrowDown">▼</button>
-        <button class="gamepad-btn" data-key="ArrowRight">▶</button>
-    </div>
-    <div id="start-btn-container">
-         <button class="gamepad-btn" id="start-btn" data-key="Enter">START</button>
-    </div>
-    <div id="action-buttons" class="gamepad-cluster">
-        <button class="gamepad-btn" data-key="s">B</button>
-        <button class="gamepad-btn" data-key="d">C</button>
-        <button class="gamepad-btn" data-key="a">A</button>
-    </div>
-</div>
-
 <div id="app-ui">
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>ИМПЕРИЯ РЕТРО-ИГР</h1>
-        <button class="btn-pixel" style="background:#0055ff; border-color:#fff; color:#fff; padding: 20px; font-size: 0.7rem;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
+        <button class="btn-pixel" style="background:#00f; border-color:#fff; color:#fff;" onclick="navScreen('s-emu-menu')">🕹️ ВИРТУАЛЬНЫЕ КОНСОЛИ</button>
     </div>
 
     <div id="s-emu-menu" class="screen" style="justify-content: flex-start;">
@@ -139,11 +55,17 @@
         <button class="btn-pixel btn-gold" onclick="launchEmulator('sonic2.md', 'sega')">🦔 Sonic The Hedgehog 2</button>
         <button class="btn-pixel btn-gold" onclick="launchEmulator('umk3.md', 'sega')">🐉 Ultimate Mortal Kombat 3</button>
         <button class="btn-pixel btn-gold" onclick="launchEmulator('comix.md', 'sega')">💥 Comix Zone</button>
-        <button class="btn-pixel btn-gold" onclick="launchEmulator('tmnt.md', 'sega')">🐢 TMNT</button>
-        <button class="btn-pixel btn-gold" onclick="launchEmulator('btdd.md', 'sega')">🐸 Battletoads DD</button>
-
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('tmnt.md', 'sega')">🐢 TMNT - Return of Shredder</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('btdd.md', 'sega')">🐸 Battletoads Double Dragon</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('battletoads.md', 'sega')">🐸 Battletoads</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('aladdin.md', 'sega')">🧞‍♂️ Aladdin</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('lionking.md', 'sega')">🦁 The Lion King</button>
+        <button class="btn-pixel btn-gold" onclick="launchEmulator('roadrash.md', 'sega')">🏍 Road Rash</button>
+        
         <h3 style="color: #0f0;">DENDY / NES (8-BIT)</h3>
         <button class="btn-pixel btn-green" onclick="launchEmulator('tanks.nes', 'nes')">🚜 Battle City (Танчики)</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon1.nes', 'nes')">🐰 Tiny Toon Adventures 1</button>
+        <button class="btn-pixel btn-green" onclick="launchEmulator('tinytoon2.nes', 'nes')">🐰 Tiny Toon 2</button>
         
         <div style="height: 50px;"></div>
     </div>
@@ -157,19 +79,19 @@
     function launchEmulator(fileName, coreType) {
         document.getElementById('app-ui').style.display = 'none';
         document.getElementById('emulator-layer').style.display = 'block';
-        document.getElementById('virtual-gamepad').style.display = 'flex'; // Показываем новый геймпад
 
         window.EJS_player = '#ejs-container';
         window.EJS_core = coreType;
-        // Взломщик кэша + относительный путь
-        window.EJS_gameUrl = fileName + '?v=' + Date.now(); 
+        window.EJS_gameUrl = fileName + '?v=' + Date.now(); // Относительный путь + взломщик кэша
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-        
-        // ВАЖНО: ОТКЛЮЧАЕМ СТАНДАРТНЫЙ НЕУДОБНЫЙ ГЕЙМПАД
-        window.EJS_virtualGamepad = false; 
-        
+        window.EJS_virtualGamepad = true;
         window.EJS_startOnLoaded = true;
-        window.EJS_Buttons = { playPause: false, restart: false, mute: false, settings: false, fullscreen: true, saveState: true, loadState: true };
+        
+        // УБИРАЕМ ЛИШНИЕ КНОПКИ С ГЕЙМПАДА
+        window.EJS_Buttons = { 
+            playPause: false, restart: true, mute: true, settings: false, fullscreen: true, 
+            saveState: false, loadState: false, screenRecord: false, gamepad: true, cheat: false, volume: true 
+        };
 
         const script = document.createElement('script');
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js?v=' + Date.now();
@@ -179,54 +101,6 @@
     function stopEmulator() { 
         location.reload(); 
     }
-
-    // === ЛОГИКА НОВОГО ГЕЙМПАДА ===
-    // Словарь: какая кнопка на экране соответствует какой кнопке на клавиатуре
-    const keyMap = {
-        "ArrowUp": "ArrowUp", "ArrowDown": "ArrowDown", "ArrowLeft": "ArrowLeft", "ArrowRight": "ArrowRight",
-        "a": "a", "s": "s", "d": "d", // A, B, C для Sega
-        "Enter": "Enter" // START
-    };
-
-    function handleButtonPress(key, isPressed) {
-        const mappedKey = keyMap[key];
-        if (!mappedKey) return;
-
-        const eventType = isPressed ? 'keydown' : 'keyup';
-        const event = new KeyboardEvent(eventType, {
-            key: mappedKey,
-            code: mappedKey,
-            bubbles: true,
-            cancelable: true
-        });
-        document.dispatchEvent(event);
-    }
-
-    document.querySelectorAll('.gamepad-btn').forEach(button => {
-        const key = button.dataset.key;
-        // Мгновенное нажатие на телефоне
-        button.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handleButtonPress(key, true);
-        }, { passive: false });
-        button.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            handleButtonPress(key, false);
-        });
-
-        // Поддержка для ПК (мышь)
-        button.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            handleButtonPress(key, true);
-        });
-        button.addEventListener('mouseup', (e) => {
-            e.preventDefault();
-            handleButtonPress(key, false);
-        });
-        button.addEventListener('mouseleave', (e) => { // Если мышь ушла с кнопки
-             handleButtonPress(key, false);
-        });
-    });
 </script>
 </body>
 </html>
