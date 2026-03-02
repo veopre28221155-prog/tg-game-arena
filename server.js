@@ -27,25 +27,42 @@ const Lobby = mongoose.model('Lobby', new mongoose.Schema({
 }));
 
 io.on('connection', (socket) => {
-    socket.on('join-room', (rid) => {
-        socket.join(rid);
-        console.log(`Socket ${socket.id} joined ${rid}`);
+    socket.on('sync-room', (rid) => { 
+        socket.join(rid); 
+        console.log(`[Socket] Client linked to room ${rid}`);
     });
 
     socket.on('player-ready', async (d) => {
         const l = await Lobby.findOne({ lobbyId: d.rid });
         if (!l) return;
-        if (l.creatorId == d.uid) l.r1 = true; 
-        else if (l.player2Id == d.uid) l.r2 = true;
+        if (l.creatorId == d.uid) l.r1 = true; else if (l.player2Id == d.uid) l.r2 = true;
         await l.save();
         io.to(d.rid).emit('lobby-update', l);
-        if (l.r1 && l.r2) {
+        
+        if (l.r1 && l.r2 && l.status === 'waiting') {
             l.status = 'playing'; await l.save();
-            io.to(d.rid).emit('start-match', { game: l.game, lid: l.lobbyId });
+            io.to(d.rid).emit('launch-match', { game: l.game, lid: l.lobbyId });
         }
     });
 
     socket.on('emu-input', (d) => socket.to(d.rid).emit('partner-input', d));
+
+    socket.on('match-end', async (d) => {
+        const l = await Lobby.findOne({ lobbyId: d.rid, status: 'playing' });
+        if (!l) return;
+        if (l.creatorId == d.uid) l.s1 = d.score; else l.s2 = d.score;
+        await l.save();
+        if (l.s1 !== -1 && l.s2 !== -1) {
+            const winId = l.s1 > l.s2 ? l.creatorId : l.player2Id;
+            if (l.bet > 0) {
+                const prize = (l.bet * 2) * 0.95;
+                await User.findOneAndUpdate({ telegramId: winId }, { $inc: { balance: prize } });
+                await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: (l.bet * 2) * 0.05 } });
+            }
+            l.status = 'finished'; await l.save();
+            io.to(l.lobbyId).emit('results', { winId });
+        }
+    });
 });
 
 app.post('/api/user-data', async (req, res) => {
@@ -65,9 +82,13 @@ app.post('/api/lobby/create', async (req, res) => {
 
 app.post('/api/lobby/join', async (req, res) => {
     const { uid, name, lid } = req.body;
-    const l = await Lobby.findOneAndUpdate({ lobbyId: lid, status: 'waiting' }, { player2Id: uid, player2Name: name }, { new: true });
-    if (l) { io.to(lid).emit('lobby-update', l); res.json({ success: true, lobby: l }); }
-    else res.json({ success: false });
+    const l = await Lobby.findOne({ lobbyId: lid, status: 'waiting' });
+    const u = await User.findOne({ telegramId: uid });
+    if (!l || (l.bet > u.balance)) return res.json({ success: false });
+    
+    l.player2Id = uid; l.player2Name = name; 
+    await l.save();
+    res.json({ success: true, lobby: l });
 });
 
 app.get('/api/lobby/list', async (req, res) => res.json(await Lobby.find({ status: 'waiting', isPrivate: false })));
