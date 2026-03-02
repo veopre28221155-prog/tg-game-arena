@@ -21,26 +21,32 @@ mongoose.connect(CONFIG.MONGO_URI);
 const User = mongoose.model('User', new mongoose.Schema({ telegramId: Number, username: String, balance: { type: Number, default: 1000 } }));
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     lobbyId: String, lobbyName: String, creatorId: Number, player2Id: Number, creatorName: String, player2Name: String,
-    game: String, bet: Number, status: { type: String, default: 'waiting' }, isPrivate: Boolean,
+    game: String, bet: Number, status: String, isPrivate: Boolean,
     r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false },
     s1: { type: Number, default: -1 }, s2: { type: Number, default: -1 }
 }));
 
+const userSockets = new Map(); // Перекрестная ссылка UID <-> SocketID
+
 io.on('connection', (socket) => {
-    socket.on('sync-room', (rid) => { 
-        socket.join(rid); 
-        console.log(`[Socket] Client linked to room ${rid}`);
+    socket.on('auth', (uid) => {
+        userSockets.set(uid, socket.id);
+        console.log(`User ${uid} authenticated`);
     });
 
+    socket.on('join-room', (rid) => socket.join(rid));
+
     socket.on('player-ready', async (d) => {
-        const l = await Lobby.findOne({ lobbyId: d.rid });
+        const l = await Lobby.findOne({ lobbyId: d.rid, status: 'waiting' });
         if (!l) return;
-        if (l.creatorId == d.uid) l.r1 = true; else if (l.player2Id == d.uid) l.r2 = true;
+        if (l.creatorId == d.uid) l.r1 = true; 
+        else if (l.player2Id == d.uid) l.r2 = true;
         await l.save();
         io.to(d.rid).emit('lobby-update', l);
         
-        if (l.r1 && l.r2 && l.status === 'waiting') {
-            l.status = 'playing'; await l.save();
+        if (l.r1 && l.r2) {
+            l.status = 'playing'; 
+            await l.save();
             io.to(d.rid).emit('launch-match', { game: l.game, lid: l.lobbyId });
         }
     });
@@ -54,13 +60,13 @@ io.on('connection', (socket) => {
         await l.save();
         if (l.s1 !== -1 && l.s2 !== -1) {
             const winId = l.s1 > l.s2 ? l.creatorId : l.player2Id;
+            const prize = (l.bet * 2) * 0.95;
             if (l.bet > 0) {
-                const prize = (l.bet * 2) * 0.95;
                 await User.findOneAndUpdate({ telegramId: winId }, { $inc: { balance: prize } });
                 await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: (l.bet * 2) * 0.05 } });
             }
             l.status = 'finished'; await l.save();
-            io.to(l.lobbyId).emit('results', { winId });
+            io.to(l.lobbyId).emit('results', { winId, prize });
         }
     });
 });
@@ -75,22 +81,18 @@ app.post('/api/user-data', async (req, res) => {
 app.post('/api/lobby/create', async (req, res) => {
     const { uid, name, lname, game, bet, priv } = req.body;
     const lobbyId = 'R' + Math.floor(1000 + Math.random()*9000);
-    const lobby = new Lobby({ lobbyId, lobbyName: lname, creatorId: uid, creatorName: name, game, bet, isPrivate: priv });
+    const lobby = new Lobby({ lobbyId, lobbyName: lname, creatorId: uid, creatorName: name, game, bet, isPrivate: priv, status: 'waiting' });
     await lobby.save();
     res.json({ success: true, lobby });
 });
 
 app.post('/api/lobby/join', async (req, res) => {
     const { uid, name, lid } = req.body;
-    const l = await Lobby.findOne({ lobbyId: lid, status: 'waiting' });
-    const u = await User.findOne({ telegramId: uid });
-    if (!l || (l.bet > u.balance)) return res.json({ success: false });
-    
-    l.player2Id = uid; l.player2Name = name; 
-    await l.save();
-    res.json({ success: true, lobby: l });
+    const l = await Lobby.findOneAndUpdate({ lobbyId: lid, status: 'waiting', player2Id: null }, { player2Id: uid, player2Name: name }, { new: true });
+    if (l) { io.to(lid).emit('lobby-update', l); res.json({ success: true, lobby: l }); }
+    else res.json({ success: false });
 });
 
-app.get('/api/lobby/list', async (req, res) => res.json(await Lobby.find({ status: 'waiting', isPrivate: false })));
+app.get('/api/lobby/list', async (req, res) => res.json(await Lobby.find({ status: 'waiting', isPrivate: false, player2Id: null })));
 
 httpServer.listen(CONFIG.PORT);
