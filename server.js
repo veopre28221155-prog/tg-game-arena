@@ -21,22 +21,16 @@ const CONFIG = {
     PORT: process.env.PORT || 3000
 };
 
-mongoose.connect(CONFIG.MONGO_URI).then(() => console.log('✅ MongoDB Connected'));
+mongoose.connect(CONFIG.MONGO_URI).then(() => console.log('✅ DB Connected'));
 
 // МОДЕЛИ
 const User = mongoose.model('User', new mongoose.Schema({
-    telegramId: Number,
-    username: String,
-    balance: { type: Number, default: 0 }
+    telegramId: Number, username: String, balance: { type: Number, default: 0 }
 }));
 
 const Withdrawal = mongoose.model('Withdrawal', new mongoose.Schema({
-    userId: Number,
-    username: String,
-    coinAmount: Number,
-    usdtAmount: Number,
-    status: { type: String, default: 'pending' },
-    date: { type: Date, default: Date.now }
+    userId: Number, username: String, coinAmount: Number, usdtAmount: Number,
+    status: { type: String, default: 'pending' }, date: { type: Date, default: Date.now }
 }));
 
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
@@ -47,7 +41,7 @@ const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     scores: { player1: { type: Number, default: -1 }, player2: { type: Number, default: -1 } }
 }));
 
-// SOCKETS
+// SOCKETS (Мультиплеер)
 io.on('connection', (socket) => {
     socket.on('join-room', (roomId) => socket.join(roomId));
     socket.on('emu-input', (data) => socket.to(data.roomId).emit('partner-input', data));
@@ -92,12 +86,13 @@ app.post('/api/lobby/create', async (req, res) => {
         if (user.balance < betAmount) return res.json({ success: false });
         await User.findOneAndUpdate({ telegramId }, { $inc: { balance: -betAmount } });
     }
-    const lobby = new Lobby({ lobbyId: 'L_'+Date.now(), creatorId: telegramId, player1Id: telegramId, gameType, betAmount, isFree });
+    const lobbyId = 'L_'+Date.now();
+    const lobby = new Lobby({ lobbyId, creatorId: telegramId, player1Id: telegramId, gameType, betAmount, isFree });
     await lobby.save();
     res.json({ success: true, lobby });
 });
 
-app.get('/api/lobbies', async (req, res) => res.json(await Lobby.find({ status: 'waiting' })));
+app.get('/api/lobbies', async (req, res) => res.json(await Lobby.find({ status: 'waiting', isFree: false })));
 
 app.post('/api/lobby/join', async (req, res) => {
     const { telegramId, lobbyId } = req.body;
@@ -141,4 +136,4 @@ app.post('/api/deposit-stars', async (req, res) => {
     res.json({ url: r.data.result });
 });
 
-httpServer.listen(CONFIG.PORT, () => console.log('🚀 Server Live on ' + CONFIG.PORT));
+httpServer.listen(CONFIG.PORT, () => console.log('🚀 Server running'));
