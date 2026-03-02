@@ -8,13 +8,13 @@
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --tg-text: #fff; --accent-neon: #00f0ff; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; }
-        body { margin: 0; background: #050505; color: #fff; font-family: var(--font-retro); overflow: hidden; }
+        :root { --accent: #00f0ff; --gold: #ffd700; --font: 'Press Start 2P', cursive; }
+        body { margin: 0; background: #050505; color: #fff; font-family: var(--font); overflow: hidden; font-size: 10px; }
         .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
-        .btn-pixel { background: #1a1a1a; color: var(--accent-neon); border: 4px solid #000; padding: 15px; width: 100%; max-width: 320px; font-family: inherit; font-size: 9px; cursor: pointer; margin-bottom: 10px; text-transform: uppercase; }
-        .btn-gold { color: var(--accent-gold); }
-        .card { background: #111; border: 2px dashed #444; padding: 15px; width: 100%; max-width: 320px; margin-bottom: 20px; font-size: 8px; }
+        .btn-pixel { background: #1a1a1a; color: var(--accent); border: 4px solid #000; padding: 15px; width: 100%; max-width: 300px; font-family: inherit; cursor: pointer; margin-bottom: 10px; text-transform: uppercase; }
+        .btn-gold { color: var(--gold); }
+        .card { background: #111; border: 2px dashed #444; padding: 15px; width: 100%; max-width: 300px; margin-bottom: 15px; }
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100%; height: 100%; }
     </style>
@@ -23,66 +23,78 @@
 
 <div id="emulator-layer">
     <div style="position:absolute; top:15px; left:15px; z-index:10001; color:gold;">SCORE: <span id="emu-score">0</span></div>
-    <button onclick="sendResultAndExit()" style="position:absolute; top:15px; right:15px; z-index:10001; background:red; color:white; border:none; padding:10px; font-family:inherit; font-size:8px;">ФИНИШ</button>
+    <button onclick="location.reload()" style="position:absolute; top:15px; right:15px; z-index:10001; background:red; color:#fff; border:none; padding:10px; font-family:inherit; font-size:8px;">ВЫЙТИ</button>
     <div id="ejs-container"></div>
 </div>
 
 <div id="app">
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active" style="justify-content:center;">
-        <h1 style="color:var(--accent-neon); font-size: 14px;">RETRO ARENA</h1>
+        <h1 style="color:var(--accent); font-size: 14px; text-align:center;">RETRO ARENA</h1>
         <div class="card">БАЛАНС: <span id="p-bal" style="color:gold">0</span> 🪙</div>
-        <button class="btn-pixel" onclick="navScreen('s-emu-menu')">🕹️ ОДИНОЧНАЯ ИГРА</button>
-        <button class="btn-pixel btn-gold" onclick="navScreen('s-lobby-create')">🤝 СОЗДАТЬ ЛОББИ</button>
-        <button class="btn-pixel" onclick="openLobbyList()">📋 СПИСОК ИГР</button>
-        <button class="btn-pixel" style="color:#f05" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
+        <button class="btn-pixel" onclick="navScreen('s-lobby-create')">🤝 СОЗДАТЬ ИГРУ</button>
+        <button class="btn-pixel btn-gold" onclick="showLobbyList()">📋 НАЙТИ ИГРУ</button>
+        <button class="btn-pixel" onclick="navScreen('s-emu-menu')">🕹️ ОДИНОЧНАЯ</button>
+        <button class="btn-pixel" style="color:#ff0055;" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
     </div>
 
     <!-- СОЗДАНИЕ ЛОББИ -->
     <div id="s-lobby-create" class="screen">
-        <h2>НОВАЯ ИГРА</h2>
-        <select id="game-select" class="btn-pixel" style="background:#000; color:#fff;">
-            <option value="umk3.md">MORTAL KOMBAT 3</option>
-            <option value="tanks.nes">ТАНЧИКИ</option>
-            <option value="sonic2.md">SONIC 2</option>
+        <h2>НОВАЯ КОМНАТА</h2>
+        <select id="game-id" class="btn-pixel" style="background:#000; color:#fff;">
+            <option value="umk3.md">Mortal Kombat 3</option>
+            <option value="tanks.nes">Battle City</option>
+            <option value="sonic2.md">Sonic 2</option>
         </select>
-        <input type="number" id="bet-input" class="btn-pixel" placeholder="Ставка (0 = FREE)" style="background:#000; color:#fff;">
-        <label style="font-size:8px;"><input type="checkbox" id="private-check"> СКРЫТОЕ (ПО ССЫЛКЕ)</label>
-        <button class="btn-pixel btn-gold" style="margin-top:20px;" onclick="requestLobbyCreate()">СОЗДАТЬ</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
+        <input type="number" id="bet-val" class="btn-pixel" placeholder="СТАВКА В 🪙" style="background:#000; color:#fff;">
+        <label><input type="checkbox" id="is-private"> СКРЫТАЯ (ПО ССЫЛКЕ)</label>
+        <button class="btn-pixel btn-gold" style="margin-top:20px;" onclick="createLobby()">СОЗДАТЬ</button>
+        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- ОЖИДАНИЕ ИГРОКА -->
+    <!-- ОЖИДАНИЕ -->
     <div id="s-waiting" class="screen" style="justify-content:center;">
-        <h2>ОЖИДАНИЕ...</h2>
-        <div id="invite-box" class="card" style="display:none;">
-            <p>Отправь инвайт другу:</p>
-            <button class="btn-pixel btn-gold" onclick="shareInvite()">📤 ПРИГЛАСИТЬ</button>
+        <h2>ЖДЕМ ИГРОКА...</h2>
+        <div class="card" id="invite-box" style="display:none;">
+            <p>Ссылка для друга:</p>
+            <button class="btn-pixel btn-gold" onclick="shareLink()">📤 ОТПРАВИТЬ</button>
         </div>
         <button class="btn-pixel" onclick="location.reload()">ОТМЕНА</button>
     </div>
 
-    <!-- СПИСОК ЛОББИ -->
-    <div id="s-lobby-list" class="screen">
+    <!-- СПИСОК ИГР -->
+    <div id="s-list" class="screen">
         <h2>ОТКРЫТЫЕ ИГРЫ</h2>
-        <div id="list-container" style="width:100%;"></div>
-        <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
+        <div id="list-render" style="width:100%;"></div>
+        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
+    </div>
+
+    <!-- ОСТАЛЬНЫЕ ЭКРАНЫ -->
+    <div id="s-profile" class="screen">
+        <h2>ПРОФИЛЬ</h2>
+        <div class="card">ID: <span id="p-id"></span></div>
+        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     const socket = io();
-    let user = null, lobby = null, currentScore = 0;
+    let user = null, lobby = null, score = 0;
+    const BOT_USERNAME = "RetroBattleArena_bot"; // ЗАМЕНИ НА СВОЕГО
 
     async function init() {
         tg.expand();
         const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
         user = await r.json();
         document.getElementById('p-bal').innerText = user.balance;
+        document.getElementById('p-id').innerText = user.telegramId;
 
+        // ПРОВЕРКА ВХОДА ПО ССЫЛКЕ
         const sp = tg.initDataUnsafe.start_param;
-        if(sp && sp.startsWith('lobby_')) joinLobby(sp.replace('lobby_',''));
+        if(sp && sp.startsWith('lobby_')) {
+            joinLobby(sp.replace('lobby_',''));
+        }
     }
     init();
 
@@ -91,42 +103,45 @@
         document.getElementById(id).classList.add('active');
     }
 
-    async function requestLobbyCreate() {
-        const game = document.getElementById('game-select').value;
-        const bet = parseInt(document.getElementById('bet-input').value) || 0;
-        const isPrivate = document.getElementById('private-check').checked;
+    async function createLobby() {
+        const game = document.getElementById('game-id').value;
+        const bet = parseInt(document.getElementById('bet-val').value) || 0;
+        const priv = document.getElementById('is-private').checked;
 
-        const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, gameType: game, betAmount: bet, isPrivate, isFree: bet===0}) });
+        const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, gameType: game, betAmount: bet, isPrivate: priv}) });
         const res = await r.json();
         if(res.success) {
             lobby = res.lobby;
             navScreen('s-waiting');
-            if(isPrivate || bet===0) {
-                document.getElementById('invite-box').style.display = 'block';
-            }
             socket.emit('join-room', lobby.lobbyId);
-        }
+            if(priv || bet === 0) document.getElementById('invite-box').style.display = 'block';
+        } else tg.showAlert("Ошибка!");
     }
 
-    function shareInvite() {
-        const url = `https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`;
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Заходи в игру!`);
+    function shareLink() {
+        const url = `https://t.me/${BOT_USERNAME}/app?startapp=lobby_${lobby.lobbyId}`;
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Заходи в Retro Arena, поиграем в ${lobby.gameType}!`);
     }
 
-    async function openLobbyList() {
-        navScreen('s-lobby-list');
-        const r = await fetch('/api/lobbies');
+    async function showLobbyList() {
+        navScreen('s-list');
+        const r = await fetch('/api/lobby/list');
         const list = await r.json();
-        document.getElementById('list-container').innerHTML = list.map(l => `
-            <div class="card">${l.gameType.toUpperCase()} | ${l.betAmount} 🪙 <button class="btn-pixel" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>
+        document.getElementById('list-render').innerHTML = list.map(l => `
+            <div class="card">
+                ${l.gameType} | ${l.betAmount} 🪙
+                <button class="btn-pixel btn-gold" onclick="joinLobby('${l.lobbyId}')">ИГРАТЬ</button>
+            </div>
         `).join('');
     }
 
     async function joinLobby(id) {
         const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, lobbyId: id}) });
         const res = await r.json();
-        if(!res.success) tg.showAlert("Ошибка входа!");
-        else socket.emit('join-room', id);
+        if(res.success) {
+            lobby = res.lobby;
+            socket.emit('join-room', id);
+        } else tg.showAlert("Не удалось войти");
     }
 
     socket.on('start-match', (data) => {
@@ -140,20 +155,21 @@
         window.EJS_gameUrl = '/' + file;
         window.EJS_pathtodata = 'data/';
         window.EJS_startOnLoaded = true;
+        window.EJS_virtualGamepad = true;
 
         window.EJS_onGameStart = () => {
             setInterval(() => {
                 if (typeof EJS_emulator !== 'undefined') {
                     const ram = EJS_emulator.gameManager.getWRam();
-                    if (file.includes('sonic')) currentScore = ram[0xFE20] || 0;
-                    else if (file.includes('umk3')) currentScore = ram[0xB110] || 0;
-                    document.getElementById('emu-score').innerText = currentScore;
+                    if (file.includes('sonic')) score = ram[0xFE20] || 0;
+                    else if (file.includes('umk3')) score = ram[0xB110] || 0;
+                    document.getElementById('emu-score').innerText = score;
                 }
             }, 1000);
         };
 
         window.addEventListener("keydown", (e) => {
-            socket.emit('emu-input', { roomId: lid, key: e.keyCode, type: 'keydown', pNum: user.telegramId === lobby?.player1Id ? 0 : 1 });
+            socket.emit('emu-input', { roomId: lid, key: e.keyCode, type: 'keydown', pNum: user.telegramId === lobby?.creatorId ? 0 : 1 });
         });
         socket.on('partner-input', (data) => {
             if (typeof EJS_emulator !== 'undefined') EJS_emulator.gameManager.simulateInput(data.key, data.type, data.pNum === 0 ? 1 : 0);
@@ -164,15 +180,9 @@
         document.body.appendChild(s);
     }
 
-    function sendResultAndExit() {
-        socket.emit('match-finished', { roomId: lobby.lobbyId || sp.replace('lobby_',''), telegramId: user.telegramId, score: currentScore });
-        tg.showAlert("Счет отправлен!");
-        location.reload();
-    }
-
     socket.on('results', (data) => {
-        tg.showPopup({ title: 'МАТЧ ОКОНЧЕН', message: data.winnerId === user.telegramId ? `ПОБЕДА! Вы выиграли ${data.prize} 🪙` : 'Поражение...' });
-        init();
+        tg.showAlert(data.winnerId === user.telegramId ? "ПОБЕДА!" : "ПОРАЖЕНИЕ");
+        location.reload();
     });
 </script>
 </body>
