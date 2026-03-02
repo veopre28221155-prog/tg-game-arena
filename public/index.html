@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Retro Arena Sync</title>
+    <title>Retro Arena Live</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #00f0ff; --gold: #ffd700; }
-        body { margin: 0; background: #050505; color: #fff; font-family: 'Press Start 2P', cursive; overflow: hidden; font-size: 8px; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; justify-content: center; }
+        :root { --neon: #00f0ff; --gold: #ffd700; --pink: #ff0055; }
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 8px; overflow: hidden; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
-        .btn { background: #111; color: var(--neon); border: 3px solid #000; padding: 12px; width: 260px; margin-bottom: 8px; cursor: pointer; font-family: inherit; text-transform: uppercase; }
+        .btn { background: #111; color: var(--neon); border: 3px solid #000; padding: 12px; width: 260px; margin-bottom: 10px; cursor: pointer; font-family: inherit; text-transform: uppercase; }
         .btn-gold { color: var(--gold); border-color: var(--gold); }
-        .card { background: #111; border: 2px dashed #444; padding: 10px; width: 260px; margin-bottom: 10px; text-align: center; }
+        .card { background: #111; border: 2px dashed #444; padding: 10px; width: 260px; margin-bottom: 15px; text-align: center; }
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100%; height: 100%; }
     </style>
@@ -23,7 +23,7 @@
 
 <div id="emulator-layer">
     <div style="position:absolute; top:10px; left:10px; color:gold; z-index:100;">SCORE: <span id="emu-score">0</span></div>
-    <button onclick="location.reload()" style="position:absolute; top:10px; right:10px; background:red; color:#fff; border:none; padding:8px; z-index:100;">EXIT</button>
+    <button onclick="sendFinish()" style="position:absolute; top:10px; right:10px; background:red; color:#fff; border:none; padding:10px; z-index:100;">FINISH</button>
     <div id="ejs-container"></div>
 </div>
 
@@ -34,15 +34,23 @@
         <button class="btn" onclick="nav('s-solo')">🕹️ ОДИНОЧНАЯ</button>
         <button class="btn btn-gold" onclick="nav('s-create')">🤝 СОЗДАТЬ ЛОББИ</button>
         <button class="btn" onclick="listRooms()">📋 НАЙТИ ИГРУ</button>
-        <button class="btn" style="color:#ff0055" onclick="nav('s-profile')">👤 ПРОФИЛЬ</button>
+        <button class="btn" style="color:var(--pink)" onclick="nav('s-profile')">👤 ПРОФИЛЬ</button>
+    </div>
+
+    <div id="s-solo" class="screen">
+        <h2>SOLO GAMES</h2>
+        <button class="btn" onclick="startEmu('umk3.md','segaMD',true)">MK3</button>
+        <button class="btn" onclick="startEmu('sonic2.md','segaMD',true)">SONIC 2</button>
+        <button class="btn" onclick="startEmu('tanks.nes','nes',true)">TANKS</button>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 
     <div id="s-create" class="screen">
-        <h2>NEW GAME</h2>
-        <input type="text" id="l-name" class="btn" placeholder="LOBBY NAME" style="color:#fff">
+        <h2>CREATE ROOM</h2>
+        <input type="text" id="l-name" class="btn" placeholder="ROOM NAME" style="color:#fff">
         <select id="g-sel" class="btn"><option value="umk3.md">MK3</option><option value="sonic2.md">SONIC 2</option><option value="tanks.nes">TANKS</option></select>
         <input type="number" id="b-val" class="btn" placeholder="BET" style="color:#fff">
-        <label><input type="checkbox" id="p-check"> PRIVATE</label>
+        <label><input type="checkbox" id="p-check"> HIDDEN</label>
         <button class="btn btn-gold" onclick="createLobby()">CREATE</button>
         <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
@@ -55,18 +63,11 @@
         </div>
         <button class="btn btn-gold" id="btn-ready" onclick="setReady()">READY</button>
         <button class="btn" onclick="shareInv()">INVITE</button>
-        <button class="btn" onclick="location.reload()">BACK</button>
-    </div>
-
-    <div id="s-solo" class="screen">
-        <h2>SOLO</h2>
-        <button class="btn" onclick="startEmu('umk3.md','segaMD',true)">MK3</button>
-        <button class="btn" onclick="startEmu('tanks.nes','nes',true)">TANKS</button>
-        <button class="btn" onclick="nav('s-main')">BACK</button>
+        <button class="btn" onclick="location.reload()">EXIT</button>
     </div>
 
     <div id="s-list" class="screen">
-        <h2>ONLINE</h2>
+        <h2>OPEN LOBBIES</h2>
         <div id="l-render"></div>
         <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
@@ -74,7 +75,6 @@
     <div id="s-profile" class="screen">
         <h2>PROFILE</h2>
         <div class="card">ID: <span id="p-id"></span></div>
-        <button class="btn" id="adm-btn" style="display:none; color:red" onclick="nav('s-admin')">ADMIN</button>
         <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 </div>
@@ -88,7 +88,7 @@
         user = await r.json();
         document.getElementById('p-bal').innerText = user.balance;
         document.getElementById('p-id').innerText = user.telegramId;
-        if(user.telegramId == 1463465416) document.getElementById('adm-btn').style.display='block';
+        
         const sp = tg.initDataUnsafe.start_param;
         if(sp && sp.startsWith('lobby_')) joinLobby(sp.replace('lobby_',''));
     }
@@ -100,19 +100,20 @@
         const d = { uid: user.telegramId, name: user.username, lname: document.getElementById('l-name').value || "BATTLE", game: document.getElementById('g-sel').value, bet: parseInt(document.getElementById('b-val').value)||0, priv: document.getElementById('p-check').checked };
         const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d) });
         const res = await r.json();
-        if(res.success) { lobby = res.lobby; nav('s-room'); updateRoomUI(lobby); socket.emit('join-room', lobby.lobbyId); }
+        if(res.success) { lobby = res.lobby; socket.emit('sync-room', lobby.lobbyId); nav('s-room'); updateRoomUI(lobby); }
     }
 
     async function listRooms() {
         nav('s-list');
         const r = await fetch('/api/lobby/list'); const list = await r.json();
-        document.getElementById('l-render').innerHTML = list.map(l => `<div class="card">${l.lobbyName} [${l.game}]<br>${l.bet}🪙 <button class="btn" style="width:70px; padding:5px" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>`).join('');
+        document.getElementById('l-render').innerHTML = list.length ? list.map(l => `<div class="card">${l.lobbyName} [${l.game}]<br>${l.bet}🪙 <button class="btn" style="width:70px; padding:5px" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>`).join('') : "EMPTY";
     }
 
     async function joinLobby(lid) {
         const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({uid: user.telegramId, name: user.username, lid}) });
         const res = await r.json();
-        if(res.success) { lobby = res.lobby; nav('s-room'); updateRoomUI(lobby); socket.emit('join-room', lid); }
+        if(res.success) { lobby = res.lobby; socket.emit('sync-room', lid); nav('s-room'); updateRoomUI(lobby); }
+        else tg.showAlert("LOBBY FULL OR CLOSED");
     }
 
     function setReady() { socket.emit('player-ready', { rid: lobby.lobbyId, uid: user.telegramId }); document.getElementById('btn-ready').innerText="WAITING..."; }
@@ -124,13 +125,19 @@
     }
 
     socket.on('lobby-update', (l) => { lobby = l; updateRoomUI(l); });
-    socket.on('start-match', (d) => startEmu(d.game, d.game.endsWith('.nes')?'nes':'segaMD', false, d.lid));
+    socket.on('launch-match', (d) => startEmu(d.game, d.game.endsWith('.nes')?'nes':'segaMD', false, d.lid));
 
     function startEmu(file, core, solo, rid) {
-        document.getElementById('app').style.display='none'; document.getElementById('emulator-layer').style.display='block';
-        window.EJS_player = '#ejs-container'; window.EJS_core = core; window.EJS_gameUrl = window.location.origin + '/' + file;
-        window.EJS_pathtodata = window.location.origin + '/data/'; window.EJS_startOnLoaded = true;
+        document.getElementById('app').style.display='none'; 
+        document.getElementById('emulator-layer').style.display='block';
         
+        window.EJS_player = '#ejs-container';
+        window.EJS_core = core;
+        window.EJS_gameUrl = window.location.origin + '/' + file;
+        window.EJS_pathtodata = window.location.origin + '/data/';
+        window.EJS_startOnLoaded = true;
+        window.EJS_virtualGamepad = true;
+
         window.EJS_onGameStart = () => {
             setInterval(() => {
                 if (typeof EJS_emulator !== 'undefined') {
@@ -146,9 +153,13 @@
             window.onkeyup = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keyup', p: user.telegramId==lobby?.creatorId?0:1 });
             socket.on('partner-input', (d) => { if(typeof EJS_emulator!=='undefined') EJS_emulator.gameManager.simulateInput(d.key, d.type, d.p==0?1:0); });
         }
-        const s = document.createElement('script'); s.src = window.location.origin + '/data/loader.js'; document.body.appendChild(s);
+        
+        const s = document.createElement('script');
+        s.src = window.location.origin + '/data/loader.js';
+        document.body.appendChild(s);
     }
 
+    function sendFinish() { socket.emit('match-end', { rid: lobby.lobbyId, uid: user.telegramId, score }); location.reload(); }
     function shareInv() { tg.openTelegramLink(`https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`); }
 </script>
 </body>
