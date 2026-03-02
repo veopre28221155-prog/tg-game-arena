@@ -21,7 +21,11 @@ const CONFIG = {
     PORT: process.env.PORT || 3000
 };
 
-mongoose.connect(CONFIG.MONGO_URI).then(() => console.log('✅ Arena Active'));
+mongoose.connect(CONFIG.MONGO_URI).then(async () => {
+    console.log('✅ DB Connected');
+    // Очистка старых зависших лобби при старте
+    await Lobby.deleteMany({ status: { $ne: 'finished' } });
+});
 
 // МОДЕЛИ
 const User = mongoose.model('User', new mongoose.Schema({
@@ -30,15 +34,18 @@ const User = mongoose.model('User', new mongoose.Schema({
 
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     lobbyId: String, creatorId: Number, player2Id: Number,
-    gameType: String, betAmount: Number, status: { type: String, default: 'waiting' },
+    gameType: String, betAmount: { type: Number, default: 0 },
+    status: { type: String, default: 'waiting' },
     isPrivate: { type: Boolean, default: false },
-    scores: { player1: { type: Number, default: -1 }, player2: { type: Number, default: -1 } }
+    scores: { player1: { type: Number, default: -1 }, player2: { type: Number, default: -1 } },
+    createdAt: { type: Date, default: Date.now, expires: 3600 } // Удалять через час
 }));
 
-// SOCKETS
+// SOCKETS (Связь игроков)
 io.on('connection', (socket) => {
     socket.on('join-room', (roomId) => {
         socket.join(roomId);
+        console.log(`Socket joined room: ${roomId}`);
     });
 
     socket.on('emu-input', (data) => {
@@ -52,22 +59,17 @@ io.on('connection', (socket) => {
         else lobby.scores.player2 = data.score;
         await lobby.save();
         if (lobby.scores.player1 !== -1 && lobby.scores.player2 !== -1) {
-            finishMatch(lobby);
+            const winnerId = lobby.scores.player1 > lobby.scores.player2 ? lobby.creatorId : lobby.player2Id;
+            const prize = (lobby.betAmount * 2) * 0.95;
+            if (lobby.betAmount > 0) {
+                await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } });
+                await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: (lobby.betAmount * 2) * 0.05 } });
+            }
+            lobby.status = 'finished'; await lobby.save();
+            io.to(lobby.lobbyId).emit('results', { winnerId, prize });
         }
     });
 });
-
-async function finishMatch(lobby) {
-    lobby.status = 'finished';
-    await lobby.save();
-    let winnerId = lobby.scores.player1 > lobby.scores.player2 ? lobby.creatorId : lobby.player2Id;
-    if (lobby.betAmount > 0) {
-        const prize = (lobby.betAmount * 2) * 0.95;
-        await User.findOneAndUpdate({ telegramId: winnerId }, { $inc: { balance: prize } });
-        await User.findOneAndUpdate({ telegramId: CONFIG.ADMIN_ID }, { $inc: { balance: (lobby.betAmount * 2) * 0.05 } });
-    }
-    io.to(lobby.lobbyId).emit('results', { winnerId });
-}
 
 // API
 app.post('/api/user-data', async (req, res) => {
@@ -75,40 +77,40 @@ app.post('/api/user-data', async (req, res) => {
         const params = new URLSearchParams(req.body.initData);
         const userData = JSON.parse(params.get('user'));
         let user = await User.findOne({ telegramId: userData.id });
-        if (!user) { user = new User({ telegramId: userData.id, username: userData.username, balance: 1000 }); await user.save(); }
+        if (!user) { user = new User({ telegramId: userData.id, username: userData.username, balance: 5000 }); await user.save(); }
         res.json(user);
-    } catch (e) { res.status(500).send("Auth failed"); }
+    } catch (e) { res.status(500).send("Auth error"); }
 });
 
 app.post('/api/lobby/create', async (req, res) => {
     const { telegramId, gameType, betAmount, isPrivate } = req.body;
     const user = await User.findOne({ telegramId });
-    if (user.balance < betAmount) return res.json({ success: false, error: "Low balance" });
-    
-    await User.findOneAndUpdate({ telegramId }, { $inc: { balance: -betAmount } });
-    const lobbyId = 'L' + Math.floor(Math.random()*100000);
+    if (betAmount > 0 && user.balance < betAmount) return res.json({ success: false, error: "Low balance" });
+    if (betAmount > 0) await User.findOneAndUpdate({ telegramId }, { $inc: { balance: -betAmount } });
+
+    const lobbyId = 'R' + Math.floor(1000 + Math.random() * 9000);
     const lobby = new Lobby({ lobbyId, creatorId: telegramId, gameType, betAmount, isPrivate });
     await lobby.save();
     res.json({ success: true, lobby });
 });
 
 app.get('/api/lobby/list', async (req, res) => {
-    const list = await Lobby.find({ status: 'waiting', isPrivate: false });
-    res.json(list);
+    res.json(await Lobby.find({ status: 'waiting', isPrivate: false }));
 });
 
 app.post('/api/lobby/join', async (req, res) => {
     const { telegramId, lobbyId } = req.body;
     const lobby = await Lobby.findOne({ lobbyId, status: 'waiting' });
     const user = await User.findOne({ telegramId });
-    if (!lobby || user.balance < lobby.betAmount) return res.json({ success: false });
+    if (!lobby || (lobby.betAmount > 0 && user.balance < lobby.betAmount)) return res.json({ success: false });
 
-    await User.findOneAndUpdate({ telegramId }, { $inc: { balance: -lobby.betAmount } });
+    if (lobby.betAmount > 0) await User.findOneAndUpdate({ telegramId }, { $inc: { balance: -lobby.betAmount } });
     lobby.player2Id = telegramId;
     lobby.status = 'playing';
     await lobby.save();
+    
     io.to(lobbyId).emit('start-match', { game: lobby.gameType, lobbyId: lobby.lobbyId });
     res.json({ success: true, lobby });
 });
 
-httpServer.listen(CONFIG.PORT, () => console.log('🚀 Server running'));
+httpServer.listen(CONFIG.PORT, () => console.log('🚀 Server running on ' + CONFIG.PORT));
