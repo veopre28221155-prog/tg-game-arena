@@ -3,94 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>Retro Battle Arena</title>
+    <title>Retro Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root { --accent: #00f0ff; --gold: #ffd700; --font: 'Press Start 2P', cursive; }
-        body { margin: 0; background: #050505; color: #fff; font-family: var(--font); overflow: hidden; font-size: 10px; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; justify-content: center; }
+        body { margin: 0; background: #050505; color: #fff; font-family: var(--font); overflow: hidden; font-size: 9px; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .screen.active { display: flex; }
         .btn-pixel { background: #1a1a1a; color: var(--accent); border: 4px solid #000; padding: 15px; width: 280px; font-family: inherit; cursor: pointer; margin-bottom: 10px; text-transform: uppercase; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.2); }
         .btn-gold { color: var(--gold); }
         .card { background: #111; border: 2px dashed #444; padding: 15px; width: 280px; margin-bottom: 15px; text-align: center; }
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100%; height: 100%; }
-        #loading-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center; color:var(--accent); }
+        .ready-badge { color: #0f0; font-size: 7px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">ЗАГРУЗКА ЯДРА...</div>
-
 <div id="emulator-layer">
     <div style="position:absolute; top:15px; left:15px; z-index:101; color:gold;">SCORE: <span id="emu-score">0</span></div>
-    <button onclick="location.reload()" style="position:absolute; top:15px; right:15px; z-index:101; background:red; color:#fff; border:none; padding:10px; font-family:inherit; font-size:8px; cursor:pointer;">ВЫХОД</button>
+    <button onclick="sendFinish()" style="position:absolute; top:15px; right:15px; z-index:101; background:red; color:#fff; border:none; padding:10px; font-family:inherit;">ФИНИШ</button>
     <div id="ejs-container"></div>
 </div>
 
 <div id="app">
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="s-main" class="screen active">
-        <h1 style="color:var(--accent); font-size: 14px; margin-bottom:30px;">RETRO ARENA</h1>
+        <h1 style="color:var(--accent); font-size: 14px; margin-bottom:20px;">RETRO ARENA</h1>
         <div class="card">БАЛАНС: <span id="p-bal" style="color:gold">0</span> 🪙</div>
-        <button class="btn-pixel" onclick="navScreen('s-lobby-create')">🤝 СОЗДАТЬ ЛОББИ</button>
-        <button class="btn-pixel btn-gold" onclick="openLobbyList()">📋 НАЙТИ ИГРУ</button>
-        <button class="btn-pixel" style="color:#ff0055;" onclick="tg.showAlert('ID: ' + user.telegramId)">👤 МОЙ ПРОФИЛЬ</button>
+        <button class="btn-pixel" onclick="navScreen('s-single')">🕹️ ОДИНОЧНАЯ</button>
+        <button class="btn-pixel btn-gold" onclick="navScreen('s-create')">🤝 СОЗДАТЬ ЛОББИ</button>
+        <button class="btn-pixel" onclick="loadLobbyList()">📋 НАЙТИ ИГРУ</button>
+        <button class="btn-pixel" style="color:#ff0055" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
     </div>
 
-    <!-- СОЗДАНИЕ ЛОББИ -->
-    <div id="s-lobby-create" class="screen">
-        <h2>НОВАЯ ИГРА</h2>
-        <select id="game-id" class="btn-pixel" style="background:#000; color:#fff;">
-            <option value="umk3.md">Mortal Kombat 3</option>
-            <option value="tanks.nes">Battle City (Dendy)</option>
-            <option value="sonic2.md">Sonic 2</option>
-        </select>
-        <input type="number" id="bet-val" class="btn-pixel" placeholder="СТАВКА (0=FREE)" style="background:#000; color:#fff;">
-        <label style="font-size:7px; margin-bottom:10px;"><input type="checkbox" id="is-private"> СКРЫТОЕ (ПО ССЫЛКЕ)</label>
-        <button class="btn-pixel btn-gold" onclick="createLobby()">СОЗДАТЬ</button>
+    <!-- ВЫБОР ОДИНОЧНОЙ -->
+    <div id="s-single" class="screen">
+        <h2>ОДИНОЧНАЯ</h2>
+        <button class="btn-pixel" onclick="startEmu('umk3.md', 'segaMD')">MK 3</button>
+        <button class="btn-pixel" onclick="startEmu('sonic2.md', 'segaMD')">SONIC 2</button>
+        <button class="btn-pixel" onclick="startEmu('tanks.nes', 'nes')">ТАНЧИКИ</button>
         <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- ОЖИДАНИЕ -->
-    <div id="s-waiting" class="screen">
-        <h2>ОЖИДАНИЕ...</h2>
-        <div class="card" id="invite-box" style="display:none;">
-            <p style="font-size:7px;">Отправь другу:</p>
-            <button class="btn-pixel btn-gold" onclick="shareInvite()">📤 ПРИГЛАСИТЬ</button>
-        </div>
-        <p style="font-size:7px; color:#888;">Игра начнется автоматически</p>
-        <button class="btn-pixel" onclick="location.reload()">ОТМЕНА</button>
+    <!-- СОЗДАНИЕ ЛОББИ -->
+    <div id="s-create" class="screen">
+        <h2>СОЗДАТЬ</h2>
+        <select id="game-select" class="btn-pixel" style="background:#000; color:#fff;">
+            <option value="umk3.md">MORTAL KOMBAT 3</option>
+            <option value="tanks.nes">ТАНЧИКИ</option>
+            <option value="sonic2.md">SONIC 2</option>
+        </select>
+        <input type="number" id="bet-select" class="btn-pixel" placeholder="СТАВКА (0=FREE)" style="background:#000; color:#fff;">
+        <label><input type="checkbox" id="private-check"> СКРЫТАЯ</label>
+        <button class="btn-pixel btn-gold" style="margin-top:10px;" onclick="createLobby()">СОЗДАТЬ</button>
+        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 
-    <!-- СПИСОК -->
+    <!-- КОМНАТА ОЖИДАНИЯ -->
+    <div id="s-room" class="screen">
+        <h2 id="room-game-name">ИГРА</h2>
+        <div class="card">
+            <p>P1: <span id="r-p1">Ожидание...</span> <span id="r-ready1"></span></p>
+            <p>P2: <span id="r-p2">Ожидание...</span> <span id="r-ready2"></span></p>
+        </div>
+        <button class="btn-pixel btn-gold" id="ready-btn" onclick="toggleReady()">ГОТОВ</button>
+        <button class="btn-pixel btn-pink" onclick="shareInvite()">ПРИГЛАСИТЬ ДРУГА</button>
+        <button class="btn-pixel" onclick="location.reload()">ВЫЙТИ</button>
+    </div>
+
+    <!-- СПИСОК ИГР -->
     <div id="s-list" class="screen">
-        <h2>ОТКРЫТЫЕ ИГРЫ</h2>
-        <div id="list-render" style="width:100%; max-height:300px; overflow-y:auto;"></div>
-        <button class="btn-pixel" style="margin-top:10px;" onclick="navScreen('s-main')">НАЗАД</button>
+        <h2>ОТКРЫТЫЕ</h2>
+        <div id="list-render" style="width:100%;"></div>
+        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
+    </div>
+
+    <!-- ПРОФИЛЬ -->
+    <div id="s-profile" class="screen">
+        <h2>ПРОФИЛЬ</h2>
+        <div class="card">ID: <span id="p-id"></span></div>
+        <button class="btn-pixel" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
 </div>
 
 <script>
     const tg = window.Telegram.WebApp;
     const socket = io();
-    let user = null, lobby = null, score = 0;
-    const BOT_USERNAME = "RetroBattleArena_bot";
+    let user, lobby, score = 0;
+    const BOT_USER = "RetroBattleArena_bot";
 
     async function init() {
         tg.expand();
-        try {
-            const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
-            user = await r.json();
-            document.getElementById('p-bal').innerText = user.balance;
+        const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
+        user = await r.json();
+        document.getElementById('p-bal').innerText = user.balance;
+        document.getElementById('p-id').innerText = user.telegramId;
 
-            const sp = tg.initDataUnsafe.start_param;
-            if(sp && sp.startsWith('lobby_')) {
-                joinLobby(sp.replace('lobby_',''));
-            }
-        } catch(e) { console.error(e); }
+        const sp = tg.initDataUnsafe.start_param;
+        if(sp && sp.startsWith('lobby_')) joinLobby(sp.replace('lobby_',''));
     }
     init();
 
@@ -100,65 +113,78 @@
     }
 
     async function createLobby() {
-        const game = document.getElementById('game-id').value;
-        const bet = parseInt(document.getElementById('bet-val').value) || 0;
-        const priv = document.getElementById('is-private').checked;
+        const game = document.getElementById('game-select').value;
+        const bet = parseInt(document.getElementById('bet-select').value) || 0;
+        const isPriv = document.getElementById('private-check').checked;
 
-        const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, gameType: game, betAmount: bet, isPrivate: priv}) });
+        const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, username: user.username, gameType: game, betAmount: bet, isPrivate: isPriv}) });
         const res = await r.json();
         if(res.success) {
             lobby = res.lobby;
-            navScreen('s-waiting');
-            socket.emit('join-room', lobby.lobbyId);
-            if(priv || bet === 0) document.getElementById('invite-box').style.display = 'block';
-        } else tg.showAlert(res.error || "Ошибка");
+            openRoom();
+        }
     }
 
-    function shareInvite() {
-        const url = `https://t.me/${BOT_USERNAME}/app?startapp=lobby_${lobby.lobbyId}`;
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Заходи, поиграем в ${lobby.gameType}!`);
-    }
-
-    async function openLobbyList() {
+    async function loadLobbyList() {
         navScreen('s-list');
         const r = await fetch('/api/lobby/list');
         const list = await r.json();
-        const container = document.getElementById('list-render');
-        container.innerHTML = list.length === 0 ? '<p style="text-align:center;">НЕТ ИГР</p>' : list.map(l => `
-            <div class="card" style="font-size:7px;">
-                ${l.gameType} | СТАВКА: ${l.betAmount}🪙
-                <button class="btn-pixel btn-gold" style="padding:5px; width:100px; margin-top:5px;" onclick="joinLobby('${l.lobbyId}')">ИГРАТЬ</button>
-            </div>
+        document.getElementById('list-render').innerHTML = list.map(l => `
+            <div class="card">${l.gameType} | ${l.betAmount}🪙 <button class="btn-pixel" style="width:100px; padding:5px;" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>
         `).join('');
     }
 
     async function joinLobby(id) {
-        const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, lobbyId: id}) });
+        const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, username: user.username, lobbyId: id}) });
         const res = await r.json();
         if(res.success) {
             lobby = res.lobby;
-            socket.emit('join-room', id);
-        } else tg.showAlert("Не удалось зайти");
+            openRoom();
+        }
     }
 
-    socket.on('start-match', (data) => {
-        document.getElementById('loading-overlay').style.display = 'flex';
+    function openRoom() {
+        navScreen('s-room');
+        socket.emit('join-room', lobby.lobbyId);
+        updateRoomUI(lobby);
+    }
+
+    function updateRoomUI(l) {
+        document.getElementById('r-p1').innerText = l.creatorName || "Player 1";
+        document.getElementById('r-ready1').innerText = l.ready1 ? "✅" : "⏳";
+        document.getElementById('r-p2').innerText = l.player2Name || "Ожидание...";
+        document.getElementById('r-ready2').innerText = l.ready2 ? "✅" : "⏳";
+        document.getElementById('room-game-name').innerText = l.gameType;
+    }
+
+    function toggleReady() {
+        socket.emit('player-ready', { roomId: lobby.lobbyId, telegramId: user.telegramId });
+        document.getElementById('ready-btn').style.display = 'none';
+    }
+
+    socket.on('update-lobby', (l) => { lobby = l; updateRoomUI(l); });
+
+    socket.on('start-game', (data) => {
         startEmu(data.game, data.game.endsWith('.nes') ? 'nes' : 'segaMD', data.lobbyId);
     });
+
+    function shareInvite() {
+        const url = `https://t.me/${BOT_USER}/app?startapp=lobby_${lobby.lobbyId}`;
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Заходи в игру!`);
+    }
 
     function startEmu(file, core, lid) {
         document.getElementById('app').style.display = 'none';
         document.getElementById('emulator-layer').style.display = 'block';
-
+        
         window.EJS_player = '#ejs-container';
         window.EJS_core = core;
         window.EJS_gameUrl = '/' + file;
-        window.EJS_pathtodata = 'data/'; 
+        window.EJS_pathtodata = 'data/';
         window.EJS_startOnLoaded = true;
         window.EJS_virtualGamepad = true;
 
         window.EJS_onGameStart = () => {
-            document.getElementById('loading-overlay').style.display = 'none';
             setInterval(() => {
                 if (typeof EJS_emulator !== 'undefined') {
                     const ram = EJS_emulator.gameManager.getWRam();
@@ -175,21 +201,18 @@
         window.addEventListener("keyup", (e) => {
             socket.emit('emu-input', { roomId: lid, key: e.keyCode, type: 'keyup', pNum: user.telegramId === lobby?.creatorId ? 0 : 1 });
         });
-
-        socket.on('partner-input', (data) => {
-            if (typeof EJS_emulator !== 'undefined') {
-                EJS_emulator.gameManager.simulateInput(data.key, data.type, data.pNum === 0 ? 1 : 0);
-            }
+        
+        socket.on('partner-input', (d) => {
+            if (typeof EJS_emulator !== 'undefined') EJS_emulator.gameManager.simulateInput(d.key, d.type, d.pNum === 0 ? 1 : 0);
         });
 
-        const s = document.createElement('script');
-        s.src = 'data/loader.js';
-        document.body.appendChild(s);
+        const s = document.createElement('script'); s.src = 'data/loader.js'; document.body.appendChild(s);
     }
 
-    socket.on('results', (data) => {
-        tg.showPopup({ title: 'КОНЕЦ МАТЧА', message: data.winnerId === user.telegramId ? 'ВЫ ПОБЕДИЛИ!' : 'ВЫ ПРОИГРАЛИ' }, () => location.reload());
-    });
+    function sendFinish() {
+        socket.emit('match-finished', { roomId: lobby.lobbyId, telegramId: user.telegramId, score });
+        location.reload();
+    }
 </script>
 </body>
 </html>
