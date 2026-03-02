@@ -24,20 +24,21 @@ mongoose.connect(CONFIG.MONGO_URI);
 const User = mongoose.model('User', new mongoose.Schema({ telegramId: Number, username: String, balance: { type: Number, default: 1000 } }));
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     lobbyId: String, creatorId: Number, player2Id: Number, creatorName: String, player2Name: String,
-    game: String, bet: Number, status: { type: String, default: 'waiting' }, isPrivate: Boolean,
+    game: String, bet: { type: Number, default: 0 }, status: { type: String, default: 'waiting' }, isPrivate: Boolean,
     r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false },
     s1: { type: Number, default: -1 }, s2: { type: Number, default: -1 }
 }));
 
 io.on('connection', (socket) => {
-    socket.on('join-room', (rid) => { socket.join(rid); console.log('Joined:', rid); });
+    socket.on('force-join', (rid) => { socket.join(rid); });
 
     socket.on('player-ready', async (d) => {
         const l = await Lobby.findOne({ lobbyId: d.rid });
         if (!l) return;
-        if (l.creatorId == d.uid) l.r1 = true; else l.r2 = true;
+        if (l.creatorId == d.uid) l.r1 = true; else l.player2Id == d.uid ? l.r2 = true : null;
         await l.save();
         io.to(d.rid).emit('lobby-update', l);
+        
         if (l.r1 && l.r2) {
             l.status = 'playing'; await l.save();
             io.to(d.rid).emit('start-match', { game: l.game, lid: l.lobbyId });
@@ -74,7 +75,7 @@ app.post('/api/user-data', async (req, res) => {
 
 app.post('/api/lobby/create', async (req, res) => {
     const { uid, name, game, bet, priv } = req.body;
-    const lobbyId = 'R' + Math.floor(Math.random()*9000);
+    const lobbyId = 'L' + Math.floor(1000 + Math.random()*9000);
     const lobby = new Lobby({ lobbyId, creatorId: uid, creatorName: name, game, bet, isPrivate: priv });
     await lobby.save();
     res.json({ success: true, lobby });
@@ -83,7 +84,7 @@ app.post('/api/lobby/create', async (req, res) => {
 app.post('/api/lobby/join', async (req, res) => {
     const { uid, name, lid } = req.body;
     const l = await Lobby.findOneAndUpdate({ lobbyId: lid, status: 'waiting' }, { player2Id: uid, player2Name: name }, { new: true });
-    if (l) { io.to(lid).emit('lobby-update', l); res.json({ success: true, lobby: l }); } 
+    if (l) { io.to(lid).emit('lobby-update', l); res.json({ success: true, lobby: l }); }
     else res.json({ success: false });
 });
 
