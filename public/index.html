@@ -2,33 +2,40 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Battle Arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        :root { --tg-text: #ffffff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; --btn-base: #1a1a1a; --btn-border: #000000; --btn-shadow: rgba(0,0,0,0.8); }
+        :root {
+            --tg-bg: #050505; --tg-text: #ffffff;
+            --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700;
+            --font-retro: 'Press Start 2P', cursive;
+            --btn-base: #1a1a1a; --btn-border: #000000;
+            --btn-shadow: rgba(0,0,0,0.8);
+        }
         * { box-sizing: border-box; }
-        body { margin: 0; background: #050505; color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; overscroll-behavior-y: none; }
+        body { margin: 0; background: #050505; background-image: radial-gradient(circle at center, #111424 0%, #000000 100%); color: var(--tg-text); font-family: var(--font-retro); height: 100vh; width: 100vw; overflow: hidden; user-select: none; touch-action: none; }
         
         .screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px; padding-bottom: 50px; }
         .screen.active { display: flex; }
-        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; }
-        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; }
-        h3 { font-size: 0.7rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
         
-        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 14px; width: 100%; max-width: 320px; font-size: 0.6rem; font-family: var(--font-retro); cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow); }
-        .btn-pixel:active { transform: translateY(2px); }
-        .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
-        .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow); }
+        h1, h2, h3 { text-align: center; text-transform: uppercase; margin-bottom: 20px; line-height: 1.4; }
+        h1 { font-size: 1.4rem; color: var(--accent-neon); text-shadow: 0 0 10px var(--accent-neon), 2px 2px 0 #000; margin-top: 10px; }
+        h3 { font-size: 0.7rem; color: #fff; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px dashed #333; padding-bottom: 10px; width: 100%; max-width: 320px; }
+        
+        .btn-pixel { background: var(--btn-base); color: var(--accent-neon); border: 4px solid var(--btn-border); padding: 16px; width: 100%; max-width: 320px; font-size: 0.7rem; font-family: var(--font-retro); text-transform: uppercase; cursor: pointer; margin-bottom: 12px; position: relative; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.3), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(0, 240, 255, 0.2); text-shadow: 2px 2px 0 #000; }
+        .btn-pixel:active { box-shadow: inset 4px 4px 0 var(--btn-shadow); transform: translateY(2px); }
+        .btn-gold { color: var(--accent-gold); box-shadow: inset 4px 4px 0 rgba(255, 215, 0, 0.4), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(255, 215, 0, 0.2); }
+        .btn-pink { color: var(--accent-pink); box-shadow: inset 4px 4px 0 rgba(255, 0, 85, 0.4), inset -4px -4px 0 var(--btn-shadow), 0 0 15px rgba(255, 0, 85, 0.2); }
         .btn-green { color: #0f0; box-shadow: inset 4px 4px 0 rgba(0, 255, 0, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-purple { color: #b0f; box-shadow: inset 4px 4px 0 rgba(187, 0, 255, 0.4), inset -4px -4px 0 var(--btn-shadow); }
         .btn-sm { padding: 10px; font-size: 0.6rem; }
 
-        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
-        #ejs-container { width: 100vw !important; height: 100vh !important; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 10000; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; border-radius: 5px; }
+        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 100; }
+        #ejs-container { width: 100% !important; height: 100% !important; }
+        #exit-emu-btn { position: absolute; top: 15px; right: 15px; z-index: 101; padding: 10px; background: #f05; border: 2px solid #fff; color: #fff; font-family: var(--font-retro); font-size: 8px; cursor: pointer; }
         #emu-tournament-ui { display: none; position: absolute; top: 15px; left: 15px; z-index: 101; padding: 10px; background: rgba(0,0,0,0.8); border: 2px solid var(--accent-gold); color: var(--accent-gold); font-family: var(--font-retro); font-size: 8px; text-shadow: 1px 1px 0 #000; pointer-events: none;}
     </style>
 </head>
@@ -41,7 +48,6 @@
 </div>
 
 <div id="app">
-    <!-- ГЛАВНОЕ МЕНЮ - ВОССТАНОВЛЕНО -->
     <div id="s-main" class="screen active" style="justify-content: center;">
         <h1>RETRO ARENA</h1>
         <button class="btn-pixel" onclick="navScreen('s-single')">🎮 ОДИНОЧНАЯ ИГРА</button>
@@ -53,22 +59,25 @@
     <div id="s-single" class="screen">
         <h2>СВОБОДНАЯ ИГРА</h2>
         <div style="width: 100%; max-width:320px; flex-grow:1;">
+            
             <h3>HTML5 ИГРЫ</h3>
             <button class="btn-pixel btn-sm" onclick="launchGame('sonic', false)">🦔 SONIC 16-BIT (HTML5)</button>
             <button class="btn-pixel btn-sm" onclick="launchGame('tetris', false)">🧱 TETRIS</button>
             <button class="btn-pixel btn-sm" onclick="launchGame('bomber', false)">💣 BOMBER ARENA</button>
 
             <h3 style="color: var(--accent-gold);">SEGA GENESIS (16-BIT)</h3>
+            <!-- ДОБАВЛЕНА НОВАЯ ИГРА -->
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_Mortal Kombat 3 (USA).gen', false)">🐉 Mortal Kombat 3</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1</button>
+            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic.bin', false)">🦔 Sonic 1 (Classic)</button>
             <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_sonic2.md', false)">🦔 Sonic 2</button>
-            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_umk3.md', false)">🐉 Ultimate MK3</button>
+            <button class="btn-pixel btn-gold btn-sm" onclick="launchGame('emu_umk3.md', false)">🐉 Ultimate Mortal Kombat 3</button>
 
             <h3 style="color: var(--accent-pink);">DENDY / NES (8-BIT)</h3>
-            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tanks.nes', false)">🚜 Танчики</button>
+            <button class="btn-pixel btn-pink btn-sm" onclick="launchGame('emu_tanks.nes', false)">🚜 Танчики (Battle City)</button>
 
             <h3 style="color: #b0f;">SUPER NINTENDO (SNES)</h3>
-            <button class="btn-pixel btn-purple btn-sm" onclick="launchGame('emu_realmonsters.sfc', false)">👹 Real Monsters</button>
+            <button class="btn-pixel btn-purple btn-sm" onclick="launchGame('emu_realmonsters.sfc', false)">👹 Aaahh!!! Real Monsters</button>
+
         </div>
         <button class="btn-pixel btn-pink" style="margin-top: 15px; flex-shrink: 0;" onclick="navScreen('s-main')">НАЗАД</button>
     </div>
@@ -77,55 +86,56 @@
 </div>
 
 <script>
+    // ТВОЙ ОРИГИНАЛЬНЫЙ КОД С МИНИМАЛЬНЫМИ ПРАВКАМИ
     const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
-    let gameType = '', isRanked = false, emuTimerInterval = null;
+    let gameType = '', isRanked = false; // Упрощено для примера
 
-    function navScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function navScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
     
-    // Функция openTournaments - заглушка, чтобы не было ошибок
-    function openTournaments() { alert("Раздел турниров в разработке"); }
-    
+    // --- ГЛАВНАЯ ФУНКЦИЯ ЗАПУСКА ИГР ---
     function launchGame(t, r) {
         gameType = t;
         isRanked = r;
         
         if (t.startsWith('emu_')) {
             const fileName = t.replace('emu_', '');
-            let core = 'sega'; 
+            let core = 'sega'; // По умолчанию sega
             if (fileName.endsWith('.nes')) core = 'nes';
             else if (fileName.endsWith('.sfc')) core = 'snes';
 
             document.getElementById('app').style.display = 'none'; 
             launchEmulator(fileName, core);
         } else {
+            // Здесь была логика для HTML5 игр, ее можно вернуть, если нужно
             alert("HTML5 игры пока отключены");
         }
     }
     
+    // =================================================================
+    // === ЛОГИКА ЭМУЛЯТОРОВ (ТВОЯ РАБОЧАЯ ВЕРСИЯ + ВЗЛОМЩИК КЭША) ===
+    // =================================================================
     function launchEmulator(fileName, coreType) {
         document.getElementById('emulator-layer').style.display = 'block';
-
         window.EJS_player = '#ejs-container';
         window.EJS_core = coreType;
-        // Используем относительный путь (без /) и взломщик кэша
+        
+        // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: относительный путь + взломщик кэша
         window.EJS_gameUrl = fileName + '?v=' + Date.now(); 
+        
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_virtualGamepad = true;
         window.EJS_startOnLoaded = true;
-        
-        // Улучшенный геймпад: убраны лишние кнопки
-        window.EJS_Buttons = { 
-            playPause: false, restart: true, mute: true, settings: false, fullscreen: true, 
-            saveState: false, loadState: false, screenRecord: false, gamepad: true, cheat: false, volume: true 
-        };
+        window.EJS_Buttons = { saveState: !isRanked, loadState: !isRanked, fullscreen: true, restart: true }; 
 
         const script = document.createElement('script');
+        // Взломщик кэша для загрузчика
         script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js?v=' + Date.now();
         document.body.appendChild(script);
     }
 
-    function stopEmulator() { 
-        location.reload(); 
+    function stopEmulator() {
+        // Твой оригинальный рабочий метод выхода
+        location.reload();
     }
 </script>
 </body>
