@@ -17,13 +17,14 @@
         .card { background: #111; border: 2px dashed #444; padding: 10px; width: 260px; margin-bottom: 10px; text-align: center; }
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100%; height: 100%; }
+        #loader-info { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #555; font-size: 6px; }
     </style>
 </head>
 <body>
 
 <div id="emulator-layer">
-    <div style="position:absolute; top:10px; left:10px; color:gold;">SCORE: <span id="emu-score">0</span></div>
-    <button onclick="sendFinish()" style="position:absolute; top:10px; right:10px; background:red; color:#fff; border:none; padding:8px; font-family:inherit;">FINISH</button>
+    <div style="position:absolute; top:10px; left:10px; color:gold; z-index:10000;">SCORE: <span id="emu-score">0</span></div>
+    <button onclick="sendFinish()" style="position:absolute; top:10px; right:10px; background:red; color:#fff; border:none; padding:8px; z-index:10000;">FINISH</button>
     <div id="ejs-container"></div>
 </div>
 
@@ -38,18 +39,23 @@
     </div>
 
     <div id="s-single" class="screen">
-        <h2>ИГРЫ</h2>
-        <button class="btn" onclick="startEmu('umk3.md', 'segaMD')">MK 3</button>
-        <button class="btn" onclick="startEmu('sonic2.md', 'segaMD')">SONIC 2</button>
-        <button class="btn" onclick="nav('s-main')">НАЗАД</button>
+        <h2>SOLO GAMES</h2>
+        <button class="btn" onclick="startSolo('umk3.md', 'segaMD')">MK 3</button>
+        <button class="btn" onclick="startSolo('sonic2.md', 'segaMD')">SONIC 2</button>
+        <button class="btn" onclick="startSolo('tanks.nes', 'nes')">TANKS</button>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 
     <div id="s-create" class="screen">
         <h2>NEW LOBBY</h2>
-        <select id="g-sel" class="btn"><option value="umk3.md">MK3</option><option value="tanks.nes">TANKS</option></select>
+        <select id="g-sel" class="btn">
+            <option value="umk3.md">MK3</option>
+            <option value="tanks.nes">TANKS</option>
+            <option value="sonic2.md">SONIC 2</option>
+        </select>
         <input type="number" id="b-val" class="btn" placeholder="BET (0=FREE)" style="color:#fff">
-        <label><input type="checkbox" id="p-check"> HIDDEN</label>
-        <button class="btn btn-gold" onclick="createLobby()">CREATE</button>
+        <label style="font-size:6px"><input type="checkbox" id="p-check"> PRIVATE (LINK ONLY)</label>
+        <button class="btn btn-gold" style="margin-top:10px" onclick="createLobby()">CREATE</button>
         <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 
@@ -71,15 +77,20 @@
     </div>
 
     <div id="s-profile" class="screen">
-        <h2>PROFILE</h2>
-        <div class="card">ID: <span id="p-id"></span></div>
+        <h2>USER PROFILE</h2>
+        <div class="card">
+            <p>USER ID: <span id="p-id"></span></p>
+            <button class="btn" style="font-size:6px" onclick="tg.showAlert('Withdraw logic here')">WITHDRAW USDT</button>
+        </div>
         <button class="btn" onclick="nav('s-main')">BACK</button>
     </div>
 </div>
 
+<div id="loader-info">SYSTEM STATUS: <span id="sys-st">READY</span></div>
+
 <script>
     const tg = window.Telegram.WebApp; const socket = io();
-    let user, lobby, score = 0;
+    let user, lobby, score = 0, isSolo = false;
 
     async function init() {
         const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
@@ -96,22 +107,27 @@
     async function createLobby() {
         const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({uid: user.telegramId, name: user.username, game: document.getElementById('g-sel').value, bet: parseInt(document.getElementById('b-val').value)||0, priv: document.getElementById('p-check').checked}) });
         const res = await r.json();
-        if(res.success) { lobby = res.lobby; nav('s-room'); updateRoomUI(lobby); socket.emit('join-room', lobby.lobbyId); }
+        if(res.success) { lobby = res.lobby; nav('s-room'); updateRoomUI(lobby); socket.emit('force-join', lobby.lobbyId); }
     }
 
     async function listRooms() {
         nav('s-list');
         const r = await fetch('/api/lobby/list'); const list = await r.json();
-        document.getElementById('l-render').innerHTML = list.length? list.map(l => `<div class="card">${l.game} | ${l.bet}🪙 <button class="btn" style="width:80px" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>`).join('') : "NO GAMES FOUND";
+        document.getElementById('l-render').innerHTML = list.length? list.map(l => `<div class="card">${l.game} | ${l.bet}🪙 <button class="btn" style="width:80px; padding:5px" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>`).join('') : "NO OPEN ROOMS";
     }
 
     async function joinLobby(lid) {
+        socket.emit('force-join', lid);
         const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({uid: user.telegramId, name: user.username, lid}) });
         const res = await r.json();
-        if(res.success) { lobby = res.lobby; nav('s-room'); updateRoomUI(lobby); socket.emit('join-room', lid); }
+        if(res.success) { lobby = res.lobby; nav('s-room'); updateRoomUI(lobby); }
+        else tg.showAlert("ROOM IS FULL OR CLOSED");
     }
 
-    function setReady() { socket.emit('player-ready', { rid: lobby.lobbyId, uid: user.telegramId }); document.getElementById('btn-ready').style.display='none'; }
+    function setReady() { 
+        socket.emit('player-ready', { rid: lobby.lobbyId, uid: user.telegramId }); 
+        document.getElementById('btn-ready').innerText = "WAITING...";
+    }
     
     function updateRoomUI(l) {
         document.getElementById('r-p1').innerText = l.creatorName; document.getElementById('r-r1').innerText = l.r1?"✅":"⏳";
@@ -122,11 +138,21 @@
     socket.on('lobby-update', (l) => { lobby = l; updateRoomUI(l); });
     socket.on('start-match', (d) => startEmu(d.game, d.game.endsWith('.nes')?'nes':'segaMD', d.lid));
 
+    function startSolo(file, core) { isSolo = true; startEmu(file, core, 'solo'); }
+
     function startEmu(file, core, rid) {
         document.getElementById('app').style.display='none'; document.getElementById('emulator-layer').style.display='block';
-        window.EJS_player = '#ejs-container'; window.EJS_core = core; window.EJS_gameUrl = '/'+file;
-        window.EJS_pathtodata = 'data/'; window.EJS_startOnLoaded = true;
+        document.getElementById('sys-st').innerText = "LOADING CORE...";
+        
+        window.EJS_player = '#ejs-container'; 
+        window.EJS_core = core; 
+        window.EJS_gameUrl = '/'+file;
+        window.EJS_pathtodata = 'data/'; 
+        window.EJS_startOnLoaded = true;
+        window.EJS_virtualGamepad = true;
+
         window.EJS_onGameStart = () => {
+            document.getElementById('sys-st').innerText = "RUNNING";
             setInterval(() => {
                 if (typeof EJS_emulator !== 'undefined') {
                     const ram = EJS_emulator.gameManager.getWRam();
@@ -135,14 +161,27 @@
                 }
             }, 1000);
         };
-        window.onkeydown = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', p: user.telegramId==lobby?.creatorId?0:1 });
-        window.onkeyup = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keyup', p: user.telegramId==lobby?.creatorId?0:1 });
-        socket.on('partner-input', (d) => { if(typeof EJS_emulator!=='undefined') EJS_emulator.gameManager.simulateInput(d.key, d.type, d.p==0?1:0); });
-        const s = document.createElement('script'); s.src = 'data/loader.js'; document.body.appendChild(s);
+
+        if(!isSolo) {
+            window.onkeydown = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', p: user.telegramId==lobby?.creatorId?0:1 });
+            window.onkeyup = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keyup', p: user.telegramId==lobby?.creatorId?0:1 });
+            socket.on('partner-input', (d) => { if(typeof EJS_emulator!=='undefined') EJS_emulator.gameManager.simulateInput(d.key, d.type, d.p==0?1:0); });
+        }
+
+        const s = document.createElement('script'); 
+        s.src = 'data/loader.js'; 
+        document.body.appendChild(s);
     }
 
-    function sendFinish() { socket.emit('match-end', { rid: lobby.lobbyId, uid: user.telegramId, score }); location.reload(); }
-    function shareInv() { tg.openTelegramLink(`https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`); }
+    function sendFinish() { 
+        if(!isSolo) socket.emit('match-end', { rid: lobby.lobbyId, uid: user.telegramId, score }); 
+        location.reload(); 
+    }
+    
+    function shareInv() { 
+        const url = `https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`;
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=JOIN ME IN ${lobby.game}!`);
+    }
 </script>
 </body>
 </html>
