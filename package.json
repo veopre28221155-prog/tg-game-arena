@@ -1,7 +1,7 @@
 {
   "name": "tg-game-arena",
   "version": "1.0.0",
-  "description": "Retro Arena Backend with AI WebSockets",
+  "description": "Retro Arena with Socket.io Multiplayer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -11,7 +11,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "mongoose": "^8.1.1",
-    "ws": "^8.16.0"
+    "socket.io": "^4.8.1"
   },
   "engines": {
     "node": ">=18.0.0"
