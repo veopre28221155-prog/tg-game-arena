@@ -5,7 +5,10 @@ const { Server } = require('socket.io');
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: "*" }, pingInterval: 2000, pingTimeout: 5000 });
+const io = new Server(httpServer, { 
+    cors: { origin: "*" },
+    transports: ['websocket', 'polling'] 
+});
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -22,37 +25,37 @@ const User = mongoose.model('User', new mongoose.Schema({ telegramId: Number, us
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
     lobbyId: String, lobbyName: String, creatorId: Number, player2Id: Number, creatorName: String, player2Name: String,
     game: String, bet: Number, status: { type: String, default: 'waiting' }, isPrivate: Boolean,
-    r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
+    r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false }
 }));
 
-// Очистка лобби (Reaper)
+// Очистка пустых лобби через 5 минут
 setInterval(async () => {
-    const timeout = new Date(Date.now() - 120000);
-    await Lobby.deleteMany({ status: 'waiting', createdAt: { $lt: timeout } });
-}, 30000);
+    await Lobby.deleteMany({ status: 'waiting', creatorId: null }); 
+}, 60000);
 
 io.on('connection', (socket) => {
-    socket.on('sync-me', async (d) => {
-        socket.uid = d.uid;
-        socket.join(d.rid);
-        const l = await Lobby.findOne({ lobbyId: d.rid });
-        if (l) io.to(d.rid).emit('lobby-update', l);
+    socket.on('register', (uid) => { socket.uid = uid; });
+
+    socket.on('join-room', (rid) => {
+        socket.join(rid);
+        console.log(`User ${socket.uid} joined ${rid}`);
     });
 
     socket.on('player-ready', async (d) => {
         const l = await Lobby.findOne({ lobbyId: d.rid });
         if (!l) return;
-        if (l.creatorId == d.uid) l.r1 = true; else l.player2Id == d.uid ? l.r2 = true : null;
+        if (l.creatorId == d.uid) l.r1 = true; 
+        else if (l.player2Id == d.uid) l.r2 = true;
         await l.save();
         io.to(d.rid).emit('lobby-update', l);
+        
         if (l.r1 && l.r2) {
             l.status = 'playing'; await l.save();
             io.to(d.rid).emit('start-match', { game: l.game, lid: l.lobbyId });
         }
     });
 
-    socket.on('emu-input', (d) => socket.to(d.rid).emit('p-input', d));
+    socket.on('emu-input', (d) => socket.to(d.rid).emit('partner-input', d));
 });
 
 app.post('/api/user-data', async (req, res) => {
@@ -75,10 +78,12 @@ app.post('/api/lobby/create', async (req, res) => {
 app.post('/api/lobby/join', async (req, res) => {
     const { uid, name, lid } = req.body;
     const l = await Lobby.findOneAndUpdate({ lobbyId: lid, status: 'waiting', player2Id: null }, { player2Id: uid, player2Name: name }, { new: true });
-    if (l) res.json({ success: true, lobby: l });
+    if (l) { io.to(lid).emit('lobby-update', l); res.json({ success: true, lobby: l }); }
     else res.json({ success: false });
 });
 
-app.get('/api/lobby/list', async (req, res) => res.json(await Lobby.find({ status: 'waiting', isPrivate: false, player2Id: null })));
+app.get('/api/lobby/list', async (req, res) => {
+    res.json(await Lobby.find({ status: 'waiting', isPrivate: false, player2Id: null }));
+});
 
 httpServer.listen(CONFIG.PORT);
