@@ -8,14 +8,13 @@
     <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --tg-text: #fff; --accent-neon: #00f0ff; --accent-pink: #ff0055; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; }
-        body { margin: 0; background: #050505; color: #fff; font-family: var(--font-retro); overflow: hidden; user-select: none; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        :root { --tg-text: #fff; --accent-neon: #00f0ff; --accent-gold: #ffd700; --font-retro: 'Press Start 2P', cursive; }
+        body { margin: 0; background: #050505; color: #fff; font-family: var(--font-retro); overflow: hidden; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
-        .btn-pixel { background: #1a1a1a; color: var(--accent-neon); border: 4px solid #000; padding: 15px; width: 100%; max-width: 320px; font-family: inherit; font-size: 10px; cursor: pointer; margin-bottom: 10px; box-shadow: inset 4px 4px 0 rgba(0, 240, 255, 0.2); text-transform: uppercase; }
+        .btn-pixel { background: #1a1a1a; color: var(--accent-neon); border: 4px solid #000; padding: 15px; width: 100%; max-width: 320px; font-family: inherit; font-size: 9px; cursor: pointer; margin-bottom: 10px; text-transform: uppercase; }
         .btn-gold { color: var(--accent-gold); }
-        .btn-pink { color: var(--accent-pink); }
-        .card { background: #111; border: 2px dashed #444; padding: 15px; width: 100%; max-width: 320px; margin-bottom: 20px; font-size: 10px; }
+        .card { background: #111; border: 2px dashed #444; padding: 15px; width: 100%; max-width: 320px; margin-bottom: 20px; font-size: 8px; }
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100%; height: 100%; }
     </style>
@@ -24,73 +23,49 @@
 
 <div id="emulator-layer">
     <div style="position:absolute; top:15px; left:15px; z-index:10001; color:gold;">SCORE: <span id="emu-score">0</span></div>
-    <button onclick="location.reload()" style="position:absolute; top:15px; right:15px; z-index:10001; background:red; color:white; border:none; padding:10px; font-family:inherit;">✖ ВЫЙТИ</button>
+    <button onclick="sendResultAndExit()" style="position:absolute; top:15px; right:15px; z-index:10001; background:red; color:white; border:none; padding:10px; font-family:inherit; font-size:8px;">ФИНИШ</button>
     <div id="ejs-container"></div>
 </div>
 
 <div id="app">
     <!-- ГЛАВНОЕ МЕНЮ -->
-    <div id="s-main" class="screen active">
+    <div id="s-main" class="screen active" style="justify-content:center;">
         <h1 style="color:var(--accent-neon); font-size: 14px;">RETRO ARENA</h1>
-        <div class="card">БАЛАНС: <span id="p-bal-main" style="color:gold">0</span> 🪙</div>
-        <button class="btn-pixel" onclick="navScreen('s-emu-menu')">🕹️ БИБЛИОТЕКА ИГР</button>
-        <button class="btn-pixel" onclick="navScreen('s-friend')">🤝 С ДРУГОМ (FREE)</button>
-        <button class="btn-pixel btn-gold" onclick="openTournaments()">⚔️ ТУРНИРЫ (Stars)</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ / ВЫВОД</button>
-        <div id="admin-btn-area" style="width:100%; display:flex; flex-direction:column; align-items:center;"></div>
+        <div class="card">БАЛАНС: <span id="p-bal" style="color:gold">0</span> 🪙</div>
+        <button class="btn-pixel" onclick="navScreen('s-emu-menu')">🕹️ ОДИНОЧНАЯ ИГРА</button>
+        <button class="btn-pixel btn-gold" onclick="navScreen('s-lobby-create')">🤝 СОЗДАТЬ ЛОББИ</button>
+        <button class="btn-pixel" onclick="openLobbyList()">📋 СПИСОК ИГР</button>
+        <button class="btn-pixel" style="color:#f05" onclick="navScreen('s-profile')">👤 ПРОФИЛЬ</button>
     </div>
 
-    <!-- ТУРНИРЫ -->
-    <div id="s-tournaments" class="screen">
-        <h2>ТУРНИРЫ</h2>
-        <button class="btn-pixel btn-gold" onclick="createLobby('umk3.md', 500, false)">СОЗДАТЬ MK3 (500 🪙)</button>
-        <button class="btn-pixel btn-gold" onclick="createLobby('sonic2.md', 500, false)">СОЗДАТЬ SONIC (500 🪙)</button>
-        <div id="lobby-list" style="width:100%; margin-top:20px;"></div>
+    <!-- СОЗДАНИЕ ЛОББИ -->
+    <div id="s-lobby-create" class="screen">
+        <h2>НОВАЯ ИГРА</h2>
+        <select id="game-select" class="btn-pixel" style="background:#000; color:#fff;">
+            <option value="umk3.md">MORTAL KOMBAT 3</option>
+            <option value="tanks.nes">ТАНЧИКИ</option>
+            <option value="sonic2.md">SONIC 2</option>
+        </select>
+        <input type="number" id="bet-input" class="btn-pixel" placeholder="Ставка (0 = FREE)" style="background:#000; color:#fff;">
+        <label style="font-size:8px;"><input type="checkbox" id="private-check"> СКРЫТОЕ (ПО ССЫЛКЕ)</label>
+        <button class="btn-pixel btn-gold" style="margin-top:20px;" onclick="requestLobbyCreate()">СОЗДАТЬ</button>
         <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
     </div>
 
-    <!-- ПРОФИЛЬ -->
-    <div id="s-profile" class="screen">
-        <h2>ПРОФИЛЬ</h2>
-        <div class="card">
-            <p>ID: <span id="p-id">...</span></p>
-            <p>БАЛАНС: <span id="p-bal">0</span> 🪙</p>
+    <!-- ОЖИДАНИЕ ИГРОКА -->
+    <div id="s-waiting" class="screen" style="justify-content:center;">
+        <h2>ОЖИДАНИЕ...</h2>
+        <div id="invite-box" class="card" style="display:none;">
+            <p>Отправь инвайт другу:</p>
+            <button class="btn-pixel btn-gold" onclick="shareInvite()">📤 ПРИГЛАСИТЬ</button>
         </div>
-        <button class="btn-pixel btn-gold" onclick="deposit(10)">КУПИТЬ 1000 🪙 (10 Stars)</button>
-        <button class="btn-pixel btn-pink" onclick="navScreen('s-withdraw')">ВЫВОД USDT</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
+        <button class="btn-pixel" onclick="location.reload()">ОТМЕНА</button>
     </div>
 
-    <!-- ВЫВОД -->
-    <div id="s-withdraw" class="screen">
-        <h2>ВЫВОД USDT</h2>
-        <p style="font-size:8px;">Мин: 5000 🪙 (1 USDT)</p>
-        <input type="number" id="w-amount" class="btn-pixel" placeholder="СУММА В 🪙" style="background:#000; color:#fff;">
-        <button class="btn-pixel btn-pink" onclick="requestWithdraw()">ОТПРАВИТЬ ЗАЯВКУ</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
-    </div>
-
-    <!-- БИБЛИОТЕКА -->
-    <div id="s-emu-menu" class="screen">
-        <h2>БИБЛИОТЕКА</h2>
-        <button class="btn-pixel btn-gold" onclick="startEmu('umk3.md', 'sega')">🐉 Mortal Kombat 3</button>
-        <button class="btn-pixel btn-gold" onclick="startEmu('sonic2.md', 'sega')">🦔 Sonic 2</button>
-        <button class="btn-pixel btn-gold" onclick="startEmu('tanks.nes', 'nes')">🚜 Танчики</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
-    </div>
-
-    <!-- ИГРА С ДРУГОМ -->
-    <div id="s-friend" class="screen">
-        <h2>ИГРА С ДРУГОМ</h2>
-        <button class="btn-pixel btn-gold" onclick="createLobby('umk3.md', 0, true)">🐉 Mortal Kombat 3</button>
-        <button class="btn-pixel btn-gold" onclick="createLobby('tanks.nes', 0, true)">🚜 Танчики</button>
-        <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
-    </div>
-
-    <!-- АДМИНКА -->
-    <div id="s-admin" class="screen">
-        <h2 style="color:red;">ADMIN PANEL</h2>
-        <div id="admin-list" style="width:100%;"></div>
+    <!-- СПИСОК ЛОББИ -->
+    <div id="s-lobby-list" class="screen">
+        <h2>ОТКРЫТЫЕ ИГРЫ</h2>
+        <div id="list-container" style="width:100%;"></div>
         <button class="btn-pixel" onclick="navScreen('s-main')">◀ НАЗАД</button>
     </div>
 </div>
@@ -98,22 +73,13 @@
 <script>
     const tg = window.Telegram.WebApp;
     const socket = io();
-    let user = null, lobby = null, score = 0;
-    const ADMIN_ID = 1463465416;
+    let user = null, lobby = null, currentScore = 0;
 
     async function init() {
         tg.expand();
         const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
         user = await r.json();
-        
-        document.getElementById('p-bal-main').innerText = user.balance;
         document.getElementById('p-bal').innerText = user.balance;
-        document.getElementById('p-id').innerText = user.telegramId;
-
-        if (user.telegramId === ADMIN_ID) {
-            const area = document.getElementById('admin-btn-area');
-            area.innerHTML = '<button class="btn-pixel" style="border-color:red; color:red;" onclick="openAdmin()">🛑 АДМИН-ПАНЕЛЬ</button>';
-        }
 
         const sp = tg.initDataUnsafe.start_param;
         if(sp && sp.startsWith('lobby_')) joinLobby(sp.replace('lobby_',''));
@@ -125,49 +91,50 @@
         document.getElementById(id).classList.add('active');
     }
 
-    async function deposit(amt) {
-        const r = await fetch('/api/deposit-stars', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, amount: amt}) });
-        const d = await r.json();
-        if(d.url) tg.openInvoice(d.url);
-    }
+    async function requestLobbyCreate() {
+        const game = document.getElementById('game-select').value;
+        const bet = parseInt(document.getElementById('bet-input').value) || 0;
+        const isPrivate = document.getElementById('private-check').checked;
 
-    async function openTournaments() {
-        navScreen('s-tournaments');
-        const r = await fetch('/api/lobbies');
-        const list = await r.json();
-        document.getElementById('lobby-list').innerHTML = list.map(l => `
-            <div class="card">${l.gameType} | ${l.betAmount} 🪙 <button class="btn-pixel" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>
-        `).join('');
-    }
-
-    async function createLobby(game, bet, isFree) {
-        const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, gameType: game, betAmount: bet, isFree}) });
+        const r = await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, gameType: game, betAmount: bet, isPrivate, isFree: bet===0}) });
         const res = await r.json();
         if(res.success) {
             lobby = res.lobby;
-            if(isFree) {
-                const url = `https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`;
-                tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Заходи в игру!`);
-            } else {
-                tg.showAlert("Турнир создан!"); navScreen('s-main');
+            navScreen('s-waiting');
+            if(isPrivate || bet===0) {
+                document.getElementById('invite-box').style.display = 'block';
             }
+            socket.emit('join-room', lobby.lobbyId);
         }
+    }
+
+    function shareInvite() {
+        const url = `https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`;
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Заходи в игру!`);
+    }
+
+    async function openLobbyList() {
+        navScreen('s-lobby-list');
+        const r = await fetch('/api/lobbies');
+        const list = await r.json();
+        document.getElementById('list-container').innerHTML = list.map(l => `
+            <div class="card">${l.gameType.toUpperCase()} | ${l.betAmount} 🪙 <button class="btn-pixel" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>
+        `).join('');
     }
 
     async function joinLobby(id) {
         const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, lobbyId: id}) });
         const res = await r.json();
-        if(res.success) { lobby = res.lobby; }
+        if(!res.success) tg.showAlert("Ошибка входа!");
+        else socket.emit('join-room', id);
     }
 
     socket.on('start-match', (data) => {
-        startEmu(data.game, data.game.endsWith('.nes') ? 'nes' : 'sega');
+        startEmu(data.game, data.game.endsWith('.nes') ? 'nes' : 'sega', data.lobbyId);
     });
 
-    function startEmu(file, core) {
+    function startEmu(file, core, lid) {
         document.getElementById('emulator-layer').style.display = 'block';
-        if(lobby) socket.emit('join-room', lobby.lobbyId);
-
         window.EJS_player = '#ejs-container';
         window.EJS_core = core;
         window.EJS_gameUrl = '/' + file;
@@ -178,15 +145,15 @@
             setInterval(() => {
                 if (typeof EJS_emulator !== 'undefined') {
                     const ram = EJS_emulator.gameManager.getWRam();
-                    if (file.includes('sonic')) score = ram[0xFE20] || 0;
-                    else if (file.includes('umk3')) score = ram[0xB110] || 0;
-                    document.getElementById('emu-score').innerText = score;
+                    if (file.includes('sonic')) currentScore = ram[0xFE20] || 0;
+                    else if (file.includes('umk3')) currentScore = ram[0xB110] || 0;
+                    document.getElementById('emu-score').innerText = currentScore;
                 }
             }, 1000);
         };
 
         window.addEventListener("keydown", (e) => {
-            if(lobby) socket.emit('emu-input', { roomId: lobby.lobbyId, key: e.keyCode, type: 'keydown', pNum: user.telegramId === lobby.player1Id ? 0 : 1 });
+            socket.emit('emu-input', { roomId: lid, key: e.keyCode, type: 'keydown', pNum: user.telegramId === lobby?.player1Id ? 0 : 1 });
         });
         socket.on('partner-input', (data) => {
             if (typeof EJS_emulator !== 'undefined') EJS_emulator.gameManager.simulateInput(data.key, data.type, data.pNum === 0 ? 1 : 0);
@@ -197,30 +164,16 @@
         document.body.appendChild(s);
     }
 
-    async function requestWithdraw() {
-        const amount = document.getElementById('w-amount').value;
-        const r = await fetch('/api/withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegramId: user.telegramId, amount}) });
-        const res = await r.json();
-        if(res.success) tg.showAlert("Заявка создана!"); else tg.showAlert("Ошибка!");
+    function sendResultAndExit() {
+        socket.emit('match-finished', { roomId: lobby.lobbyId || sp.replace('lobby_',''), telegramId: user.telegramId, score: currentScore });
+        tg.showAlert("Счет отправлен!");
+        location.reload();
     }
 
-    async function openAdmin() {
-        navScreen('s-admin');
-        const r = await fetch('/api/admin/get-withdrawals', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId }) });
-        const list = await r.json();
-        document.getElementById('admin-list').innerHTML = list.map(w => `
-            <div class="card">
-                ${w.userId} | ${w.usdtAmount} USDT
-                <button onclick="adminAction('${w._id}', 'complete')">OK</button>
-                <button onclick="adminAction('${w._id}', 'reject')">X</button>
-            </div>
-        `).join('');
-    }
-
-    async function adminAction(id, action) {
-        await fetch('/api/admin/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ adminId: user.telegramId, id, action }) });
-        openAdmin();
-    }
+    socket.on('results', (data) => {
+        tg.showPopup({ title: 'МАТЧ ОКОНЧЕН', message: data.winnerId === user.telegramId ? `ПОБЕДА! Вы выиграли ${data.prize} 🪙` : 'Поражение...' });
+        init();
+    });
 </script>
 </body>
 </html>
