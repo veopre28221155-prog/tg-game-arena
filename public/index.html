@@ -1,14 +1,15 @@
 function startEmu(file, coreType, rid, isSolo) {
-    // Подготовка контейнера
+    // 0. Полная очистка контейнера и инстанса
+    if (window.EJS_emulator) { try { window.EJS_emulator.stop(); } catch(e){} }
     document.getElementById('app').style.display = 'none'; 
     document.getElementById('emulator-layer').style.display = 'block';
     document.getElementById('ejs-container').innerHTML = "";
 
-    // 1. Определение ролей (Хост управляет Портом 0, Гость - Портом 1)
+    // 1. Определение ролей
     const isHost = !isSolo && (user.telegramId == lobby.creatorId);
     const myPort = isHost ? 0 : 1; 
 
-    // 2. Глобальные настройки ядра
+    // 2. Глобальные настройки
     window.EJS_player = '#ejs-container'; 
     window.EJS_core = file.endsWith('.nes') ? 'nes' : 'segaMD'; 
     window.EJS_gameUrl = window.location.origin + '/' + file;
@@ -18,38 +19,33 @@ function startEmu(file, coreType, rid, isSolo) {
 
     // 3. Автоматизация старта и синхронизация
     window.EJS_onGameStart = () => {
-        console.log("Macro: Establishing Zero-Cycle Sync...");
-        
+        console.log("Macro: Cycle-Start Syncing...");
         if (EJS_emulator.gameManager) {
-            // Сброс обоих ядер в ноль
             EJS_emulator.gameManager.restart();
 
-            // 4. Скрипт автоматического выбора "2 PLAYERS" в меню
+            // 4. Скрипт автоматического входа в 2P
             if (!isSolo) {
                 setTimeout(() => {
-                    console.log("Macro: Navigating to 2P mode...");
-                    // Имитируем нажатие ВНИЗ (40)
+                    console.log("Macro: Executing Auto-Menu...");
                     EJS_emulator.gameManager.simulateInput(40, 'keydown', 0);
                     setTimeout(() => {
                         EJS_emulator.gameManager.simulateInput(40, 'keyup', 0);
-                        // Имитируем нажатие START (13)
                         setTimeout(() => {
                             EJS_emulator.gameManager.simulateInput(13, 'keydown', 0);
                             setTimeout(() => EJS_emulator.gameManager.simulateInput(13, 'keyup', 0), 100);
                         }, 500);
                     }, 100);
-                }, 4000); // Ожидание заставки Sega/Nintendo
+                }, 4000); 
             }
         }
 
-        // Мониторинг RAM (Очки/Кольца)
+        // Мониторинг RAM (Переменная score должна быть объявлена глобально)
         setInterval(() => {
             if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
                 const ram = EJS_emulator.gameManager.getWRam();
                 if (file.includes('sonic')) score = ram[0xFE20];
                 else if (file.includes('umk3')) score = ram[0xB110];
-                else score = 0;
-                document.getElementById('emu-score').innerText = score;
+                document.getElementById('emu-score').innerText = score || 0;
             }
         }, 1000);
     };
@@ -57,28 +53,21 @@ function startEmu(file, coreType, rid, isSolo) {
     // 5. Мост ввода (Network Input Relay)
     if (!isSolo) {
         const sendInput = (e, type) => {
-            socket.emit('emu-input', { 
-                rid: rid, 
-                key: e.keyCode, 
-                type: type, 
-                pNum: myPort 
-            });
+            socket.emit('emu-input', { rid: rid, key: e.keyCode, type: type, pNum: myPort });
         };
 
-        // Захват локальных нажатий
         window.onkeydown = (e) => sendInput(e, 'keydown');
         window.onkeyup = (e) => sendInput(e, 'keyup');
 
-        // Инъекция удаленных нажатий партнера
+        // ИСПРАВЛЕНИЕ: Удаляем старый слушатель перед новой игрой
+        socket.off('partner-input'); 
         socket.on('partner-input', (d) => {
             if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
-                // Жмем порт, который прислал партнер (0 или 1)
                 EJS_emulator.gameManager.simulateInput(d.key, d.type, d.pNum);
             }
         });
     }
 
-    // Запуск процесса инъекции эмулятора
     const s = document.createElement('script'); 
     s.src = window.location.origin + '/data/loader.js?v=' + Date.now(); 
     document.body.appendChild(s);
