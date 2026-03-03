@@ -1,13 +1,14 @@
 function startEmu(file, coreType, rid, isSolo) {
+    // Подготовка контейнера
     document.getElementById('app').style.display = 'none'; 
     document.getElementById('emulator-layer').style.display = 'block';
     document.getElementById('ejs-container').innerHTML = "";
 
-    // 1. Определение ролей
+    // 1. Определение ролей (Хост управляет Портом 0, Гость - Портом 1)
     const isHost = !isSolo && (user.telegramId == lobby.creatorId);
     const myPort = isHost ? 0 : 1; 
 
-    // 2. Глобальные настройки
+    // 2. Глобальные настройки ядра
     window.EJS_player = '#ejs-container'; 
     window.EJS_core = file.endsWith('.nes') ? 'nes' : 'segaMD'; 
     window.EJS_gameUrl = window.location.origin + '/' + file;
@@ -15,71 +16,69 @@ function startEmu(file, coreType, rid, isSolo) {
     window.EJS_startOnLoaded = true; 
     window.EJS_virtualGamepad = true;
 
-    // 3. Синхронизация при старте
+    // 3. Автоматизация старта и синхронизация
     window.EJS_onGameStart = () => {
-        console.log("System Status: Frame Zero Syncing...");
+        console.log("Macro: Establishing Zero-Cycle Sync...");
         
         if (EJS_emulator.gameManager) {
-            // Принудительный рестарт для выравнивания кадров
+            // Сброс обоих ядер в ноль
             EJS_emulator.gameManager.restart();
 
-            // 4. Автоматический вход в режим 2-Player (Macro Script)
+            // 4. Скрипт автоматического выбора "2 PLAYERS" в меню
             if (!isSolo) {
                 setTimeout(() => {
-                    console.log("Macro: Selecting 2-Player Mode...");
-                    
-                    // Эмулируем нажатие ВНИЗ (код 40) на джойстике Хоста у обоих
+                    console.log("Macro: Navigating to 2P mode...");
+                    // Имитируем нажатие ВНИЗ (40)
                     EJS_emulator.gameManager.simulateInput(40, 'keydown', 0);
                     setTimeout(() => {
                         EJS_emulator.gameManager.simulateInput(40, 'keyup', 0);
-                        
-                        // Эмулируем нажатие START (код 13) через полсекунды
+                        // Имитируем нажатие START (13)
                         setTimeout(() => {
                             EJS_emulator.gameManager.simulateInput(13, 'keydown', 0);
                             setTimeout(() => EJS_emulator.gameManager.simulateInput(13, 'keyup', 0), 100);
-                            console.log("Macro: Match Initiated.");
                         }, 500);
                     }, 100);
-
-                }, 4000); // 4 секунды на прогрузку заставки BIOS/Sega
+                }, 4000); // Ожидание заставки Sega/Nintendo
             }
         }
 
-        // Мониторинг очков
+        // Мониторинг RAM (Очки/Кольца)
         setInterval(() => {
-            if (typeof EJS_emulator !== 'undefined') {
+            if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
                 const ram = EJS_emulator.gameManager.getWRam();
-                score = file.includes('sonic') ? ram[0xFE20] : (file.includes('umk3') ? ram[0xB110] : 0);
+                if (file.includes('sonic')) score = ram[0xFE20];
+                else if (file.includes('umk3')) score = ram[0xB110];
+                else score = 0;
                 document.getElementById('emu-score').innerText = score;
             }
         }, 1000);
     };
 
-    // 5. Мост ввода (Network Bridge)
+    // 5. Мост ввода (Network Input Relay)
     if (!isSolo) {
-        // Отправка своего ввода
-        const handleLocalInput = (e, type) => {
+        const sendInput = (e, type) => {
             socket.emit('emu-input', { 
-                rid, 
+                rid: rid, 
                 key: e.keyCode, 
                 type: type, 
                 pNum: myPort 
             });
         };
 
-        window.onkeydown = (e) => handleLocalInput(e, 'keydown');
-        window.onkeyup = (e) => handleLocalInput(e, 'keyup');
+        // Захват локальных нажатий
+        window.onkeydown = (e) => sendInput(e, 'keydown');
+        window.onkeyup = (e) => sendInput(e, 'keyup');
 
-        // Инъекция ввода партнера
+        // Инъекция удаленных нажатий партнера
         socket.on('partner-input', (d) => {
             if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
-                // Прямая инъекция в порт партнера
+                // Жмем порт, который прислал партнер (0 или 1)
                 EJS_emulator.gameManager.simulateInput(d.key, d.type, d.pNum);
             }
         });
     }
 
-    // Загрузка лоадера
+    // Запуск процесса инъекции эмулятора
     const s = document.createElement('script'); 
     s.src = window.location.origin + '/data/loader.js?v=' + Date.now(); 
     document.body.appendChild(s);
