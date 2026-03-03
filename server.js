@@ -16,26 +16,29 @@ const CONFIG = {
     PORT: process.env.PORT || 3000
 };
 
-mongoose.connect(CONFIG.MONGO_URI).then(() => console.log('✅ DB Connected'));
+mongoose.connect(CONFIG.MONGO_URI);
 
-// СХЕМЫ
-const User = mongoose.model('User', new mongoose.Schema({
-    telegramId: { type: Number, unique: true }, username: String, balance: { type: Number, default: 1000 }
-}));
-
+const User = mongoose.model('User', new mongoose.Schema({ telegramId: Number, username: String, balance: { type: Number, default: 1000 } }));
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
-    lobbyId: String, lobbyName: String, creatorId: Number, player2Id: Number,
-    name1: String, name2: String, game: String, bet: Number, status: { type: String, default: 'waiting' },
-    isPrivate: Boolean, r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false }
+    lobbyId: String, creatorId: Number, player2Id: Number, name1: String, name2: String,
+    game: String, bet: Number, status: String, isPrivate: Boolean,
+    r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false }
 }, { timestamps: true }));
 
-// SOCKETS: МУЛЬТИПЛЕЕР
 io.on('connection', (socket) => {
     socket.on('join-room', (rid) => socket.join(rid));
 
+    // NETPLAY BRIDGE: Передача кнопок
+    socket.on('emu-input', (d) => {
+        // Лог релея для отладки
+        console.log(`[Input Relay] Room: ${d.rid} | Player: P${d.pNum} | Key: ${d.key} | Type: ${d.type}`);
+        // Отправляем всем в комнате, кроме отправителя
+        socket.to(d.rid).emit('partner-input', { key: d.key, type: d.type, pNum: d.pNum });
+    });
+
     socket.on('player-ready', async (d) => {
         const l = await Lobby.findOne({ lobbyId: d.rid });
-        if(!l || l.status !== 'waiting') return;
+        if(!l) return;
         if (l.creatorId == d.uid) l.r1 = true; else l.player2Id == d.uid ? l.r2 = true : null;
         await l.save();
         io.to(d.rid).emit('lobby-update', l);
@@ -45,10 +48,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('emu-input', (d) => socket.to(d.rid).emit('partner-input', d));
+    socket.on('match-end', async (d) => {
+        const l = await Lobby.findOne({ lobbyId: d.rid });
+        if(l) { l.status = 'finished'; await l.save(); io.to(d.rid).emit('results', { winId: d.uid }); }
+    });
 });
 
-// API
 app.post('/api/user-data', async (req, res) => {
     try {
         const params = new URLSearchParams(req.body.initData);
@@ -60,26 +65,21 @@ app.post('/api/user-data', async (req, res) => {
 
 app.post('/api/lobby/create', async (req, res) => {
     try {
-        const { uid, name, lname, game, bet, priv } = req.body;
+        const { uid, name, game } = req.body;
         await Lobby.deleteMany({ creatorId: uid, status: 'waiting' });
-        const lobbyId = 'L' + Date.now();
-        const lobby = new Lobby({ lobbyId, lobbyName: lname, creatorId: uid, name1: name, game, bet, isPrivate: priv });
+        const lobbyId = 'R' + Math.floor(1000 + Math.random()*9000);
+        const lobby = new Lobby({ lobbyId, creatorId: uid, name1: name, game, status: 'waiting' });
         await lobby.save();
         res.json({ success: true, lobby });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-app.get('/api/lobby/list', async (req, res) => {
-    res.json(await Lobby.find({ status: 'waiting', isPrivate: false, player2Id: null }));
-});
-
 app.post('/api/lobby/join', async (req, res) => {
-    try {
-        const { uid, name, lid } = req.body;
-        const l = await Lobby.findOneAndUpdate({ lobbyId: lid, status: 'waiting', player2Id: null }, { player2Id: uid, name2: name }, { new: true });
-        if (l) { io.to(lid).emit('lobby-update', l); res.json({ success: true, lobby: l }); }
-        else res.json({ success: false });
-    } catch (e) { res.json({ success: false }); }
+    const l = await Lobby.findOneAndUpdate({ lobbyId: req.body.lid, status: 'waiting', player2Id: null }, { player2Id: req.body.uid, name2: req.body.name }, { new: true });
+    if(l) { io.to(l.lobbyId).emit('lobby-update', l); res.json({ success: true, lobby: l }); }
+    else res.json({ success: false });
 });
 
-httpServer.listen(CONFIG.PORT, () => console.log('🚀 Battle Arena Root Active'));
+app.get('/api/lobby/list', async (req, res) => res.json(await Lobby.find({ status: 'waiting', player2Id: null })));
+
+httpServer.listen(CONFIG.PORT, () => console.log('🚀 NETPLAY SERVER READY'));
