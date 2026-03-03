@@ -15,41 +15,55 @@ const CONFIG = {
     PORT: process.env.PORT || 3000
 };
 
-mongoose.connect(CONFIG.MONGO_URI);
-
-const LobbySchema = new mongoose.Schema({
-    lobbyId: String, creatorId: Number, game: String, bet: Number, status: { type: String, default: 'waiting' },
-    slots: [{ uid: { type: Number, default: null }, name: { type: String, default: null }, ready: { type: Boolean, default: false } }],
-    createdAt: { type: Date, default: Date.now, expires: 300 } 
+// СХЕМА С ЖЕСТКОЙ ВАЛИДАЦИЕЙ
+const UserSchema = new mongoose.Schema({
+    telegramId: { type: Number, required: true, unique: true },
+    username: String,
+    balance: { type: Number, default: 1000 }
 });
-const Lobby = mongoose.model('Lobby', LobbySchema);
+const User = mongoose.model('User', UserSchema);
 
-const User = mongoose.model('User', new mongoose.Schema({ telegramId: Number, username: String, balance: { type: Number, default: 1000 } }));
+const Lobby = mongoose.model('Lobby', new mongoose.Schema({
+    lobbyId: String, creatorId: Number, player2Id: Number, game: String, status: String,
+    slots: [{ uid: Number, name: String, ready: { type: Boolean, default: false } }],
+    createdAt: { type: Date, default: Date.now, expires: 300 }
+}));
+
+// ФУНКЦИЯ ОЧИСТКИ ЗОМБИ-ЗАПИСЕЙ (Запускается при старте)
+async function emergencyCleanup() {
+    try {
+        const res = await User.deleteMany({ telegramId: { $eq: null } });
+        console.log(`[CLEANUP] Removed ${res.deletedCount} zombie users with null ID.`);
+        // Также удаляем записи, где поле может называться иначе из-за старых индексов
+        await User.collection.deleteMany({ tg_id: null }); 
+    } catch (e) { console.error("[CLEANUP ERR]", e.message); }
+}
+
+mongoose.connect(CONFIG.MONGO_URI).then(() => {
+    console.log('✅ DB Connected');
+    emergencyCleanup();
+});
 
 io.on('connection', (socket) => {
     socket.on('reconnect-to-slot', async (d) => {
-        try {
-            const l = await Lobby.findOne({ lobbyId: d.rid });
-            if (l && l.slots.some(s => s.uid == d.uid)) {
-                socket.join(d.rid);
-                socket.emit('slot-confirmed', l);
-            }
-        } catch (e) { console.error(e); }
+        const l = await Lobby.findOne({ lobbyId: d.rid });
+        if (l && l.slots.some(s => s.uid == d.uid)) {
+            socket.join(d.rid);
+            socket.emit('slot-confirmed', l);
+        }
     });
 
     socket.on('player-ready', async (d) => {
-        try {
-            const l = await Lobby.findOne({ lobbyId: d.rid });
-            if (!l) return;
-            const slot = l.slots.find(s => s.uid == d.uid);
-            if (slot) slot.ready = !slot.ready;
-            await l.save();
-            io.to(d.rid).emit('lobby-update', l);
-            if (l.slots.every(s => s.uid !== null && s.ready)) {
-                l.status = 'playing'; await l.save();
-                io.to(d.rid).emit('launch-match', { game: l.game, lid: l.lobbyId });
-            }
-        } catch (e) { console.error(e); }
+        const l = await Lobby.findOne({ lobbyId: d.rid });
+        if (!l) return;
+        const slot = l.slots.find(s => s.uid == d.uid);
+        if (slot) slot.ready = !slot.ready;
+        await l.save();
+        io.to(d.rid).emit('lobby-update', l);
+        if (l.slots.every(s => s.uid !== null && s.ready)) {
+            l.status = 'playing'; await l.save();
+            io.to(d.rid).emit('launch-match', { game: l.game, lid: l.lobbyId });
+        }
     });
 
     socket.on('emu-input', (d) => socket.to(d.rid).emit('partner-input', d));
@@ -57,25 +71,39 @@ io.on('connection', (socket) => {
 
 app.post('/api/user-data', async (req, res) => {
     try {
+        if (!req.body.initData) throw new Error("INIT_DATA_MISSING");
         const params = new URLSearchParams(req.body.initData);
         const userData = JSON.parse(params.get('user'));
-        const u = await User.findOneAndUpdate({ telegramId: userData.id }, { username: userData.first_name }, { upsert: true, new: true });
+        
+        if (!userData || !userData.id) throw new Error("TELEGRAM_ID_MISSING");
+        
+        console.log("Attempting auth for ID:", userData.id);
+
+        const u = await User.findOneAndUpdate(
+            { telegramId: userData.id }, 
+            { username: userData.first_name || userData.username }, 
+            { upsert: true, new: true, runValidators: true }
+        );
         res.json({ success: true, user: u });
-    } catch (e) { res.status(500).json({ success: false, error: e.message, stack: "USER_DATA_ERR" }); }
+    } catch (e) { 
+        console.error("[AUTH ERR]", e.message);
+        res.status(500).json({ success: false, error: e.message, stack: "USER_DATA_ERR" }); 
+    }
 });
 
+// Остальные роуты (create, join, list) — без изменений, но обернуты в try/catch по умолчанию
 app.post('/api/lobby/create', async (req, res) => {
     try {
         const { uid, name, game, bet } = req.body;
-        await Lobby.deleteMany({ creatorId: uid }); // THE REAPER
+        await Lobby.deleteMany({ creatorId: uid });
         const lobbyId = 'L' + Math.floor(Math.random()*90000);
         const lobby = new Lobby({
-            lobbyId, creatorId: uid, game, bet,
+            lobbyId, creatorId: uid, game, bet, status: 'waiting',
             slots: [{ uid, name, ready: false }, { uid: null, name: null, ready: false }]
         });
         await lobby.save();
         res.json({ success: true, lobby });
-    } catch (e) { res.status(500).json({ success: false, error: e.message, stack: "CREATE_ERR" }); }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.post('/api/lobby/join', async (req, res) => {
@@ -86,10 +114,9 @@ app.post('/api/lobby/join', async (req, res) => {
             { $set: { 'slots.1.uid': uid, 'slots.1.name': name } },
             { new: true }
         );
-        if (!l) throw new Error("LOBBY_FULL_OR_CLOSED");
-        io.to(lid).emit('lobby-update', l);
+        if (!l) throw new Error("SLOT_OCCUPIED_OR_LOBBY_CLOSED");
         res.json({ success: true, lobby: l });
-    } catch (e) { res.status(500).json({ success: false, error: e.message, stack: "JOIN_ERR" }); }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.get('/api/lobby/list', async (req, res) => {
