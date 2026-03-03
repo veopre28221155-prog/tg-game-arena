@@ -1,25 +1,148 @@
-function startEmu(file, dummy, rid, isSolo) {
-        let core = 'segaMD';
-        if(file.endsWith('.nes')) core = 'nes';
-        if(file.endsWith('.sfc')) core = 'snes';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Retro Arena Live</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon: #00f0ff; --gold: #ffd700; --pink: #ff0055; }
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 8px; overflow: hidden; height: 100vh; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .screen.active { display: flex; }
+        .btn { background: #111; color: var(--neon); border: 3px solid #000; padding: 12px; width: 270px; margin-bottom: 10px; cursor: pointer; font-family: inherit; text-transform: uppercase; }
+        .btn-gold { color: var(--gold); border-color: var(--gold); }
+        .card { background: #111; border: 2px dashed #444; padding: 10px; width: 270px; margin-bottom: 15px; text-align: center; }
+        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
+        #ejs-container { width: 100%; height: 100%; }
+        .scroll-list { width: 100%; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+    </style>
+</head>
+<body>
 
-        document.getElementById('app').style.display = 'none'; 
-        document.getElementById('emulator-layer').style.display = 'block';
+<div id="emulator-layer">
+    <div style="position:absolute; top:10px; left:10px; color:gold; z-index:100;">SCORE: <span id="emu-score">0</span></div>
+    <button onclick="location.reload()" style="position:absolute; top:10px; right:10px; background:red; color:#fff; border:none; padding:10px; z-index:100; font-family:inherit;">EXIT</button>
+    <div id="ejs-container"></div>
+</div>
+
+<div id="app">
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="s-main" class="screen active">
+        <h1 style="color:var(--neon); font-size:12px;">RETRO ARENA</h1>
+        <div class="card">BALANCE: <span id="p-bal">0</span> 🪙</div>
+        <button class="btn" onclick="nav('s-solo')">🕹️ ОДИНОЧНАЯ ИГРА</button>
+        <button class="btn btn-gold" onclick="nav('s-create')">🤝 СОЗДАТЬ ЛОББИ</button>
+        <button class="btn" onclick="listRooms()">📋 НАЙТИ ИГРУ</button>
+        <button class="btn" style="color:var(--pink)" onclick="tg.showAlert('USER ID: ' + user.telegramId)">👤 ПРОФИЛЬ</button>
+    </div>
+
+    <!-- ОДИНОЧНАЯ ИГРА -->
+    <div id="s-solo" class="screen">
+        <h2>LIBRARY</h2>
+        <div class="scroll-list" id="solo-render"></div>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
+    </div>
+
+    <!-- СОЗДАНИЕ ЛОББИ -->
+    <div id="s-create" class="screen">
+        <h2>NEW ROOM</h2>
+        <input type="text" id="l-name" class="btn" placeholder="ROOM NAME" style="color:#fff">
+        <select id="g-sel" class="btn">
+            <option value="umk3.md">MK3</option>
+            <option value="battletoads.md">BATTLETOADS</option>
+            <option value="tanks.nes">TANKS</option>
+            <option value="sonic2.md">SONIC 2</option>
+            <option value="tmnt.md">TMNT</option>
+            <option value="sunset.md">SUNSET RIDERS</option>
+        </select>
+        <button class="btn btn-gold" onclick="createLobby()">CREATE</button>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
+    </div>
+
+    <!-- ЛОББИ ОЖИДАНИЯ -->
+    <div id="s-room" class="screen">
+        <h2 id="r-game">GAME</h2>
+        <div class="card" id="slot-render"></div>
+        <button class="btn btn-gold" id="btn-ready" onclick="setReady()">READY</button>
+        <button class="btn" onclick="shareInv()">INVITE FRIEND</button>
+        <button class="btn" onclick="location.reload()">EXIT</button>
+    </div>
+
+    <!-- СПИСОК ОТКРЫТЫХ ИГР -->
+    <div id="s-list" class="screen">
+        <h2>OPEN ROOMS</h2>
+        <div id="l-render" class="scroll-list"></div>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp; const socket = io();
+    let user, lobby, score = 0;
+    const GAMES = ['umk3.md', 'battletoads.md', 'comix.md', 'sonic2.md', 'tanks.nes', 'tmnt.md', 'sunset.md', 'roadrash.md', 'simpsons.md', 'lionking.md', 'jurassic.md'];
+
+    async function init() {
+        tg.expand();
+        const r = await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) });
+        const res = await r.json();
+        user = res.user;
+        document.getElementById('p-bal').innerText = user.balance;
+
+        // Рендер одиночных игр
+        document.getElementById('solo-render').innerHTML = GAMES.map(g => `<button class="btn" style="font-size:6px" onclick="startEmu('${g}', '', '', true)">${g.replace('.md','').replace('.nes','')}</button>`).join('');
+        
+        const sp = tg.initDataUnsafe.start_param;
+        if(sp && sp.startsWith('lobby_')) joinLobby(sp.replace('lobby_',''));
+    }
+    init();
+
+    function nav(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+    async function createLobby() {
+        const d = { uid: user.telegramId, name: user.username, lname: document.getElementById('l-name').value || "BATTLE", game: document.getElementById('g-sel').value, bet: 0, priv: false };
+        const res = await (await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d) })).json();
+        if(res.success) { lobby = res.lobby; socket.emit('join-room', lobby.lobbyId); nav('s-room'); renderSlots(lobby); }
+    }
+
+    async function listRooms() {
+        nav('s-list');
+        const r = await fetch('/api/lobby/list'); const list = await r.json();
+        document.getElementById('l-render').innerHTML = list.map(l => `<div class="card">${l.lobbyName} [${l.game}]<br><button class="btn" style="width:70px; padding:5px" onclick="joinLobby('${l.lobbyId}')">JOIN</button></div>`).join('') || "EMPTY";
+    }
+
+    async function joinLobby(lid) {
+        const r = await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({uid: user.telegramId, name: user.username, lid}) });
+        const res = await r.json();
+        if(res.success) { lobby = res.lobby; socket.emit('join-room', lid); nav('s-room'); renderSlots(lobby); }
+    }
+
+    function setReady() { socket.emit('player-ready', { rid: lobby.lobbyId, uid: user.telegramId }); document.getElementById('btn-ready').innerText="WAITING..."; }
+    
+    function renderSlots(l) {
+        lobby = l;
+        document.getElementById('slot-render').innerHTML = `P1: ${l.name1} ${l.r1?'✅':'⏳'}<br>P2: ${l.name2||'WAIT'} ${l.r2?'✅':'⏳'}`;
+        document.getElementById('r-game').innerText = l.game;
+    }
+
+    socket.on('lobby-update', renderSlots);
+    socket.on('start-match', (d) => startEmu(d.game, '', d.lid, false));
+
+    function startEmu(file, dummy, rid, isSolo) {
+        document.getElementById('app').style.display='none'; 
+        document.getElementById('emulator-layer').style.display='block';
         document.getElementById('ejs-container').innerHTML = "";
 
-        // Глобальные настройки эмулятора
-        window.EJS_player = '#ejs-container'; 
-        window.EJS_core = core; 
+        let core = file.endsWith('.nes') ? 'nes' : 'segaMD';
+        window.EJS_player = '#ejs-container'; window.EJS_core = core; 
         window.EJS_gameUrl = window.location.origin + '/' + file;
         window.EJS_pathtodata = window.location.origin + '/data/'; 
-        window.EJS_startOnLoaded = true; 
-        window.EJS_virtualGamepad = true;
+        window.EJS_startOnLoaded = true; window.EJS_virtualGamepad = true;
 
         window.EJS_onGameStart = () => {
-            console.log("SYNC START");
-            // Принудительный перезапуск для синхронизации кадров
-            if(EJS_emulator.gameManager) EJS_emulator.gameManager.restart();
-            
+            if(EJS_emulator.gameManager) EJS_emulator.gameManager.restart(); // Синхронный старт
             setInterval(() => {
                 if (typeof EJS_emulator !== 'undefined') {
                     const ram = EJS_emulator.gameManager.getWRam();
@@ -30,37 +153,22 @@ function startEmu(file, dummy, rid, isSolo) {
         };
 
         if(!isSolo) {
-            // ОПРЕДЕЛЕНИЕ РОЛИ
             const isHost = user.telegramId == lobby.creatorId;
             const myPort = isHost ? 0 : 1;
-            const partnerPort = isHost ? 1 : 0;
-
-            console.log(`Role: ${isHost ? 'HOST' : 'GUEST'} | My Port: ${myPort}`);
-
-            // ОТПРАВКА СВОИХ КНОПОК
-            const sendInput = (e, type) => {
-                socket.emit('emu-input', { 
-                    rid, 
-                    key: e.keyCode, 
-                    type: type, 
-                    pNum: myPort // Передаем, какой порт мы нажали реально
-                });
-            };
-
+            const sendInput = (e, type) => { socket.emit('emu-input', { rid, key: e.keyCode, type: type, pNum: myPort }); };
             window.onkeydown = (e) => sendInput(e, 'keydown');
             window.onkeyup = (e) => sendInput(e, 'keyup');
 
-            // ПРИЕМ КНОПОК ПАРТНЕРА
             socket.on('partner-input', (d) => { 
                 if(typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
-                    // d.pNum - это порт, который нажал друг. 
-                    // Мы эмулируем его именно в тот же порт у себя.
                     EJS_emulator.gameManager.simulateInput(d.key, d.type, d.pNum); 
                 }
             });
         }
-
-        const s = document.createElement('script'); 
-        s.src = window.location.origin + '/data/loader.js?v=' + Date.now(); 
-        document.body.appendChild(s);
+        const s = document.createElement('script'); s.src = window.location.origin + '/data/loader.js?v=' + Date.now(); document.body.appendChild(s);
     }
+
+    function shareInv() { tg.openTelegramLink(`https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`); }
+</script>
+</body>
+</html>
