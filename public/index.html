@@ -1,31 +1,108 @@
-async function init() {
-        // Проверка: мы вообще в Telegram?
-        if(!tg.initData || tg.initData === "") {
-            document.getElementById('status-bar').innerText = "ERROR: NOT IN TELEGRAM";
-            return tg.showAlert("CRITICAL: Open this app inside Telegram Mobile!");
-        }
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Retro Arena Sync</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon: #00f0ff; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 8px; overflow: hidden; }
+        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .screen.active { display: flex; }
+        .btn { background: #111; color: var(--neon); border: 3px solid #333; padding: 15px; width: 260px; margin-bottom: 10px; cursor: pointer; font-family: inherit; }
+        .card { border: 1px dashed #444; padding: 10px; width: 260px; margin-bottom: 15px; text-align: center; }
+        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
+        #ejs-container { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+<div id="emulator-layer"><div id="ejs-container"></div></div>
+<div id="app">
+    <div id="s-main" class="screen active">
+        <h1 style="color:var(--neon)">ARENA LIVE</h1>
+        <div id="status-bar" class="card">AUTH...</div>
+        <button class="btn" onclick="nav('s-create')">CREATE GAME</button>
+        <button class="btn" onclick="listRooms()">JOIN GAME</button>
+    </div>
+    <div id="s-create" class="screen">
+        <select id="g-sel" class="btn"><option value="umk3.md">MK3</option><option value="sonic.bin">SONIC</option><option value="tanks.nes">TANKS</option></select>
+        <button class="btn" onclick="doCreate()">CREATE</button>
+        <button class="btn" onclick="nav('s-main')">BACK</button>
+    </div>
+    <div id="s-room" class="screen">
+        <div id="slot-render" class="card"></div>
+        <button class="btn" id="ready-btn" onclick="ready()">READY</button>
+        <button class="btn" onclick="shareInv()">INVITE</button>
+        <button class="btn" onclick="location.reload()">EXIT</button>
+    </div>
+    <div id="s-list" class="screen"><div id="l-render"></div><button class="btn" onclick="nav('s-main')">BACK</button></div>
+</div>
 
+<script>
+    const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+    const socket = io({ transports: ['polling', 'websocket'] });
+    let user, lobby, score = 0;
+
+    function nav(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+    async function init() {
+        if(!tg.initData) return tg.showAlert("USE MOBILE TG");
         try {
-            const res = await fetch('/api/user-data', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({initData: tg.initData}) 
-            });
-            const r = await res.json();
-            
-            if(!r.success) {
-                // Если сервер вернул ошибку дубликата или null
-                return tg.showAlert(`DB_SYNC_ERROR: ${r.error}\nTry restarting the bot.`);
-            }
-            
-            user = r.user;
-            document.getElementById('status-bar').innerText = `READY: ${user.username}`;
-            
-            // Если есть лобби в сессии или ссылке - заходим
+            const r = await (await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) })).json();
+            if(!r.success) throw new Error(r.error);
+            user = r.user; document.getElementById('status-bar').innerText = `READY: ${user.username}`;
             const sp = tg.initDataUnsafe.start_param;
             if (sp && sp.startsWith('lobby_')) doJoin(sp.replace('lobby_',''));
-            
-        } catch(e) {
-            tg.showAlert("CONNECTION_ERROR: Check your internet or VPN.");
-        }
+        } catch(e) { tg.showAlert("INIT_ERR: " + e.message); }
     }
+    init();
+
+    async function doCreate() {
+        const res = await (await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({uid:user.telegramId, name:user.username, game:document.getElementById('g-sel').value}) })).json();
+        if(res.success) { lobby = res.lobby; socket.emit('sync-me', lobby.lobbyId); nav('s-room'); renderSlots(lobby); }
+    }
+
+    async function doJoin(lid) {
+        const res = await (await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({uid:user.telegramId, name:user.username, lid}) })).json();
+        if(res.success) { lobby = res.lobby; socket.emit('sync-me', lid); nav('s-room'); renderSlots(lobby); }
+        else tg.showAlert("CANNOT JOIN");
+    }
+
+    async function listRooms() {
+        nav('s-list');
+        const r = await (await fetch('/api/lobby/list')).json();
+        document.getElementById('l-render').innerHTML = r.list.map(l => `<div class="card">${l.game} <button class="btn" style="width:70px;padding:5px" onclick="doJoin('${l.lobbyId}')">JOIN</button></div>`).join('') || "EMPTY";
+    }
+
+    function ready() { if(lobby) socket.emit('player-ready', { rid: lobby.lobbyId, uid: user.telegramId }); }
+
+    function renderSlots(l) {
+        lobby = l;
+        document.getElementById('slot-render').innerHTML = l.slots.map(s => `<div>${s.name || 'EMPTY'} : ${s.ready?'✅':'⏳'}</div>`).join('');
+    }
+
+    socket.on('lobby-update', renderSlots);
+    socket.on('launch-match', (d) => startEmu(d.game, d.game.endsWith('.nes')?'nes':'segaMD', d.lid));
+
+    function startEmu(file, core, rid) {
+        document.getElementById('app').style.display='none'; 
+        document.getElementById('emulator-layer').style.display='block';
+        document.getElementById('ejs-container').innerHTML = "";
+        window.EJS_player = '#ejs-container'; window.EJS_core = core; 
+        window.EJS_gameUrl = window.location.origin+'/'+file;
+        window.EJS_pathtodata = window.location.origin+'/data/'; 
+        window.EJS_startOnLoaded = true; window.EJS_virtualGamepad = true;
+        
+        const pNum = lobby.slots.findIndex(s => s.uid == user.telegramId);
+        window.onkeydown = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', p: pNum });
+        socket.on('partner-input', (d) => { if(typeof EJS_emulator !== 'undefined') EJS_emulator.gameManager.simulateInput(d.key, d.type, d.p == 0 ? 1 : 0); });
+        const s = document.createElement('script'); s.src = window.location.origin+'/data/loader.js?v='+Date.now(); document.body.appendChild(s);
+    }
+
+    function shareInv() { tg.openTelegramLink(`https://t.me/RetroBattleArena_bot/app?startapp=lobby_${lobby.lobbyId}`); }
+</script>
+</body>
+</html>
