@@ -7,7 +7,8 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, { 
     cors: { origin: "*" },
-    maxHttpBufferSize: 1e7, // 10MB для Snapshot
+    maxHttpBufferSize: 2e7, // 20MB
+    perMessageDeflate: true, // Включение нативного сжатия сокетов
     transports: ['polling', 'websocket']
 });
 
@@ -16,42 +17,37 @@ app.use(express.static('public'));
 
 const CONFIG = {
     MONGO_URI: "mongodb+srv://admin:Cdjkjxns2011123@cluster0.3ena1xi.mongodb.net/retro_arena?retryWrites=true&w=majority",
-    ADMIN_ID: 1463465416, 
     PORT: process.env.PORT || 3000
 };
 
-mongoose.connect(CONFIG.MONGO_URI).then(() => console.log('✅ DB Connected'));
+mongoose.connect(CONFIG.MONGO_URI);
 
-// МОДЕЛИ (Глобальные)
-const User = mongoose.model('User', new mongoose.Schema({
-    telegramId: { type: Number, unique: true }, username: String, balance: { type: Number, default: 1000 }
-}));
-
+const User = mongoose.model('User', new mongoose.Schema({ telegramId: Number, username: String, balance: { type: Number, default: 1000 } }));
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
-    lobbyId: String, game: String, creatorId: Number, player2Id: Number,
-    name1: String, name2: String, bet: Number, status: String,
-    r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false }
+    lobbyId: String, creatorId: Number, player2Id: Number, game: String, status: String,
+    name1: String, name2: String, r1: Boolean, r2: Boolean
 }));
 
-const loadedPool = {}; // Трекер барьера загрузки
+const loadedClients = {};
 
 io.on('connection', (socket) => {
     socket.on('sync-me', (rid) => socket.join(rid));
 
-    // ПРОТОКОЛ СИНХРОННОГО БАРЬЕРА
     socket.on('client-loaded', (d) => {
-        if (!loadedPool[d.rid]) loadedPool[d.rid] = new Set();
-        loadedPool[d.rid].add(socket.id);
-        console.log(`[Barrier] ${loadedPool[d.rid].size}/2 ready in ${d.rid}`);
-
-        if (loadedPool[d.rid].size >= 2) {
+        if (!loadedClients[d.rid]) loadedClients[d.rid] = new Set();
+        loadedClients[d.rid].add(socket.id);
+        if (loadedClients[d.rid].size >= 2) {
             io.to(d.rid).emit('ignite-engine');
-            delete loadedPool[d.rid];
+            delete loadedClients[d.rid];
         }
     });
 
     socket.on('emu-input', (d) => socket.to(d.rid).emit('partner-input', d));
-    socket.on('sync-state', (d) => socket.to(d.rid).emit('apply-state', d.state));
+    
+    // БИНАРНЫЙ РЕЛЕЙ (SNAPSHOT)
+    socket.on('sync-state', (d) => {
+        socket.to(d.rid).emit('apply-state', d.state);
+    });
 
     socket.on('player-ready', async (d) => {
         const l = await Lobby.findOne({ lobbyId: d.rid });
@@ -66,7 +62,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// API ЭНДПОИНТЫ
+// API (user-data, lobby/create, join, list)
 app.post('/api/user-data', async (req, res) => {
     try {
         const params = new URLSearchParams(req.body.initData);
@@ -77,10 +73,10 @@ app.post('/api/user-data', async (req, res) => {
 });
 
 app.post('/api/lobby/create', async (req, res) => {
-    const { uid, name, game, bet } = req.body;
-    await Lobby.deleteMany({ creatorId: uid, status: 'waiting' });
-    const lobbyId = 'L' + Math.floor(Math.random()*90000);
-    const lobby = new Lobby({ lobbyId, creatorId: uid, name1: name, game, bet: bet||0, status: 'waiting' });
+    const { uid, name, game } = req.body;
+    await Lobby.deleteMany({ creatorId: uid });
+    const lobbyId = 'R' + Math.floor(1000 + Math.random()*9000);
+    const lobby = new Lobby({ lobbyId, creatorId: uid, name1: name, game, status: 'waiting', r1: false, r2: false });
     await lobby.save();
     res.json({ success: true, lobby });
 });
@@ -90,8 +86,6 @@ app.post('/api/lobby/join', async (req, res) => {
     res.json({ success: !!l, lobby: l });
 });
 
-app.get('/api/lobby/list', async (req, res) => {
-    res.json(await Lobby.find({ status: 'waiting', player2Id: null }));
-});
+app.get('/api/lobby/list', async (req, res) => res.json({ list: await Lobby.find({ status: 'waiting', player2Id: null }) }));
 
-httpServer.listen(CONFIG.PORT, () => console.log('🚀 Sync-Barrier Server Active'));
+httpServer.listen(CONFIG.PORT);
