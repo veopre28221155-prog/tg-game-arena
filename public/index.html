@@ -1,110 +1,114 @@
-// Глобальные идентификаторы интервалов
-let scoreInterval = null; 
-let syncInterval = null; 
+<script>
+    const tg = window.Telegram.WebApp; 
+    const socket = io({ transports: ['polling', 'websocket'] });
+    let user, lobby;
+    let score = 0;
+    let scoreInterval = null;
+    let syncInterval = null;
 
-function startEmu(file, core, rid, isSolo) {
-    // 0. Глубокая очистка перед запуском
-    if (window.EJS_emulator) { try { window.EJS_emulator.stop(); } catch(e) {} }
-    if (scoreInterval) clearInterval(scoreInterval);
-    if (syncInterval) clearInterval(syncInterval);
-    
-    // Очистка слушателей сокета для предотвращения утечек
-    socket.off('ignite-engine');
-    socket.off('apply-state');
-    socket.off('partner-input');
+    // ... (функции init, nav, createLobby, joinLobby, listRooms остаются прежними)
 
-    document.getElementById('app').style.display = 'none'; 
-    document.getElementById('emulator-layer').style.display = 'block';
-    document.getElementById('ejs-container').innerHTML = "";
+    function startEmu(file, core, rid, isSolo) {
+        // 0. Глубокая очистка перед запуском
+        if (window.EJS_emulator) { try { window.EJS_emulator.stop(); } catch(e) {} }
+        if (scoreInterval) clearInterval(scoreInterval);
+        if (syncInterval) clearInterval(syncInterval);
+        
+        // Очистка слушателей сокета для предотвращения утечек
+        socket.off('ignite-engine');
+        socket.off('apply-state');
+        socket.off('partner-input');
 
-    // Настройки EmulatorJS
-    window.EJS_player = '#ejs-container'; 
-    window.EJS_core = core; 
-    window.EJS_gameUrl = window.location.origin + '/' + file;
-    window.EJS_pathtodata = window.location.origin + '/data/'; 
-    window.EJS_startOnLoaded = true; 
-    window.EJS_virtualGamepad = true;
+        document.getElementById('app').style.display = 'none'; 
+        document.getElementById('emulator-layer').style.display = 'block';
+        document.getElementById('ejs-container').innerHTML = "";
 
-    window.EJS_onGameStart = () => {
-        const gm = EJS_emulator.gameManager;
-        if (!gm) return;
+        // Настройки EmulatorJS
+        window.EJS_player = '#ejs-container'; 
+        window.EJS_core = core; 
+        window.EJS_gameUrl = window.location.origin + '/' + file;
+        window.EJS_pathtodata = window.location.origin + '/data/'; 
+        window.EJS_startOnLoaded = true; 
+        window.EJS_virtualGamepad = true;
 
-        if (isSolo) {
-            gm.restart();
-        } else {
-            // 1. БАРЬЕР: НЕМЕДЛЕННАЯ ПАУЗА ДЛЯ СИНХРОНИЗАЦИИ
-            gm.pause();
-            document.getElementById('sync-indicator').innerText = "[WAITING FOR PARTNER...]";
-            socket.emit('client-loaded', { rid });
+        window.EJS_onGameStart = () => {
+            const gm = EJS_emulator.gameManager;
+            if (!gm) return;
 
-            // 2. СИГНАЛ ЗАЖИГАНИЯ ОТ СЕРВЕРА (Когда оба готовы)
-            socket.on('ignite-engine', () => {
-                console.log("IGNITION: Synchronous session started");
-                document.getElementById('sync-indicator').innerText = "[ENGINE IGNITED]";
-                
-                gm.restart(); // Сброс циклов CPU в 0
+            if (isSolo) {
+                gm.restart();
+            } else {
+                // 1. БАРЬЕР: НЕМЕДЛЕННАЯ ПАУЗА ДЛЯ СИНХРОНИЗАЦИИ
+                gm.pause();
+                document.getElementById('sync-indicator').innerText = "[WAITING FOR PARTNER...]";
+                socket.emit('client-loaded', { rid });
 
-                // 3. АВТО-МЕНЮ МАКРОС (Выполняется синхронно на Порту 0)
-                setTimeout(() => {
-                    console.log("Executing Menu Macro...");
-                    gm.simulateInput(40, 'keydown', 0); // Вниз
+                // 2. СИГНАЛ ЗАЖИГАНИЯ ОТ СЕРВЕРА (Когда оба готовы)
+                socket.on('ignite-engine', () => {
+                    console.log("IGNITION: Synchronous session started");
+                    document.getElementById('sync-indicator').innerText = "[ENGINE IGNITED]";
+                    
+                    gm.restart(); // Сброс циклов CPU в 0
+
+                    // 3. АВТО-МЕНЮ МАКРОС (Синхронно на Порту 0)
                     setTimeout(() => {
-                        gm.simulateInput(40, 'keyup', 0);
+                        console.log("Executing Menu Macro...");
+                        gm.simulateInput(40, 'keydown', 0); // Вниз
                         setTimeout(() => {
-                            gm.simulateInput(13, 'keydown', 0); // Старт
-                            setTimeout(() => gm.simulateInput(13, 'keyup', 0), 100);
-                        }, 500);
-                    }, 100);
-                }, 3000);
+                            gm.simulateInput(40, 'keyup', 0);
+                            setTimeout(() => {
+                                gm.simulateInput(13, 'keydown', 0); // Старт
+                                setTimeout(() => gm.simulateInput(13, 'keyup', 0), 100);
+                            }, 500);
+                        }, 100);
+                    }, 3000);
 
-                // 4. ВКЛЮЧЕНИЕ SNAPSHOT SYNC (Только для Хоста)
-                const isHost = (user.telegramId == lobby.creatorId);
-                if (isHost) {
-                    setTimeout(() => {
-                        syncInterval = setInterval(async () => {
-                            if (gm) {
-                                const state = await gm.getState();
-                                socket.emit('sync-state', { rid, state });
-                            }
-                        }, 5000);
-                    }, 10000); // Начинаем через 10 сек после старта
-                }
-            });
+                    // 4. ВКЛЮЧЕНИЕ SNAPSHOT SYNC (Только для Хоста)
+                    const isHost = (user.telegramId == lobby.creatorId);
+                    if (isHost) {
+                        setTimeout(() => {
+                            syncInterval = setInterval(async () => {
+                                if (gm) {
+                                    const state = await gm.getState();
+                                    socket.emit('sync-state', { rid, state });
+                                }
+                            }, 5000);
+                        }, 10000); 
+                    }
+                });
 
-            // 5. ПРИМЕНЕНИЕ SNAPSHOT (Для Гостя)
-            socket.on('apply-state', (state) => {
-                if (gm) {
-                    gm.loadState(state);
-                    document.getElementById('sync-indicator').innerText = "[RAM SYNC: OK]";
-                }
-            });
+                // 5. ПРИМЕНЕНИЕ SNAPSHOT (Для Гостя)
+                socket.on('apply-state', (state) => {
+                    if (gm) {
+                        gm.loadState(state);
+                        document.getElementById('sync-indicator').innerText = "[RAM SYNC: OK]";
+                    }
+                });
 
-            // 6. ОБМЕН КНОПКАМИ (Network Bridge)
-            const myPort = (user.telegramId == lobby.creatorId) ? 0 : 1;
-            
-            // Локальный ввод -> в сеть
-            window.onkeydown = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', pNum: myPort });
-            window.onkeyup = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keyup', pNum: myPort });
-            
-            // Удаленный ввод -> в эмулятор
-            socket.on('partner-input', (d) => {
-                if (gm) gm.simulateInput(d.key, d.type, d.pNum);
-            });
-        }
-
-        // Мониторинг очков (RAM Hook)
-        scoreInterval = setInterval(() => {
-            if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
-                const ram = EJS_emulator.gameManager.getWRam();
-                if (file.includes('sonic')) score = ram[0xFE20];
-                else if (file.includes('umk3')) score = ram[0xB110];
-                document.getElementById('emu-score').innerText = score || 0;
+                // 6. ОБМЕН КНОПКАМИ (Network Bridge)
+                const myPort = (user.telegramId == lobby.creatorId) ? 0 : 1;
+                
+                window.onkeydown = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', pNum: myPort });
+                window.onkeyup = (e) => socket.emit('emu-input', { rid, key: e.keyCode, type: 'keyup', pNum: myPort });
+                
+                socket.on('partner-input', (d) => {
+                    if (gm) gm.simulateInput(d.key, d.type, d.pNum);
+                });
             }
-        }, 1000);
-    };
 
-    // Инъекция лоадера
-    const s = document.createElement('script');
-    s.src = window.location.origin + '/data/loader.js?v=' + Date.now();
-    document.body.appendChild(s);
-}
+            // Мониторинг очков (RAM Hook)
+            scoreInterval = setInterval(() => {
+                if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
+                    const ram = EJS_emulator.gameManager.getWRam();
+                    if (file.includes('sonic')) score = ram[0xFE20];
+                    else if (file.includes('umk3')) score = ram[0xB110];
+                    document.getElementById('emu-score').innerText = score || 0;
+                }
+            }, 1000);
+        };
+
+        const s = document.createElement('script');
+        s.src = window.location.origin + '/data/loader.js?v=' + Date.now();
+        document.body.appendChild(s);
+    }
+</script>
