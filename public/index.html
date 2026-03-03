@@ -1,14 +1,16 @@
+// Добавь эту переменную в самый верх скрипта, где у тебя user и lobby
+let scoreInterval = null; 
+
 function startEmu(file, coreType, rid, isSolo) {
-    // 0. Полная очистка контейнера и инстанса для предотвращения конфликтов
-    if (window.EJS_emulator) { 
-        try { window.EJS_emulator.stop(); } catch(e) {} 
-    }
+    // 0. Полная очистка контейнера и интервалов
+    if (window.EJS_emulator) { try { window.EJS_emulator.stop(); } catch(e) {} }
+    if (scoreInterval) clearInterval(scoreInterval);
     
     document.getElementById('app').style.display = 'none'; 
     document.getElementById('emulator-layer').style.display = 'block';
     document.getElementById('ejs-container').innerHTML = "";
 
-    // 1. Определение ролей (Хост - Порт 0, Гость - Порт 1)
+    // 1. Определение ролей
     const isHost = !isSolo && (user.telegramId == lobby.creatorId);
     const myPort = isHost ? 0 : 1; 
 
@@ -40,15 +42,14 @@ function startEmu(file, coreType, rid, isSolo) {
                         setTimeout(() => {
                             EJS_emulator.gameManager.simulateInput(13, 'keydown', 0);
                             setTimeout(() => EJS_emulator.gameManager.simulateInput(13, 'keyup', 0), 100);
-                            console.log("Macro-Script: Success.");
                         }, 500);
                     }, 100);
                 }, 4000); // Тайминг ожидания заставки Sega/Nintendo
             }
         }
 
-        // Мониторинг оперативной памяти (Score Tracking)
-        setInterval(() => {
+        // 5. Мониторинг оперативной памяти (Score Tracking)
+        scoreInterval = setInterval(() => {
             if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
                 const ram = EJS_emulator.gameManager.getWRam();
                 if (file.includes('sonic')) score = ram[0xFE20];
@@ -58,7 +59,7 @@ function startEmu(file, coreType, rid, isSolo) {
         }, 1000);
     };
 
-    // 5. Сетевой Мост Ввода (Network Input Relay)
+    // 6. Сетевой Мост Ввода (Network Input Relay)
     if (!isSolo) {
         const sendInput = (e, type) => {
             socket.emit('emu-input', { 
@@ -69,21 +70,17 @@ function startEmu(file, coreType, rid, isSolo) {
             });
         };
 
-        // Захват клавиатуры и тач-контроллера
         window.onkeydown = (e) => sendInput(e, 'keydown');
         window.onkeyup = (e) => sendInput(e, 'keyup');
 
-        // ИСПРАВЛЕНИЕ: Очистка и создание слушателя партнерского ввода
         socket.off('partner-input'); 
         socket.on('partner-input', (d) => {
             if (typeof EJS_emulator !== 'undefined' && EJS_emulator.gameManager) {
-                // Прямая инъекция в порт партнера
                 EJS_emulator.gameManager.simulateInput(d.key, d.type, d.pNum);
             }
         });
     }
 
-    // Финальная инъекция лоадера
     const s = document.createElement('script'); 
     s.src = window.location.origin + '/data/loader.js?v=' + Date.now(); 
     document.body.appendChild(s);
