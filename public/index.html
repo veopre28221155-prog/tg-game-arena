@@ -3,137 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>Retro Arena Turbo</title>
+    <title>Retro Arena Solo</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <!-- Пакет для бинарного сжатия -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #00f0ff; --gold: #ffd700; }
-        body { margin: 0; background: #000; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 8px; overflow: hidden; }
-        .screen { display: none; position: absolute; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        :root { --neon: #00f0ff; --gold: #ffd700; --pink: #ff0055; }
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 8px; overflow-x: hidden; }
+        .screen { display: none; padding: 20px; flex-direction: column; align-items: center; }
         .screen.active { display: flex; }
-        .btn { background: #111; color: var(--neon); border: 3px solid #333; padding: 12px; width: 260px; margin-bottom: 10px; cursor: pointer; font-family: inherit; }
+        h1 { color: var(--neon); font-size: 14px; text-shadow: 0 0 10px var(--neon); margin-bottom: 20px; }
+        
+        .game-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            width: 100%; 
+            max-width: 340px; 
+            padding-bottom: 100px;
+        }
+        
+        .game-card { 
+            background: #111; 
+            border: 3px solid #222; 
+            padding: 10px; 
+            text-align: center; 
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 80px;
+        }
+        .game-card:active { border-color: var(--neon); transform: scale(0.95); }
+        .game-card span { font-size: 6px; line-height: 1.4; pointer-events: none; }
+
+        .btn-dev { 
+            background: #111; color: #555; border: 3px solid #222; 
+            padding: 12px; width: 280px; margin-top: 10px; cursor: not-allowed; 
+            font-family: inherit; font-size: 7px;
+        }
+
         #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
         #ejs-container { width: 100%; height: 100%; }
-        #sync-indicator { position: absolute; bottom: 10px; left: 10px; z-index: 10000; color: #555; }
+        #exit-btn { position: absolute; top: 10px; right: 10px; z-index: 10000; background: red; color: #fff; border: none; padding: 10px; font-family: inherit; font-size: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="emulator-layer">
-    <div id="sync-indicator">[NET: IDLE]</div>
-    <button onclick="location.reload()" style="position:absolute; top:10px; right:10px; z-index:100; background:red; color:#fff; border:none; padding:8px;">EXIT</button>
+    <button id="exit-btn" onclick="location.reload()">EXIT GAME</button>
     <div id="ejs-container"></div>
 </div>
 
 <div id="app">
     <div id="s-main" class="screen active">
-        <h1 style="color:var(--neon)">RETRO TURBO</h1>
-        <button class="btn" onclick="nav('s-solo')">SOLO PLAY</button>
-        <button class="btn" onclick="nav('s-create')">CREATE LOBBY</button>
-        <button class="btn" onclick="listRooms()">JOIN LOBBY</button>
-    </div>
+        <h1>RETRO ARENA</h1>
+        
+        <div class="game-grid" id="lib-render">
+            <!-- Игры вставляются сюда -->
+        </div>
 
-    <div id="s-create" class="screen">
-        <select id="g-sel" class="btn"><option value="umk3.md">MK3</option><option value="tanks.nes">TANKS</option></select>
-        <button class="btn" onclick="createLobby()">CREATE</button>
-        <button class="btn" onclick="nav('s-main')">BACK</button>
-    </div>
-
-    <div id="s-room" class="screen">
-        <div id="slot-render" class="card" style="border:1px dashed #444; padding:10px; margin-bottom:10px;"></div>
-        <button class="btn" onclick="ready()">READY</button>
-        <button class="btn" onclick="location.reload()">EXIT</button>
-    </div>
-
-    <div id="s-list" class="screen"><div id="l-render"></div><button class="btn" onclick="nav('s-main')">BACK</button></div>
-    
-    <div id="s-solo" class="screen">
-        <button class="btn" onclick="startEmu('umk3.md','segaMD','',true)">MK3</button>
-        <button class="btn" onclick="nav('s-main')">BACK</button>
+        <button class="btn-dev" onclick="tg.showAlert('Hacking Sega in progress... Multiplayer coming soon!')">
+            🤝 MULTIPLAYER (IN DEV)
+        </button>
+        
+        <div style="height: 50px;"></div>
     </div>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp; const socket = io({ transports: ['websocket', 'polling'] });
-    let user, lobby, syncInterval, isMuted = true;
+    const tg = window.Telegram.WebApp;
+    tg.ready(); tg.expand();
 
-    async function init() {
-        const r = await (await fetch('/api/user-data', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({initData: tg.initData}) })).json();
-        user = r.user; 
+    const GAMES = [
+        { n: "1200 in 1", f: "1200in1.nes" },
+        { n: "Battletoads", f: "battletoads.md" },
+        { n: "Battletoads DD", f: "btdd.md" },
+        { n: "Comix Zone", f: "comix.md" },
+        { n: "Jurassic Park", f: "jurassic.md" },
+        { n: "Lion King", f: "lionking.md" },
+        { n: "Real Monsters", f: "realmonsters.sfc" },
+        { n: "Road Rash", f: "roadrash.md" },
+        { n: "The Simpsons", f: "simpsons.md" },
+        { n: "Sonic 1", f: "sonic.bin" },
+        { n: "Sonic 2", f: "sonic2.md" },
+        { n: "Sunset Riders", f: "sunset.md" },
+        { n: "Tanks", f: "tanks.nes" },
+        { n: "Tiny Toon 1", f: "tinytoon1.nes" },
+        { n: "Tiny Toon 2", f: "tinytoon2.nes" },
+        { n: "Tiny Toon Sega", f: "tinytoon_sega.md" },
+        { n: "TMNT", f: "tmnt.md" },
+        { n: "UMK 3", f: "umk3.md" },
+        { n: "X-Men 2", f: "xmen2.md" }
+    ];
+
+    function init() {
+        const render = document.getElementById('lib-render');
+        render.innerHTML = GAMES.map(g => `
+            <div class="game-card" onclick="launchGame('${g.f}')">
+                <span>${g.n}</span>
+            </div>
+        `).join('');
     }
     init();
 
-    function nav(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+    function launchGame(file) {
+        // Определение ядра
+        let core = 'segaMD';
+        if (file.endsWith('.nes')) core = 'nes';
+        if (file.endsWith('.sfc')) core = 'snes';
 
-    async function createLobby() {
-        const d = { uid: user.telegramId, name: user.username, game: document.getElementById('g-sel').value };
-        const res = await (await fetch('/api/lobby/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d) })).json();
-        if(res.success) { lobby = res.lobby; socket.emit('sync-me', lobby.lobbyId); nav('s-room'); renderSlots(lobby); }
-    }
+        // Показ слоя эмулятора
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('emulator-layer').style.display = 'block';
 
-    async function joinLobby(lid) {
-        const res = await (await fetch('/api/lobby/join', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({uid:user.telegramId, name:user.username, lid}) })).json();
-        if(res.success) { lobby = res.lobby; socket.emit('sync-me', lid); nav('s-room'); renderSlots(lobby); }
-    }
-
-    async function listRooms() {
-        nav('s-list');
-        const r = await (await fetch('/api/lobby/list')).json();
-        document.getElementById('l-render').innerHTML = r.list.map(l => `<div class="btn" onclick="joinLobby('${l.lobbyId}')">${l.game}</div>`).join('') || "EMPTY";
-    }
-
-    function ready() { socket.emit('player-ready', { rid: lobby.lobbyId, uid: user.telegramId }); }
-    function renderSlots(l) { lobby = l; document.getElementById('slot-render').innerHTML = `P1: ${l.name1} ${l.r1?'OK':'..'} | P2: ${l.name2||'WAIT'} ${l.r2?'OK':'..'}`; }
-
-    socket.on('lobby-update', renderSlots);
-    socket.on('launch-match', (d) => startEmu(d.game, d.game.endsWith('.nes')?'nes':'segaMD', d.lid, false));
-
-    function startEmu(file, core, rid, isSolo) {
-        document.getElementById('app').style.display='none'; 
-        document.getElementById('emulator-layer').style.display='block';
-        document.getElementById('ejs-container').innerHTML = "";
-
-        window.EJS_player = '#ejs-container'; window.EJS_core = core; 
-        window.EJS_gameUrl = window.location.origin+'/'+file;
-        window.EJS_pathtodata = window.location.origin+'/data/'; 
-        window.EJS_startOnLoaded = true; window.EJS_virtualGamepad = true;
-
-        window.EJS_onGameStart = () => {
-            const gm = EJS_emulator.gameManager;
-            if(!isSolo) {
-                gm.pause();
-                socket.emit('client-loaded', { rid });
-                
-                socket.on('ignite-engine', () => {
-                    gm.restart();
-                    // 5 секунд блокировки ввода
-                    setTimeout(() => { isMuted = false; document.getElementById('sync-status').innerText = "[LINK ACTIVE]"; }, 5000);
-                    
-                    if (user.telegramId == lobby.creatorId) {
-                        syncInterval = setInterval(async () => {
-                            const state = await gm.getState();
-                            const compressed = pako.deflate(state); // СЖАТИЕ
-                            socket.emit('sync-state', { rid, state: compressed });
-                        }, 3000);
-                    }
-                });
-
-                socket.on('apply-state', (compressed) => {
-                    const decompressed = pako.inflate(compressed); // РАСПАКОВКА
-                    gm.loadState(decompressed);
-                    document.getElementById('sync-indicator').innerText = "[SYNC: COMPRESSED OK]";
-                });
-
-                const myPort = (user.telegramId == lobby.creatorId) ? 0 : 1;
-                window.onkeydown = (e) => { if(!isMuted) socket.emit('emu-input', { rid, key: e.keyCode, type: 'keydown', pNum: myPort }); };
-                window.onkeyup = (e) => { if(!isMuted) socket.emit('emu-input', { rid, key: e.keyCode, type: 'keyup', pNum: myPort }); };
-                socket.on('partner-input', (d) => gm.simulateInput(d.key, d.type, d.pNum));
-            }
+        window.EJS_player = '#ejs-container';
+        window.EJS_core = core;
+        window.EJS_gameUrl = window.location.origin + '/' + file;
+        window.EJS_pathtodata = window.location.origin + '/data/';
+        window.EJS_startOnLoaded = true;
+        window.EJS_virtualGamepad = true;
+        
+        // Отключение лишних кнопок для чистого Solo
+        window.EJS_Buttons = {
+            saveState: true,
+            loadState: true,
+            fullscreen: false,
+            restart: true,
+            settings: true
         };
-        const s = document.createElement('script'); s.src = window.location.origin+'/data/loader.js'; document.body.appendChild(s);
+
+        const script = document.createElement('script');
+        script.src = window.location.origin + '/data/loader.js';
+        document.body.appendChild(script);
+    }
+
+    function nav(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
     }
 </script>
 </body>
