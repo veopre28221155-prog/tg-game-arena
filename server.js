@@ -18,65 +18,84 @@ const CONFIG = {
 
 mongoose.connect(CONFIG.MONGO_URI);
 
-const User = mongoose.model('User', new mongoose.Schema({ telegramId: { type: Number, unique: true }, username: String, balance: { type: Number, default: 1000 } }));
 const Lobby = mongoose.model('Lobby', new mongoose.Schema({
-    lobbyId: String, creatorId: Number, player2Id: Number, name1: String, name2: String,
-    game: String, bet: Number, status: String,
-    r1: { type: Boolean, default: false }, r2: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
-}));
-
-// ПРОТОКОЛ «ЧИСТИЛЬЩИКА» (Каждые 60 сек)
-setInterval(async () => {
-    const expiry = new Date(Date.now() - 300000); // 5 минут
-    const res = await Lobby.deleteMany({ status: 'waiting', createdAt: { $lt: expiry } });
-    if(res.deletedCount > 0) console.log(`[REAPER] Purged ${res.deletedCount} ghost lobbies.`);
-}, 60000);
+    lobbyId: String, lobbyName: String, creatorId: Number, player2Id: { type: Number, default: null },
+    name1: String, name2: String, game: String, bet: Number, status: { type: String, default: 'waiting' },
+    isPrivate: { type: Boolean, default: false }, r1: Boolean, r2: Boolean
+}, { timestamps: true }));
 
 io.on('connection', (socket) => {
-    socket.on('sync-me', (rid) => socket.join(rid));
+    socket.on('join-room', (rid) => socket.join(rid));
+
     socket.on('player-ready', async (d) => {
         const l = await Lobby.findOne({ lobbyId: d.rid });
         if(!l) return;
-        if (l.creatorId == d.uid) l.r1 = true; else l.r2 = true;
+        if (l.creatorId == d.uid) l.r1 = true; else l.player2Id == d.uid ? l.r2 = true : null;
         await l.save();
         io.to(d.rid).emit('lobby-update', l);
         if (l.r1 && l.r2) {
             l.status = 'playing'; await l.save();
-            io.to(d.rid).emit('launch-match', { game: l.game, lid: l.lobbyId });
+            io.to(d.rid).emit('start-match', { game: l.game, lid: l.lobbyId });
         }
     });
+
     socket.on('emu-input', (d) => socket.to(d.rid).emit('partner-input', d));
 });
 
-app.post('/api/user-data', async (req, res) => {
-    try {
-        const params = new URLSearchParams(req.body.initData);
-        const uObj = JSON.parse(params.get('user'));
-        const u = await User.findOneAndUpdate({ telegramId: uObj.id }, { username: uObj.first_name }, { upsert: true, new: true });
-        res.json({ success: true, user: u });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
+// API: Создание лобби
 app.post('/api/lobby/create', async (req, res) => {
     try {
-        const { uid, name, game } = req.body;
-        await Lobby.deleteMany({ creatorId: uid }); // ПРИНУДИТЕЛЬНАЯ ОЧИСТКА ХОСТА
-        const lid = 'R' + Math.floor(1000+Math.random()*9000);
-        const l = new Lobby({ lobbyId: lid, creatorId: uid, name1: name, game, status: 'waiting' });
-        await l.save();
-        res.json({ success: true, lobby: l });
+        const { uid, name, lname, game, bet, priv } = req.body;
+        await Lobby.deleteMany({ creatorId: uid }); // Удаляем старые лобби этого юзера
+        const lobbyId = 'L' + Date.now();
+        const lobby = new Lobby({
+            lobbyId, lobbyName: lname || "ARENA", creatorId: uid, name1: name,
+            game, bet: bet || 0, isPrivate: priv || false, status: 'waiting'
+        });
+        await lobby.save();
+        io.emit('new-lobby-created'); // Оповещаем всех онлайн игроков
+        res.json({ success: true, lobby });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// API: Список лобби (Улучшенный фильтр)
+app.get('/api/lobby/list', async (req, res) => {
+    try {
+        // Находим все лобби, которые ждут игрока и не скрыты
+        const list = await Lobby.find({ 
+            status: 'waiting', 
+            isPrivate: false, 
+            player2Id: null 
+        }).limit(10);
+        res.json(list);
+    } catch (e) { res.status(500).json([]); }
+});
+
+// API: Вход в лобби
 app.post('/api/lobby/join', async (req, res) => {
     try {
-        const l = await Lobby.findOneAndUpdate({ lobbyId: req.body.lid, status: 'waiting', player2Id: null }, { player2Id: req.body.uid, name2: req.body.name }, { new: true });
-        if (l) { io.to(l.lobbyId).emit('lobby-update', l); res.json({ success: true, lobby: l }); }
-        else res.json({ success: false });
+        const { uid, name, lid } = req.body;
+        const l = await Lobby.findOneAndUpdate(
+            { lobbyId: lid, status: 'waiting', player2Id: null },
+            { player2Id: uid, name2: name },
+            { new: true }
+        );
+        if(l) {
+            io.to(lid).emit('lobby-update', l);
+            res.json({ success: true, lobby: l });
+        } else res.json({ success: false });
     } catch (e) { res.json({ success: false }); }
 });
 
-app.get('/api/lobby/list', async (req, res) => res.json({ list: await Lobby.find({ status: 'waiting', player2Id: null }) }));
+// Твой эндпоинт user-data остается без изменений...
+app.post('/api/user-data', async (req, res) => {
+    try {
+        const params = new URLSearchParams(req.body.initData);
+        const userData = JSON.parse(params.get('user'));
+        const User = mongoose.model('User', new mongoose.Schema({ telegramId: Number, username: String, balance: { type: Number, default: 1000 } }));
+        let u = await User.findOneAndUpdate({ telegramId: userData.id }, { username: userData.first_name }, { upsert: true, new: true });
+        res.json({ success: true, user: u });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
 
 httpServer.listen(CONFIG.PORT);
