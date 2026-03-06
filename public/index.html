@@ -5,17 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pixel Arena</title>
     
-    <!-- SDK Telegram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- UI Библиотеки -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- Стили EmulatorJS (должны лежать в папке data) -->
     <link rel="stylesheet" href="/data/emulator.css">
     
-    <!-- Надежный Firebase v8 -->
+    <!-- Firebase 8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -36,7 +31,6 @@
         #game-overlay { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; flex-direction: column; }
         #game-container { width: 100%; height: 100%; flex: 1; }
 
-        /* Джойстик */
         .dpad-btn { width: 60px; height: 60px; background: #222; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; border: 1px solid #444; }
         .dpad-btn:active { background: #00f0ff; color: black; }
         .action-btn { width: 70px; height: 70px; border-radius: 50%; font-weight: bold; font-size: 24px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 5px 0 rgba(0,0,0,0.5); }
@@ -45,47 +39,47 @@
 </head>
 <body class="flex flex-col h-screen">
 
-    <!-- ШАПКА -->
+    <!-- HEADER -->
     <header class="p-4 bg-zinc-950 flex justify-between items-center z-50 border-b border-white/5">
-        <div class="flex items-center gap-2">
-            <h1 class="text-white font-retro font-bold text-sm tracking-tighter uppercase italic">Arena<span class="text-[#00f0ff]">X</span></h1>
-        </div>
+        <h1 class="text-white font-retro font-bold text-sm tracking-tighter uppercase italic">Arena<span class="text-[#00f0ff]">X</span></h1>
         <div class="flex items-center gap-2 bg-zinc-900 px-4 py-2 rounded-full border border-white/10">
             <i data-lucide="zap" class="w-4 h-4 text-[#00f0ff] fill-[#00f0ff]"></i>
             <span id="ui-balance" class="text-xs font-bold text-white">---</span>
         </div>
     </header>
 
-    <!-- ВКЛАДКИ -->
+    <!-- NAVIGATION -->
     <nav class="flex bg-zinc-950 border-b border-white/5 z-50">
         <button id="tab-multi" class="nav-tab active" onclick="window.app.switchTab('multi')">Multiplayer</button>
         <button id="tab-solo" class="nav-tab" onclick="window.app.switchTab('solo')">Solo</button>
         <button id="tab-lobbies" class="nav-tab" onclick="window.app.switchTab('lobbies')">Lobbies</button>
     </nav>
 
-    <!-- КОНТЕНТ -->
+    <!-- CONTENT -->
     <main id="main-content" class="flex-1 overflow-y-auto p-4 bg-black pb-24">
-        <!-- Мультиплеер -->
         <div id="screen-multi" class="space-y-4"><div id="list-multi"></div></div>
-        <!-- Соло -->
         <div id="screen-solo" class="hidden space-y-4"><div id="list-solo"></div></div>
-        <!-- Лобби -->
         <div id="screen-lobbies" class="hidden space-y-4">
             <h2 class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-2">Active Battle Rooms</h2>
             <div id="lobbies-list" class="space-y-3"></div>
         </div>
     </main>
 
-    <!-- ЭКРАН ЭМУЛЯТОРА (HOST / SOLO) -->
+    <!-- GAME OVERLAY (Эмулятор + Кнопка ИИ-Судьи) -->
     <div id="game-overlay">
         <div class="h-14 bg-zinc-950 border-b border-[#00f0ff]/20 flex justify-between items-center px-4">
             <span id="game-tag" class="text-[9px] font-bold text-[#00f0ff] uppercase tracking-widest bg-[#00f0ff]/10 px-2 py-1 rounded">Engine Ready</span>
-            <button onclick="location.reload()" class="text-zinc-500"><i data-lucide="x-circle" class="w-6 h-6"></i></button>
+            
+            <div class="flex gap-4 items-center">
+                <!-- Кнопка Финиша (Отправка ИИ) -->
+                <button onclick="window.app.finishMatch()" class="bg-yellow-500 text-black px-3 py-1 text-[9px] font-bold uppercase rounded animate-pulse">Finish & Verify</button>
+                <button onclick="location.reload()" class="text-zinc-500"><i data-lucide="x-circle" class="w-6 h-6"></i></button>
+            </div>
         </div>
         <div id="game-container" class="flex-1"></div>
     </div>
 
-    <!-- ВИРТУАЛЬНЫЙ ДЖОЙСТИК (PLAYER 2) -->
+    <!-- P2 CONTROLLER -->
     <div id="screen-controller" class="hidden fixed inset-0 bg-black z-[2000] flex flex-col p-8 items-center justify-around">
         <div class="text-center w-full">
             <span class="bg-pink-600 text-white text-[10px] font-bold px-3 py-1 rounded animate-pulse uppercase">P2 Connected</span>
@@ -110,21 +104,20 @@
     <script>
         (function() {
             var db, user = null, currentLobby = null, isHost = false;
-            // Карта кнопок: Телефон -> Эмулятор (Эмуляция клавиатуры)
+            var matchStartTime = 0; // Для телеметрии ИИ
+            var currentGameId = "";
+
             var p2map = { UP: "ArrowUp", DOWN: "ArrowDown", LEFT: "ArrowLeft", RIGHT: "ArrowRight", A: "KeyX", B: "KeyZ", C: "KeyC", START: "Enter" };
 
-            // СПИСОК ИГР (Файлы должны лежать в папке public)
             const MULTI_GAMES = [
                 { id: 'umk3.md', title: 'Mortal Kombat 3', core: 'sega', color: '#ff003c' },
-                { id: 'roadrash.md', title: 'Road Rash', core: 'sega', color: '#00f0ff' },
-                { id: 'tanks.nes', title: 'Battle City (Tanks)', core: 'nes', color: '#888' }
+                { id: 'roadrash.md', title: 'Road Rash', core: 'sega', color: '#00f0ff' }
             ];
             const SOLO_GAMES = [
-                { id: 'sonic.bin', title: 'Sonic Hedgehog', core: 'sega', color: '#0055ff' },
-                { id: 'comix.md', title: 'Comix Zone', core: 'sega', color: '#ffff00' }
+                { id: 'sonic.bin', title: 'Sonic Hedgehog', core: 'sega', color: '#0055ff' }
             ];
 
-            // ❌❌❌ ВНИМАНИЕ: ВСТАВЬ СЮДА СВОИ КЛЮЧИ ИЗ FIREBASE STUDIO ❌❌❌
+            // ❌ ВСТАВЬ СВОИ КЛЮЧИ FIREBASE ❌
             var firebaseConfig = {
                 projectId: "ТВОЙ_ПРОЕКТ",
                 appId: "ТВОЙ_APP_ID",
@@ -136,31 +129,29 @@
             document.addEventListener('DOMContentLoaded', function() {
                 lucide.createIcons();
                 
-                // 1. Инициализация Firebase
-                try { 
-                    firebase.initializeApp(firebaseConfig); 
-                    db = firebase.firestore(); 
-                    console.log("Firebase OK");
-                } catch(e) { console.error("Ошибка Firebase. Проверь ключи!"); }
+                try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e) { console.error("Firebase Error"); }
 
-                // 2. Получение данных из твоего server.js (MongoDB)
-                if (window.Telegram && window.Telegram.WebApp) {
+                // Авторизация Telegram -> Твой MongoDB Сервер
+                let tgUserPayload = { id: 123456789, first_name: "TestUser" }; // Фолбек для браузера
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
                     window.Telegram.WebApp.expand();
-                    fetch('/api/user-data', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if(data.success) {
-                            user = data.user;
-                            document.getElementById('ui-balance').innerText = user.balance;
-                        }
-                    }).catch(e => console.error("Ошибка получения данных MongoDB"));
+                    tgUserPayload = window.Telegram.WebApp.initDataUnsafe.user;
                 }
 
-                // 3. Рендер списка игр
+                fetch('/api/user-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramUser: tgUserPayload })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        user = data.user;
+                        document.getElementById('ui-balance').innerText = user.balance;
+                    }
+                });
+
+                // Рендер игр
                 const renderGames = (list, containerId, isMulti) => {
                     document.getElementById(containerId).innerHTML = list.map(g => `
                         <div class="game-card p-5 flex justify-between items-center border-l-4" style="border-left-color: ${g.color}">
@@ -169,7 +160,7 @@
                                 <p class="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-1">${g.core} ENGINE</p>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="window.app.playSolo('${g.id}', '${g.core}')" class="btn-action btn-p1 px-5 py-3">SOLO</button>
+                                <button onclick="window.app.playSolo('${g.id}', '${g.core}', '${g.id.split('.')[0]}')" class="btn-action btn-p1 px-5 py-3">SOLO</button>
                                 ${isMulti ? `<button onclick="window.app.createLobby('${g.id}', '${g.title}', '${g.core}')" class="btn-action btn-p2 px-5 py-3">HOST</button>` : ''}
                             </div>
                         </div>
@@ -178,7 +169,6 @@
                 renderGames(MULTI_GAMES, 'list-multi', true);
                 renderGames(SOLO_GAMES, 'list-solo', false);
 
-                // 4. API Приложения (Глобальные функции)
                 window.app = {
                     switchTab: function(t) {
                         ['multi', 'solo', 'lobbies'].forEach(s => {
@@ -189,43 +179,42 @@
                         document.getElementById('tab-' + t).classList.add('active');
                     },
                     
-                    playSolo: function(rom, core) {
+                    playSolo: function(rom, core, gameIdForAi) {
+                        currentGameId = gameIdForAi;
+                        matchStartTime = Date.now(); // Старт телеметрии
+                        
                         document.getElementById('game-overlay').style.display = 'flex';
                         window.EJS_player = '#game-container';
                         window.EJS_core = core;
                         window.EJS_gameUrl = '/' + rom; 
-                        window.EJS_pathtodata = '/data/'; // Путь к папке EmulatorJS
+                        window.EJS_pathtodata = '/data/';
                         var s = document.createElement('script'); 
                         s.src = '/data/loader.js';
                         document.body.appendChild(s);
                     },
 
                     createLobby: function(rom, title, core) {
-                        if(!db) return alert("База данных недоступна. Проверь ключи Firebase.");
-                        const bet = confirm("Создать платную комнату (Ставка 100 монет)?\nОК - Платная\nОтмена - Бесплатная") ? 100 : 0;
-                        if(bet > (user ? user.balance : 0)) return alert("Недостаточно монет на балансе!");
+                        if(!db) return alert("Firebase error");
                         
                         isHost = true;
                         currentLobby = Math.random().toString(36).substring(2, 8).toUpperCase();
-                        document.getElementById('game-tag').innerText = "HOST ID: " + currentLobby + (bet > 0 ? " [BET: " + bet + "]" : " [FREE]");
+                        document.getElementById('game-tag').innerText = "HOST ID: " + currentLobby;
                         
                         db.collection("lobbies").doc(currentLobby).set({
-                            title: title, rom: rom, core: core, bet: bet, status: "open", controller2: null
+                            title: title, rom: rom, core: core, status: "open", controller2: null
                         });
 
-                        // Синхронизация (Слушаем нажатия P2)
                         db.collection("lobbies").doc(currentLobby).onSnapshot(doc => {
                             var d = doc.data();
                             if(d && d.controller2) {
                                 var code = p2map[d.controller2.btn];
                                 if(code) {
-                                    // Эмулируем нажатие клавиши для EmulatorJS
                                     window.dispatchEvent(new KeyboardEvent('keydown', { code: code }));
                                     setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: code })), 80);
                                 }
                             }
                         });
-                        this.playSolo(rom, core);
+                        this.playSolo(rom, core, rom.split('.')[0]);
                     },
 
                     joinLobby: function(id) {
@@ -233,10 +222,48 @@
                         isHost = false;
                         document.getElementById('screen-controller').classList.remove('hidden');
                         document.getElementById('screen-controller').style.display = 'flex';
+                    },
+
+                    // 🤖 ИНТЕГРАЦИЯ AI-СУДЬИ (Срабатывает по кнопке "Finish & Verify")
+                    finishMatch: function() {
+                        if(!user) return alert("User not loaded");
+                        
+                        const timeSpentMs = Date.now() - matchStartTime;
+                        
+                        // Собираем телеметрию (в реальности ее нужно доставать из RAM игры, пока эмулируем для ИИ)
+                        const mockTelemetry = [
+                            { time: 0, action: "start" },
+                            { time: Math.floor(timeSpentMs / 2), action: "checkpoint_reached" },
+                            { time: timeSpentMs, action: "finish" }
+                        ];
+
+                        alert("Анализ ИИ запущен! Ждем вердикт Судьи...");
+
+                        fetch('/api/verify-match', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                telegramId: user.telegramId,
+                                game: currentGameId, // "sonic" или "umk3"
+                                score: timeSpentMs,  // Для соника важна скорость
+                                telemetry: mockTelemetry
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'approve') {
+                                alert("✅ VERIFIED! Честная игра. +50 монет.");
+                                document.getElementById('ui-balance').innerText = data.newBalance;
+                            } else if (data.status === 'flag_for_review') {
+                                alert("⚠️ ПОДОЗРИТЕЛЬНО: Рекорд отправлен админу на ручную проверку.");
+                            } else {
+                                alert("❌ ЧИТЫ ОБНАРУЖЕНЫ!\nИИ Судья: " + data.reason);
+                            }
+                        })
+                        .catch(err => alert("Ошибка соединения с ИИ."));
                     }
                 };
 
-                // 5. Обновление списка активных лобби в реальном времени
                 if(db) {
                     db.collection("lobbies").where("status", "==", "open").onSnapshot(qs => {
                         const list = document.getElementById('lobbies-list');
@@ -245,17 +272,13 @@
                             const l = doc.data();
                             list.innerHTML += `
                                 <div class="bg-zinc-900 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                                    <div>
-                                        <p class="text-[11px] font-bold text-white uppercase italic">${l.title}</p>
-                                        <p class="text-[8px] text-[#00f0ff] uppercase font-black tracking-widest mt-1">${l.bet > 0 ? 'BET: ' + l.bet + ' COINS' : 'FREE MODE'}</p>
-                                    </div>
+                                    <p class="text-[11px] font-bold text-white uppercase italic">${l.title}</p>
                                     <button onclick="window.app.joinLobby('${doc.id}')" class="btn-action btn-p1 px-6 py-3">JOIN</button>
                                 </div>`;
                         });
                     });
                 }
 
-                // 6. Логика джойстика (Отправка данных в Firebase)
                 function bindButton(id, btnName) {
                     var el = document.getElementById(id);
                     el.addEventListener('pointerdown', function(e) {
@@ -263,7 +286,7 @@
                         if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                         if(currentLobby && db && !isHost) {
                             db.collection("lobbies").doc(currentLobby).update({
-                                controller2: { btn: btnName, ts: Date.now() } // ts нужен, чтобы Firestore увидел обновление
+                                controller2: { btn: btnName, ts: Date.now() }
                             });
                         }
                     });
