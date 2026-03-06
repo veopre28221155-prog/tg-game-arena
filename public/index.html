@@ -14,166 +14,242 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Space+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+        body { background-color: #09090b; color: white; font-family: 'Space Mono', monospace; overflow: hidden; margin: 0; }
+        .arcade-btn { background-color: #00f0ff; color: #000; font-weight: bold; text-transform: uppercase; border-radius: 4px; border: none; cursor: pointer; }
+        .arcade-btn:active { transform: scale(0.95); }
+        .pixel-border { border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 15px rgba(0, 240, 255, 0.1); }
         
-        :root { --p: #00f0ff; --s: #ff003c; --a: #05ff00; --bg: #030303; }
-        
-        body { background: var(--bg); color: white; font-family: 'Space Mono', monospace; overflow: hidden; margin: 0; }
-        .font-retro { font-family: 'Orbitron', sans-serif; }
+        .nav-btn { flex: 1; padding: 15px 0; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #52525b; border-bottom: 2px solid transparent; background: transparent; border: none; }
+        .nav-btn.active { color: #00f0ff; border-color: #00f0ff; background: rgba(0, 240, 255, 0.05); }
 
-        /* Glassmorphism */
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .neon-border { border: 1px solid var(--p); box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
-        
-        /* Кнопки */
-        .btn-core { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; position: relative; overflow: hidden; }
-        .btn-core:active { transform: scale(0.95); opacity: 0.8; }
-        .btn-p { background: var(--p); color: black; font-weight: 900; }
-        .btn-s { border: 1px solid var(--p); color: var(--p); font-weight: 800; }
-
-        /* Эмулятор и джойстик */
         #game-overlay { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; flex-direction: column; }
-        .dpad-btn { width: 60px; height: 60px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 0 #000; }
-        .action-btn { width: 70px; height: 70px; border-radius: 50%; font-weight: bold; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 0 rgba(0,0,0,0.4); }
-        
-        .tab-btn { flex: 1; padding: 15px 0; font-size: 9px; font-weight: 900; text-transform: uppercase; color: #555; transition: 0.3s; border-bottom: 2px solid transparent; }
-        .tab-btn.active { color: var(--p); border-bottom-color: var(--p); background: linear-gradient(to top, rgba(0,240,255,0.05), transparent); }
+        #game-container { width: 100%; height: 100%; flex: 1; }
 
-        /* Анимации */
-        @keyframes pulse-neon { 0% { box-shadow: 0 0 5px var(--p); } 50% { box-shadow: 0 0 20px var(--p); } 100% { box-shadow: 0 0 5px var(--p); } }
-        .live-tag { animation: pulse-neon 2s infinite; }
+        /* Стили геймпада SEGA */
+        .dpad-btn { width: 60px; height: 60px; background: #27272a; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; border: 1px solid #3f3f46; box-shadow: 0 4px 0 #000; }
+        .dpad-btn:active { background: #00f0ff; color: black; transform: translateY(2px); box-shadow: none; }
+        .action-btn { width: 65px; height: 65px; border-radius: 50%; font-weight: bold; font-size: 24px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 5px 0 rgba(0,0,0,0.5); }
+        .action-btn:active { transform: translateY(3px); box-shadow: none; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
-    <!-- TOP BAR -->
-    <header class="p-4 bg-zinc-950 flex justify-between items-center border-b border-white/5 relative z-50">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-cyan-500/10 rounded-xl border border-cyan-500/30 flex items-center justify-center">
-                <i data-lucide="gamepad-2" class="text-cyan-400 w-5 h-5"></i>
-            </div>
-            <div>
-                <h1 class="text-white font-retro font-bold text-sm tracking-tighter italic">ARENA<span class="text-primary">X</span></h1>
-                <p class="text-[7px] text-zinc-500 uppercase font-bold tracking-[0.2em]">Sega Engine v2.5</p>
-            </div>
+    <!-- TOP HEADER -->
+    <header class="p-4 bg-zinc-900 border-b border-white/5 flex justify-between items-center z-50">
+        <div class="flex items-center gap-2">
+            <i data-lucide="zap" class="w-5 h-5 text-[#00f0ff] fill-[#00f0ff]"></i>
+            <h1 class="text-white font-bold text-sm italic tracking-tighter uppercase">Pixel Kombat</h1>
         </div>
-        <div class="flex items-center gap-2 bg-zinc-900 px-4 py-2 rounded-2xl border border-white/5 shadow-inner">
-            <i data-lucide="zap" class="w-3 h-3 text-yellow-400 fill-yellow-400"></i>
-            <span id="ui-balance" class="text-xs font-black text-white">---</span>
+        <div class="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10 text-[#00f0ff]">
+            <span id="ui-balance" class="text-xs font-bold tracking-widest">1000</span>
+            <i data-lucide="coins" class="w-3 h-3 text-yellow-500"></i>
         </div>
     </header>
 
-    <!-- CONTENT -->
-    <main id="main-scroll" class="flex-1 overflow-y-auto pb-24">
-        
-        <!-- ARCADE SCREEN -->
-        <section id="scr-arcade" class="p-5 space-y-6">
-            <div class="flex items-center justify-between">
-                <h2 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Available Titles</h2>
-                <div class="flex gap-1">
-                    <div class="w-1 h-1 bg-primary rounded-full animate-ping"></div>
-                    <span class="text-[7px] text-primary uppercase font-bold">Servers: Online</span>
-                </div>
-            </div>
-
-            <!-- Sonic -->
-            <div class="arcade-card glass rounded-2xl p-4 space-y-4 border border-white/5">
-                <div class="h-44 bg-[url('https://picsum.photos/seed/sonic/800/400')] bg-cover bg-center rounded-xl relative group">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
-                    <span class="absolute top-3 left-3 bg-black/80 text-[7px] font-bold px-2 py-1 rounded-md text-cyan-400 border border-cyan-400/20 uppercase tracking-widest">Genesis Classic</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-retro text-sm text-white italic">Sonic The Hedgehog</h3>
-                        <p class="text-[8px] text-zinc-500 mt-1 uppercase font-bold">High Stakes • 2 Players</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="window.app.play('sonic.bin')" class="btn-core btn-p px-6 py-3 rounded-lg text-[9px]">PLAY</button>
-                        <button onclick="window.app.host('sonic.bin', 'Sonic')" class="btn-core btn-s px-4 py-3 rounded-lg text-[9px]"><i data-lucide="plus" class="w-3 h-3"></i></button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- UMK3 -->
-            <div class="arcade-card glass rounded-2xl p-4 space-y-4 border border-white/5">
-                <div class="h-44 bg-[url('https://picsum.photos/seed/mk/800/400')] bg-cover bg-center rounded-xl grayscale hover:grayscale-0 transition-all duration-500">
-                    <div class="absolute inset-0 bg-black/40"></div>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-retro text-sm text-white italic">Mortal Kombat 3</h3>
-                        <p class="text-[8px] text-zinc-500 mt-1 uppercase font-bold">PvP Tournament • 2 Players</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="window.app.play('umk3.md')" class="btn-core btn-p px-6 py-3 rounded-lg text-[9px] !bg-red-600 !text-white">PLAY</button>
-                        <button onclick="window.app.host('umk3.md', 'MK3')" class="btn-core btn-s px-4 py-3 rounded-lg text-[9px] !border-red-600 !text-red-600"><i data-lucide="plus" class="w-3 h-3"></i></button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- LOBBIES SCREEN -->
-        <section id="scr-lobbies" class="hidden p-5 space-y-4">
-            <h2 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Global Battle List</h2>
-            <div id="lobbies-list" class="space-y-3">
-                <!-- Живые лобби -->
-            </div>
-        </section>
-
-        <!-- WALLET SCREEN -->
-        <section id="scr-wallet" class="hidden p-5 space-y-6 text-center">
-            <div class="glass p-8 rounded-3xl border-primary/20 space-y-4">
-                <i data-lucide="wallet" class="w-12 h-12 text-primary mx-auto"></i>
-                <h3 class="text-xs font-bold uppercase tracking-widest">Balance Refill</h3>
-                <div class="p-4 bg-black/50 rounded-xl border border-white/5 font-mono text-xs text-primary tracking-wider">
-                    <p class="text-[7px] text-zinc-500 mb-2 uppercase">ALFA Card</p>
-                    5559 4941 3152 2061
-                </div>
-                <input id="dep-amt" type="number" placeholder="Enter Amount" class="w-full bg-zinc-900 border border-white/10 p-4 rounded-xl text-center font-bold text-white text-sm focus:border-primary outline-none">
-                <button onclick="window.app.deposit()" class="w-full btn-core btn-p py-4 rounded-xl text-[10px] uppercase tracking-widest">Request Deposit</button>
-            </div>
-        </section>
-    </main>
-
-    <!-- NAVIGATION -->
-    <nav class="fixed bottom-0 inset-x-0 h-20 glass border-t border-white/5 grid grid-cols-4 px-2 pb-4 z-[100]">
-        <button onclick="window.app.tab('arcade')" id="nav-arcade" class="nav-item tab-btn active">
-            <i data-lucide="layout-grid" class="w-5 h-5 mx-auto"></i> Arcade
-        </button>
-        <button onclick="window.app.tab('lobbies')" id="nav-lobbies" class="nav-item tab-btn">
-            <i data-lucide="swords" class="w-5 h-5 mx-auto"></i> Lobbies
-        </button>
-        <button onclick="window.app.tab('wallet')" id="nav-wallet" class="nav-item tab-btn">
-            <i data-lucide="credit-card" class="w-5 h-5 mx-auto"></i> Wallet
-        </button>
-        <button onclick="window.app.tab('profile')" id="nav-profile" class="nav-item tab-btn">
-            <i data-lucide="fingerprint" class="w-5 h-5 mx-auto"></i> Info
-        </button>
+    <!-- NAVIGATION TABS -->
+    <nav class="flex bg-zinc-900 border-b border-white/5 z-50">
+        <button id="tab-arcade" class="nav-btn active" onclick="switchTab('arcade')">Games</button>
+        <button id="tab-lobbies" class="nav-btn" onclick="switchTab('lobbies')">Lobbies</button>
+        <button id="tab-profile" class="nav-btn" onclick="switchTab('profile')">Profile</button>
     </nav>
 
-    <!-- OVERLAYS -->
-    <div id="game-overlay">
-        <div class="h-16 bg-zinc-950 flex justify-between items-center px-5 border-b border-primary/20">
-            <div class="flex items-center gap-3">
-                <div class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
-                <span id="game-tag" class="text-[9px] font-bold text-white uppercase tracking-widest">Solo Session</span>
+    <!-- CONTENT -->
+    <main class="flex-1 overflow-y-auto p-4 space-y-4 bg-black pb-20">
+        
+        <!-- ARCADE SCREEN -->
+        <div id="screen-arcade" class="space-y-4">
+            <div class="bg-zinc-900 rounded-2xl overflow-hidden pixel-border">
+                <div class="h-40 bg-[url('https://picsum.photos/seed/sonic/800/400')] bg-cover bg-center"></div>
+                <div class="p-5 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-white uppercase italic text-sm">Sonic Hedgehog</h3>
+                        <p class="text-[7px] text-primary font-bold uppercase tracking-widest mt-1">Sega Genesis • 1991</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="launchGame('sonic.bin', true)" class="arcade-btn px-6 py-2 text-[10px]">SOLO</button>
+                        <button onclick="createLobby('sonic.bin', 'Sonic')" class="arcade-btn px-4 py-2 bg-pink-600 text-white text-[10px]">LOBBY</button>
+                    </div>
+                </div>
             </div>
-            <button onclick="location.reload()" class="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded-full text-zinc-500"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
-        <div id="game-container" class="flex-1"></div>
+
+        <!-- LOBBIES SCREEN -->
+        <div id="screen-lobbies" class="hidden space-y-4">
+            <h2 class="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Active Battles</h2>
+            <div id="lobbies-list" class="space-y-3">
+                <div class="text-center py-10 text-zinc-800 text-[10px] uppercase font-bold tracking-widest">Scanning for rooms...</div>
+            </div>
+        </div>
+
+        <!-- PROFILE SCREEN -->
+        <div id="screen-profile" class="hidden space-y-6">
+            <div class="bg-zinc-900 p-10 rounded-2xl pixel-border text-center">
+                <div class="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 border border-primary/30 flex items-center justify-center">
+                    <i data-lucide="user" class="text-primary w-10 h-10"></i>
+                </div>
+                <h2 id="prof-name" class="text-xl font-bold uppercase italic text-white tracking-widest">---</h2>
+                <p id="prof-id" class="text-[8px] text-zinc-500 mt-2 uppercase">Rank: Novice Warrior</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- GAME ENGINE OVERLAY (HOST) -->
+    <div id="game-overlay">
+        <div class="h-14 bg-zinc-950 border-b border-primary/20 flex justify-between items-center px-4">
+            <div class="flex items-center gap-2">
+                <span id="overlay-tag" class="text-[8px] font-bold bg-primary/20 text-primary px-2 py-1 rounded uppercase tracking-widest">SOLO</span>
+                <span id="lobby-id-display" class="hidden text-[10px] text-white font-bold bg-white/10 px-2 py-1 rounded tracking-widest"></span>
+            </div>
+            <button onclick="location.reload()" class="text-zinc-500"><i data-lucide="x-circle" class="w-6 h-6"></i></button>
+        </div>
+        <div id="game-container"></div>
     </div>
 
-    <!-- P2 CONTROLLER -->
+    <!-- VIRTUAL CONTROLLER (CLIENT/P2) -->
     <div id="screen-controller" class="hidden fixed inset-0 bg-black z-[2000] flex flex-col p-8">
-        <div class="flex-1 flex flex-col justify-around items-center max-w-lg mx-auto w-full">
+        <div class="flex-1 flex flex-col justify-around items-center max-w-md mx-auto w-full h-full">
             <div class="grid grid-cols-3 gap-3">
-                <div></div><button id="p-up" class="dpad-btn text-zinc-400"><i data-lucide="chevron-up"></i></button><div></div>
-                <button id="p-left" class="dpad-btn text-zinc-400"><i data-lucide="chevron-left"></i></button>
+                <div></div><button id="p-up" class="dpad-btn text-white">▲</button><div></div>
+                <button id="p-left" class="dpad-btn text-white">◀</button>
                 <div class="w-[60px] h-[60px] bg-zinc-900 rounded-full border-4 border-black flex items-center justify-center shadow-inner">
-                    <div class="w-2 h-2 bg-primary rounded-full blur-[2px]"></div>
+                   <div class="w-2 h-2 bg-primary rounded-full blur-[1px]"></div>
                 </div>
-                <button id="p-right" class="dpad-btn text-zinc-400"><i data-lucide="chevron-right"></i></button>
-                <div></div><button id="p-down" class="dpad-btn text-zinc-400"><i data-lucide="chevron-down"></i></button><div></div>
+                <button id="p-right" class="dpad-btn text-white">▶</button>
+                <div></div><button id="p-down" class="dpad-btn text-white">▼</button><div></div>
             </div>
-            <div class="flex flex-col gap-10 items-center">
-                <button id="p-b" class="action-btn bg-yellow-500 t
+            <div class="flex flex-col gap-8 items-center">
+                <button id="p-b" class="action-btn bg-yellow-500">B</button>
+                <div class="flex gap-4">
+                    <button id="p-a" class="action-btn bg-red-600">A</button>
+                    <button id="p-c" class="action-btn bg-blue-600">C</button>
+                </div>
+            </div>
+            <button id="p-start" class="w-40 py-4 bg-zinc-800 text-zinc-500 rounded-full text-[10px] font-bold uppercase border border-zinc-700 tracking-widest">START</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var db, currentLobby = null, isHost = false, lastProcessedTs = 0;
+            // Карта клавиш: Кнопка джойстика -> Код клавиши для EmulatorJS
+            var p2map = { UP: "ArrowUp", DOWN: "ArrowDown", LEFT: "ArrowLeft", RIGHT: "ArrowRight", A: "KeyX", B: "KeyZ", C: "KeyC", START: "Enter" };
+
+            var firebaseConfig = {
+                projectId: "studio-8235565247-f8a50",
+                appId: "1:924081428998:web:8c62d7a8df8676cb7e8187",
+                apiKey: "AIzaSyBJUydsDT4euRjy5A1EIEQWMtud91FPEFo",
+                authDomain: "studio-8235565247-f8a50.firebaseapp.com",
+                messagingSenderId: "924081428998"
+            };
+
+            document.addEventListener('DOMContentLoaded', function() {
+                lucide.createIcons();
+                try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e) {}
+
+                window.switchTab = function(t) {
+                    ['arcade', 'lobbies', 'profile'].forEach(s => {
+                        document.getElementById('screen-' + s).style.display = 'none';
+                        document.getElementById('tab-' + s).classList.remove('active');
+                    });
+                    document.getElementById('screen-' + t).style.display = 'block';
+                    document.getElementById('tab-' + t).classList.add('active');
+                };
+
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.expand();
+                    fetch('/api/user-data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
+                    })
+                    .then(res => res.json()).then(data => {
+                        if(data.success) {
+                            document.getElementById('ui-balance').innerText = data.user.balance;
+                            document.getElementById('prof-name').innerText = data.user.username;
+                        }
+                    });
+                }
+
+                // ГЛАВНЫЙ ДВИЖОК: Запуск эмулятора и обработка входящих команд
+                window.launchGame = function(rom, solo) {
+                    document.getElementById('game-overlay').style.display = 'flex';
+                    window.EJS_player = '#game-container';
+                    window.EJS_core = 'sega';
+                    window.EJS_gameUrl = '/' + rom;
+                    window.EJS_pathtodata = '/data/';
+                    var s = document.createElement('script');
+                    s.src = '/data/loader.js';
+                    document.body.appendChild(s);
+                };
+
+                window.createLobby = function(rom, title) {
+                    isHost = true;
+                    currentLobby = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    document.getElementById('overlay-tag').innerText = "HOSTING";
+                    document.getElementById('lobby-id-display').classList.remove('hidden');
+                    document.getElementById('lobby-id-display').innerText = "ID: " + currentLobby;
+
+                    db.collection("lobbies").doc(currentLobby).set({ title: title, status: "open", controller2: null });
+
+                    // СЛУШАТЕЛЬ (onSnapshot): Получаем нажатия от P2 и имитируем их в системе
+                    db.collection("lobbies").doc(currentLobby).onSnapshot(function(doc) {
+                        var d = doc.data();
+                        if(d && d.controller2 && d.controller2.timestamp > lastProcessedTs) {
+                            lastProcessedTs = d.controller2.timestamp;
+                            var code = p2map[d.controller2.button];
+                            if(code) {
+                                // Имитируем нажатие (keydown) и сразу отпускание (keyup) для дискретных кнопок
+                                window.dispatchEvent(new KeyboardEvent('keydown', { code: code }));
+                                setTimeout(() => { window.dispatchEvent(new KeyboardEvent('keyup', { code: code })); }, 100);
+                            }
+                        }
+                    });
+                    window.launchGame(rom, false);
+                };
+
+                if(db) {
+                    db.collection("lobbies").where("status", "==", "open").onSnapshot(function(qs) {
+                        var list = document.getElementById('lobbies-list');
+                        list.innerHTML = '';
+                        if(qs.empty) { list.innerHTML = '<div class="text-center py-10 text-zinc-800 text-[10px] uppercase font-bold tracking-widest">No Battles Found...</div>'; return; }
+                        qs.forEach(function(doc) {
+                            var l = doc.data();
+                            list.innerHTML += `
+                                <div class="bg-zinc-900 border border-white/5 p-4 rounded-xl flex justify-between items-center">
+                                    <div class="flex items-center gap-3">
+                                        <div class="text-xl">🎮</div>
+                                        <div><p class="text-[10px] font-bold text-white uppercase italic">${l.title}</p></div>
+                                    </div>
+                                    <button onclick="joinBattle('${doc.id}')" class="arcade-btn px-6 py-2 rounded-lg text-[9px]">JOIN</button>
+                                </div>`;
+                        });
+                    });
+                }
+
+                window.joinBattle = function(id) {
+                    currentLobby = id; isHost = false;
+                    document.getElementById('screen-controller').classList.remove('hidden');
+                    document.getElementById('screen-controller').style.display = 'flex';
+                };
+
+                // ОТПРАВКА НАЖАТИЙ (Клиент -> Firebase)
+                function bind(id, btnName) {
+                    var el = document.getElementById(id);
+                    el.addEventListener('pointerdown', function(e) {
+                        e.preventDefault();
+                        if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                        if(currentLobby && db && !isHost) {
+                            db.collection("lobbies").doc(currentLobby).update({
+                                controller2: { button: btnName, timestamp: Date.now() }
+                            });
+                        }
+                    });
+                }
+                bind('p-up', 'UP'); bind('p-down', 'DOWN'); bind('p-left', 'LEFT'); bind('p-right', 'RIGHT');
+                bind('p-a', 'A'); bind('p-b', 'B'); bind('p-c', 'C'); bind('p-start', 'START');
+            });
+        })();
+    </script>
+</body>
+</html>
