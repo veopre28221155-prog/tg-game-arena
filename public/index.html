@@ -16,139 +16,164 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         body { background-color: #09090b; color: white; font-family: 'Space Mono', monospace; overflow: hidden; margin: 0; }
-        .arcade-btn { background-color: #00f0ff; color: #000; font-weight: bold; text-transform: uppercase; border-radius: 4px; border: none; cursor: pointer; font-size: 9px; }
-        .arcade-btn:active { transform: scale(0.95); }
-        .pixel-border { border: 2px solid rgba(0, 240, 255, 0.2); }
-        .tab-btn { font-size: 9px; font-weight: bold; color: #71717a; text-transform: uppercase; padding: 12px 0; border-bottom: 2px solid transparent; width: 100%; background: transparent; border: none; }
-        .tab-btn.active { color: #00f0ff; border-color: #00f0ff; background: rgba(0, 240, 255, 0.05); }
         
-        #game-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; }
-        #game-container { width: 100%; height: 100%; flex: 1; }
+        /* Цвета из Firebase Studio */
+        .text-primary { color: #00f0ff; }
+        .bg-primary { background-color: #00f0ff; }
+        .border-primary { border-color: #00f0ff; }
+        
+        .arcade-card { background: #18181b; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; }
+        .pixel-border { border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 15px rgba(0, 240, 255, 0.1); }
+        
+        /* Кнопки как в Firebase Studio */
+        .btn-play { background: #00f0ff; color: black; font-weight: 800; font-size: 10px; border-radius: 4px; transition: 0.2s; }
+        .btn-lobby { background: transparent; border: 1px solid #00f0ff; color: #00f0ff; font-weight: 800; font-size: 10px; border-radius: 4px; }
+        
+        /* Нижнее меню */
+        .bottom-nav { background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.05); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; color: #71717a; text-transform: uppercase; gap: 4px; }
+        .nav-item.active { color: #00f0ff; }
 
-        .dpad-btn { width: 55px; height: 55px; background: #27272a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
-        .action-btn { width: 65px; height: 65px; border-radius: 50%; font-weight: bold; font-size: 24px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
-        
-        /* Эффект CRT монитора */
-        .scanlines { position: relative; overflow: hidden; }
-        .scanlines::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
+        #game-overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; }
+        .dpad-btn { width: 55px; height: 55px; background: #27272a; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .action-btn { width: 60px; height: 60px; border-radius: 50%; font-weight: bold; font-size: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
     </style>
 </head>
-<body class="flex flex-col h-screen scanlines">
+<body class="flex flex-col h-screen">
 
     <!-- HEADER -->
-    <div class="p-4 border-b border-white/5 bg-zinc-900 flex justify-between items-center z-10">
-        <h1 class="text-[#00f0ff] font-bold text-lg tracking-tighter italic uppercase">Pixel Arena</h1>
-        <div class="flex items-center gap-2 bg-black/40 px-3 py-1 rounded border border-white/10 text-[#00f0ff]">
-            <i data-lucide="coins" class="w-3 h-3 text-yellow-500"></i>
-            <span id="ui-balance" class="text-xs font-bold">1000</span>
+    <div class="p-4 bg-zinc-950 flex justify-between items-center z-10 border-b border-white/5">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-primary/10 rounded flex items-center justify-center border border-primary/30">
+                <i data-lucide="trophy" class="w-4 h-4 text-primary"></i>
+            </div>
+            <div>
+                <h1 class="text-white font-bold text-xs tracking-tighter uppercase italic">Pixel Kombat</h1>
+                <p class="text-[7px] text-gray-500 uppercase font-bold tracking-widest leading-none">Arena v1.1.0</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-full border border-white/5">
+            <i data-lucide="star" class="w-3 h-3 text-yellow-500 fill-yellow-500"></i>
+            <span id="ui-balance" class="text-[10px] font-bold text-white">1000</span>
+            <i data-lucide="user" class="w-3 h-3 text-primary ml-1"></i>
         </div>
     </div>
 
-    <!-- TABS NAVIGATION -->
-    <div class="flex bg-zinc-900 border-b border-white/5 z-10">
-        <button id="tab-arcade" class="tab-btn active">Arcade</button>
-        <button id="tab-wallet" class="tab-btn">Wallet</button>
-        <button id="tab-profile" class="tab-btn">Profile</button>
-        <button id="tab-admin" class="tab-btn hidden">Admin</button>
-    </div>
-
-    <!-- CONTENT AREA -->
-    <div id="content-screen" class="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-950 pb-20">
+    <!-- SCREENS CONTAINER -->
+    <div id="main-content" class="flex-1 overflow-y-auto pb-24 bg-black">
         
-        <!-- ARCADE SECTION -->
-        <div id="sect-arcade" class="space-y-4">
-            <!-- SONIC -->
-            <div class="bg-zinc-900 rounded-lg overflow-hidden pixel-border p-4 flex gap-4 items-center">
-                <div class="w-20 h-20 bg-blue-900 rounded flex items-center justify-center text-4xl">🦔</div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-white text-xs uppercase italic">Sonic The Hedgehog</h3>
-                    <div class="flex gap-2 mt-3">
-                        <button onclick="window.gameAPI.play('sonic.bin', true)" class="arcade-btn flex-1 py-2">Solo</button>
-                        <button onclick="window.gameAPI.host('sonic.bin')" class="arcade-btn flex-1 py-2 bg-pink-600 text-white">Lobby</button>
+        <!-- ARCADE SCREEN -->
+        <div id="screen-arcade" class="p-4 space-y-6">
+            <h2 class="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-4">Top Retro Games</h2>
+            
+            <!-- Game Cards (Sonic, MK, Comix) -->
+            <div id="games-list" class="space-y-4">
+                <!-- Sonic -->
+                <div class="arcade-card">
+                    <div class="h-40 bg-[url('https://picsum.photos/seed/sonic/800/400')] bg-cover bg-center"></div>
+                    <div class="p-4 flex justify-between items-end">
+                        <div>
+                            <p class="text-[8px] text-primary font-bold uppercase mb-1">1991 • 1-2 Players</p>
+                            <h3 class="text-sm font-bold text-white uppercase italic">Sonic SEGA Genesis</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.gameAPI.play('sonic.bin', true)" class="btn-play px-6 py-2">PLAY</button>
+                            <button onclick="window.gameAPI.host('sonic.bin')" class="btn-lobby px-4 py-2 flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> LOBBY</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- MORTAL KOMBAT -->
-            <div class="bg-zinc-900 rounded-lg overflow-hidden pixel-border p-4 flex gap-4 items-center">
-                <div class="w-20 h-20 bg-red-900 rounded flex items-center justify-center text-4xl">🐉</div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-white text-xs uppercase italic">UMK 3</h3>
-                    <div class="flex gap-2 mt-3">
-                        <button onclick="window.gameAPI.play('umk3.md', true)" class="arcade-btn flex-1 py-2">Solo</button>
-                        <button onclick="window.gameAPI.host('umk3.md')" class="arcade-btn flex-1 py-2 bg-pink-600 text-white">Lobby</button>
+                <!-- UMK3 -->
+                <div class="arcade-card opacity-90">
+                    <div class="h-40 bg-[url('https://picsum.photos/seed/mk/800/400')] bg-cover bg-center"></div>
+                    <div class="p-4 flex justify-between items-end">
+                        <div>
+                            <p class="text-[8px] text-primary font-bold uppercase mb-1">1995 • 2 Players</p>
+                            <h3 class="text-sm font-bold text-white uppercase italic">Mortal Kombat 3</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.gameAPI.play('umk3.md', true)" class="btn-play px-6 py-2 text-red-600 bg-red-200" style="background:#ff003c; color:white">PLAY</button>
+                            <button onclick="window.gameAPI.host('umk3.md')" class="btn-lobby px-4 py-2 border-red-500 text-red-500"><i data-lucide="users" class="w-3 h-3"></i> LOBBY</button>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- COMIX ZONE -->
-            <div class="bg-zinc-900 rounded-lg overflow-hidden pixel-border p-4 flex gap-4 items-center">
-                <div class="w-20 h-20 bg-yellow-900 rounded flex items-center justify-center text-4xl">👊</div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-white text-xs uppercase italic">Comix Zone</h3>
-                    <div class="flex gap-2 mt-3">
-                        <button onclick="window.gameAPI.play('comix.md', true)" class="arcade-btn flex-1 py-2">Solo</button>
-                        <button onclick="window.gameAPI.host('comix.md')" class="arcade-btn flex-1 py-2 bg-pink-600 text-white">Lobby</button>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="window.gameAPI.joinPrompt()" class="w-full bg-zinc-800 text-gray-400 py-3 rounded text-[9px] font-bold uppercase border border-white/5">Connect to Lobby ID</button>
-        </div>
-
-        <!-- WALLET SECTION -->
-        <div id="sect-wallet" class="hidden space-y-6">
-            <div class="bg-zinc-900 p-6 rounded-lg pixel-border">
-                <h3 class="text-[#00f0ff] font-bold text-xs uppercase mb-4 italic">Deposit Stars</h3>
-                <p class="text-[8px] text-gray-400 mb-4">1 STAR = 1 COIN. Manual transfer to Admin card.</p>
-                <div class="space-y-4 text-[10px]">
-                    <div class="bg-black p-3 rounded font-mono text-primary border border-primary/20">5559 4941 3152 2061</div>
-                    <input id="dep-amount" type="number" placeholder="Amount Stars" class="w-full bg-black p-3 rounded border border-white/10 outline-none">
-                    <button onclick="window.gameAPI.requestDeposit()" class="w-full arcade-btn py-3">Submit Request</button>
                 </div>
             </div>
         </div>
 
-        <!-- PROFILE SECTION -->
-        <div id="sect-profile" class="hidden space-y-4">
-            <div class="bg-zinc-900 p-8 rounded-lg pixel-border text-center">
-                <div class="w-16 h-16 rounded-full bg-cyan-500/10 mx-auto mb-4 border border-cyan-500/30 flex items-center justify-center">
-                    <i data-lucide="user" class="text-cyan-400 w-8 h-8"></i>
-                </div>
-                <h2 id="prof-name" class="text-lg font-bold uppercase italic tracking-tighter">---</h2>
-                <p id="prof-id" class="text-[8px] text-gray-600 mt-2 uppercase">Warrior ID: ---</p>
+        <!-- LOBBIES SCREEN -->
+        <div id="screen-lobbies" class="hidden p-4 space-y-4">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Active Lobbies</h2>
+                <span class="text-[7px] bg-primary/10 text-primary px-2 py-1 rounded">Live Sync ON</span>
+            </div>
+            <div id="lobbies-list" class="space-y-3">
+                <!-- Сюда будут падать лобби из Firebase -->
+                <div class="text-center py-10 text-gray-600 text-[10px] uppercase font-bold">Waiting for new rooms...</div>
             </div>
         </div>
+
+        <!-- WALLET SCREEN -->
+        <div id="screen-wallet" class="hidden p-4 space-y-6">
+            <div class="bg-zinc-900 p-6 rounded-xl border border-white/5 space-y-4">
+                <h3 class="text-xs font-bold text-primary uppercase italic">Deposit Balance</h3>
+                <div class="p-4 bg-black rounded-lg border border-dashed border-primary/30">
+                    <p class="text-[8px] text-gray-400 uppercase mb-2">Recipient Card (ALFA)</p>
+                    <p class="text-sm font-bold text-white tracking-widest select-all">5559 4941 3152 2061</p>
+                </div>
+                <input id="dep-amount" type="number" placeholder="AMOUNT IN STARS" class="w-full bg-black border border-white/10 p-3 rounded text-xs outline-none focus:border-primary">
+                <button onclick="window.gameAPI.requestDeposit()" class="w-full btn-play py-3 text-xs uppercase">Submit Deposit Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav fixed bottom-0 inset-x-0 h-16 grid grid-cols-4 z-20">
+        <button onclick="window.gameAPI.showScreen('arcade')" id="nav-arcade" class="nav-item active">
+            <i data-lucide="play-circle" class="w-5 h-5"></i> ARCADE
+        </button>
+        <button onclick="window.gameAPI.showScreen('lobbies')" id="nav-lobbies" class="nav-item">
+            <i data-lucide="users" class="w-5 h-5"></i> LOBBIES
+        </button>
+        <button onclick="window.gameAPI.showScreen('wallet')" id="nav-wallet" class="nav-item">
+            <i data-lucide="wallet" class="w-5 h-5"></i> WALLET
+        </button>
+        <button onclick="window.gameAPI.showScreen('profile')" id="nav-profile" class="nav-item">
+            <i data-lucide="user" class="w-5 h-5"></i> INFO
+        </button>
     </div>
 
     <!-- GAME OVERLAY -->
     <div id="game-overlay">
-        <div class="h-[50px] bg-zinc-900 border-b border-white/10 flex justify-between items-center px-4">
-            <span id="lobby-id-display" class="text-[10px] text-white font-bold bg-white/10 px-2 rounded tracking-widest uppercase">SOLO</span>
-            <button onclick="location.reload()" class="text-white/40"><i data-lucide="x-circle"></i></button>
+        <div class="h-14 bg-zinc-900 border-b border-primary/20 flex justify-between items-center px-4">
+            <div class="flex items-center gap-2">
+                <span id="game-mode-tag" class="text-[8px] font-bold bg-primary/20 text-primary px-2 py-1 rounded">SOLO</span>
+                <span id="game-lobby-tag" class="hidden text-[10px] text-white font-bold bg-white/10 px-2 py-1 rounded tracking-tighter"></span>
+            </div>
+            <button onclick="location.reload()" class="w-8 h-8 flex items-center justify-center text-gray-500"><i data-lucide="x-circle" class="w-6 h-6"></i></button>
         </div>
-        <div id="game-container"></div>
+        <div id="game-container" class="flex-1"></div>
     </div>
 
-    <!-- P2 CONTROLLER -->
+    <!-- CONTROLLER P2 -->
     <div id="screen-controller" class="hidden fixed inset-0 bg-black z-[200] flex flex-col p-6">
         <div class="flex justify-between items-center w-full max-w-md mx-auto h-full">
+            <!-- D-PAD -->
             <div class="grid grid-cols-3 gap-2">
-                <div></div><button id="p-up" class="dpad-btn">▲</button><div></div>
-                <button id="p-left" class="dpad-btn">◀</button>
+                <div></div><button id="p-up" class="dpad-btn text-white">▲</button><div></div>
+                <button id="p-left" class="dpad-btn text-white">◀</button>
                 <div class="w-[55px] h-[55px] bg-zinc-900 rounded-full border-4 border-black"></div>
-                <button id="p-right" class="dpad-btn">▶</button>
-                <div></div><button id="p-down" class="dpad-btn">▼</button><div></div>
+                <button id="p-right" class="dpad-btn text-white">▶</button>
+                <div></div><button id="p-down" class="dpad-btn text-white">▼</button><div></div>
             </div>
+            <!-- BUTTONS -->
             <div class="flex flex-col gap-6">
-                <button id="p-b" class="action-btn bg-yellow-500">B</button>
+                <button id="p-b" class="action-btn bg-yellow-500 text-white">B</button>
                 <div class="flex gap-4">
-                    <button id="p-a" class="action-btn bg-red-600">A</button>
-                    <button id="p-c" class="action-btn bg-blue-600">C</button>
+                    <button id="p-a" class="action-btn bg-red-600 text-white">A</button>
+                    <button id="p-c" class="action-btn bg-blue-600 text-white">C</button>
                 </div>
             </div>
         </div>
-        <div class="text-center pb-12"><button id="p-start" class="px-10 py-3 bg-zinc-800 text-zinc-400 rounded-full text-xs font-bold uppercase tracking-widest border border-zinc-700">Start</button></div>
+        <div class="text-center pb-12"><button id="p-start" class="px-12 py-3 bg-zinc-800 text-gray-400 rounded-full text-[10px] font-bold uppercase tracking-widest">START</button></div>
     </div>
 
     <script>
@@ -168,23 +193,34 @@
                 lucide.createIcons();
                 try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e) {}
 
-                // NAVIGATION
-                const tabs = ['arcade', 'wallet', 'profile', 'admin'];
-                tabs.forEach(tab => {
-                    const btn = document.getElementById('tab-' + tab);
-                    if(btn) btn.onclick = function() {
-                        tabs.forEach(t => {
-                            const b = document.getElementById('tab-' + t);
-                            const s = document.getElementById('sect-' + t);
-                            if(b) b.classList.remove('active');
-                            if(s) s.classList.add('hidden');
+                // LIVE LOBBIES LISTENER
+                if(db) {
+                    db.collection("lobbies").where("status", "==", "open").onSnapshot(function(snapshot) {
+                        var list = document.getElementById('lobbies-list');
+                        if(snapshot.empty) {
+                            list.innerHTML = '<div class="text-center py-10 text-gray-600 text-[10px] uppercase font-bold">No active rooms... Create yours!</div>';
+                            return;
+                        }
+                        list.innerHTML = '';
+                        snapshot.forEach(function(doc) {
+                            var lobby = doc.data();
+                            list.innerHTML += `
+                                <div class="bg-zinc-900 border border-white/5 p-4 rounded-lg flex justify-between items-center">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-primary/20 rounded flex items-center justify-center text-xs">🎮</div>
+                                        <div>
+                                            <p class="text-[9px] font-bold text-white uppercase italic">${lobby.gameTitle || 'Retro Game'}</p>
+                                            <p class="text-[7px] text-primary uppercase font-bold tracking-widest">BET: ${lobby.bet || 0} COINS</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="window.gameAPI.joinLobby('${doc.id}')" class="btn-play px-5 py-2">JOIN</button>
+                                </div>
+                            `;
                         });
-                        this.classList.add('active');
-                        document.getElementById('sect-' + tab).classList.remove('hidden');
-                    };
-                });
+                    });
+                }
 
-                // FETCH USER FROM MONGO
+                // LOAD DATA
                 if (window.Telegram && window.Telegram.WebApp) {
                     window.Telegram.WebApp.expand();
                     fetch('/api/user-data', {
@@ -196,16 +232,20 @@
                     .then(data => {
                         if(data.success) {
                             myUser = data.user;
-                            document.getElementById('ui-balance').innerText = myUser.balance;
-                            document.getElementById('prof-balance').innerText = myUser.balance;
-                            document.getElementById('prof-name').innerText = myUser.username;
-                            document.getElementById('prof-id').innerText = "TG-ID: " + myUser.telegramId;
-                            if(myUser.telegramId === 698298064) document.getElementById('tab-admin').classList.remove('hidden'); // Пример админ ID
+                            document.getElementById('ui-balance').innerText = data.user.balance;
                         }
                     });
                 }
 
                 window.gameAPI = {
+                    showScreen: function(name) {
+                        ['arcade', 'lobbies', 'wallet', 'profile'].forEach(s => {
+                            document.getElementById('screen-' + s).classList.add('hidden');
+                            document.getElementById('nav-' + s).classList.remove('active');
+                        });
+                        document.getElementById('screen-' + name).classList.remove('hidden');
+                        document.getElementById('nav-' + name).classList.add('active');
+                    },
                     play: function(rom, solo) {
                         document.getElementById('game-overlay').style.display = 'flex';
                         window.EJS_player = '#game-container';
@@ -217,17 +257,20 @@
                         document.body.appendChild(s);
                     },
                     host: function(rom) {
-                        const bet = prompt("Enter Bet Amount (Coins):", "100");
-                        if(!bet || parseInt(bet) > parseInt(document.getElementById('ui-balance').innerText)) return alert("Low Balance!");
-                        
+                        var bet = prompt("ENTER BET (10-1000):", "100");
+                        if(!bet) return;
                         isHost = true;
                         currentLobby = Math.random().toString(36).substring(2, 8).toUpperCase();
-                        document.getElementById('lobby-id-display').innerText = "ID: " + currentLobby;
                         
-                        db.collection("lobbies").doc(currentLobby).set({ 
-                            rom: rom, bet: bet, host: myUser.username, status: "open", controller2: null 
+                        document.getElementById('game-mode-tag').innerText = "HOSTING";
+                        document.getElementById('game-lobby-tag').classList.remove('hidden');
+                        document.getElementById('game-lobby-tag').innerText = "ID: " + currentLobby;
+                        
+                        db.collection("lobbies").doc(currentLobby).set({
+                            gameTitle: rom === 'sonic.bin' ? 'Sonic' : 'MK3',
+                            rom: rom, bet: bet, status: "open", controller2: null
                         });
-                        
+
                         db.collection("lobbies").doc(currentLobby).onSnapshot(doc => {
                             var d = doc.data();
                             if(d && d.controller2) {
@@ -237,35 +280,29 @@
                         });
                         this.play(rom, false);
                     },
-                    joinPrompt: function() {
-                        var code = prompt("ENTER LOBBY ID:");
-                        if(code) {
-                            currentLobby = code.toUpperCase();
-                            isHost = false;
-                            document.getElementById('screen-controller').classList.remove('hidden');
-                            document.getElementById('screen-controller').style.display = 'flex';
-                        }
+                    joinLobby: function(id) {
+                        currentLobby = id;
+                        isHost = false;
+                        document.getElementById('screen-controller').classList.remove('hidden');
+                        document.getElementById('screen-controller').style.display = 'flex';
                     },
                     requestDeposit: function() {
-                        const amt = document.getElementById('dep-amount').value;
-                        if(!amt) return;
+                        var amt = document.getElementById('dep-amount').value;
+                        if(!amt || !db) return alert("Fill amount");
                         db.collection("transactions").add({
-                            user: myUser.username,
-                            type: "deposit",
-                            amount: amt,
-                            status: "pending",
-                            ts: Date.now()
+                            user: myUser ? myUser.username : 'Unknown',
+                            amount: amt, status: "pending", ts: Date.now()
                         });
-                        alert("Request Sent! Wait for Admin.");
+                        alert("REQUEST SENT TO ADMIN!");
                     }
                 };
 
                 function bind(id, btn) {
                     var el = document.getElementById(id);
-                    function send(s) {
+                    function send(st) {
                         if(currentLobby && db && !isHost) {
                             db.collection("lobbies").doc(currentLobby).update({
-                                controller2: { btn: btn, state: s }
+                                controller2: { btn: btn, state: st }
                             });
                         }
                     }
