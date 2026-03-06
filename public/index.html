@@ -3,119 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pixel Kombat Arena [ТЕСТ КНОПОК]</title>
+    <title>Pixel Kombat [Error Test]</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: { extend: { colors: { primary: '#00f0ff', background: '#09090b', card: '#18181b' } } }
-        }
-    </script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
-        body { background-color: #09090b; color: white; font-family: 'Space Mono', monospace; }
-        .arcade-button { background-color: #00f0ff; color: #000; font-weight: bold; text-transform: uppercase; }
-        .arcade-button:active { transform: scale(0.95); }
+        body { background-color: #09090b; color: white; font-family: monospace; }
+        .test-button { background-color: #ff003c; color: white; font-weight: bold; padding: 20px; border-radius: 10px; width: 100%; margin-top: 20px; border: 2px solid white; }
+        .test-button:active { background-color: #990024; }
     </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
+<body class="flex flex-col h-screen p-4">
 
-    <!-- ГЛАВНЫЙ ЭКРАН -->
-    <div id="main-app" class="flex flex-col h-full overflow-y-auto">
-        <div class="flex justify-between items-center p-4 border-b border-primary/20 bg-card">
-            <h1 class="text-primary font-bold text-lg">PIXEL KOMBAT</h1>
-            <div class="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded border border-primary/30 text-primary text-xs">
-                <i data-lucide="star" class="w-3 h-3"></i> <span>TEST</span>
-            </div>
-        </div>
-        <div class="px-4 pt-6 space-y-6">
-            <div class="bg-card border-2 border-primary/20 rounded-lg overflow-hidden">
-                <div class="h-32 bg-gray-800"></div>
-                <div class="p-4 space-y-4">
-                    <h2 class="text-primary font-bold uppercase">Sonic SEGA</h2>
-                    <div class="flex gap-2">
-                        <!-- ВАЖНО: У кнопок теперь есть ID, а не onclick -->
-                        <button id="play-host-btn" class="flex-1 arcade-button py-2 text-xs flex items-center justify-center gap-2 rounded">
-                            <i data-lucide="play" class="w-4 h-4"></i> PLAY (HOST)
-                        </button>
-                        <button id="join-p2-btn" class="flex-1 bg-transparent border border-primary text-primary py-2 text-xs flex items-center justify-center gap-2 rounded">
-                            <i data-lucide="gamepad-2" class="w-4 h-4"></i> JOIN P2
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <h1 class="text-xl text-center font-bold text-red-500 mb-4">ТЕСТ НАЖАТИЯ КНОПОК</h1>
+    <p class="text-xs text-gray-400 text-center mb-10 tracking-widest uppercase font-bold">Нажми на красную кнопку ниже, чтобы вызвать ошибку.</p>
+
+    <!-- ГЛАВНАЯ КНОПКА ТЕСТА -->
+    <button id="error-btn" class="test-button">ВЫЗВАТЬ ОШИБКУ КНОПКИ</button>
+
+    <button id="simple-log-btn" class="test-button" style="background-color: #00f0ff; color: black; margin-top: 10px;">ПРОСТОЙ ЛОГ</button>
+
+    <!-- ОКНО ЖУРНАЛА (Оно всегда на виду для этого теста) -->
+    <div class="mt-10 flex-1 flex flex-col border-t-2 border-gray-700 pt-4">
+        <h2 class="text-yellow-500 text-sm font-bold mb-2 uppercase">Журнал (Logs):</h2>
+        <textarea id="log-output" readonly class="w-full flex-1 bg-gray-900 text-white p-4 rounded text-[10px] font-mono border border-gray-700"></textarea>
     </div>
 
-    <!-- КНОПКА ДИАГНОСТИКИ -->
-    <button onclick="window.debug.show()" style="position: fixed; bottom: 10px; right: 10px; z-index: 1000;" class="bg-yellow-500 text-black w-12 h-12 rounded-full flex items-center justify-center shadow-lg">
-        <i data-lucide="bug" class="w-6 h-6"></i>
-    </button>
-    <div id="debug-overlay" class="hidden" style="position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.8); padding: 20px; display: flex; flex-direction: column;">
-        <h2 class="text-yellow-400 text-lg font-bold mb-4">ЖУРНАЛ ДИАГНОСТИКИ</h2>
-        <textarea id="debug-output" readonly class="w-full flex-1 bg-gray-900 text-white p-4 rounded text-xs font-mono"></textarea>
-        <button onclick="document.getElementById('debug-overlay').classList.add('hidden')" class="mt-4 bg-yellow-500 text-black py-2 rounded font-bold">ЗАКРЫТЬ</button>
-    </div>
-
-    <!-- ============================================== -->
-    <!-- СУПЕР-БЕЗОПАСНЫЙ СКРИПТ -->
-    <!-- ============================================== -->
+    <!-- СКРИПТ ОБРАБОТКИ -->
     <script>
-        // --- СИСТЕМА ДИАГНОСТИКИ ---
         (function() {
-            const errorLogs = [];
-            window.debug = { logs: errorLogs };
-            const originalConsoleLog = console.log;
+            var logOutput = document.getElementById('log-output');
             
-            console.log = function(...args) {
-                const formattedLog = `[ЛОГ]: ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}`;
-                errorLogs.push(formattedLog);
-                originalConsoleLog.apply(console, args);
+            function addToLog(msg) {
+                var currentText = logOutput.value;
+                logOutput.value = "[" + new Date().toLocaleTimeString() + "] " + msg + "\n\n" + currentText;
+            }
+
+            // Перехватываем все ошибки на странице
+            window.onerror = function(message, source, lineno) {
+                addToLog("КРИТИЧЕСКАЯ ОШИБКА: " + message);
+                return true;
             };
 
-            window.debug.show = function() {
-                const output = document.getElementById('debug-output');
-                output.value = errorLogs.length > 0 ? errorLogs.join('\n\n') : "Журнал пока пуст. Нажмите на кнопки.";
-                document.getElementById('debug-overlay').classList.remove('hidden');
-            };
+            // Когда страница загрузится
+            document.addEventListener('DOMContentLoaded', function() {
+                addToLog("Страница загружена. Готов к тесту.");
+                lucide.createIcons();
 
-            console.log("Диагностика запущена.");
+                var errorBtn = document.getElementById('error-btn');
+                var logBtn = document.getElementById('simple-log-btn');
+
+                // ПРОВЕРКА КНОПКИ №1 (Вызывает ошибку)
+                if (errorBtn) {
+                    addToLog("Кнопка 'ВЫЗВАТЬ ОШИБКУ' найдена.");
+                    errorBtn.addEventListener('click', function() {
+                        addToLog("Нажатие зарегистрировано! Сейчас вызову ошибку...");
+                        // Специально вызываем ошибку (обращаемся к несуществующей функции)
+                        this_function_does_not_exist(); 
+                    });
+                }
+
+                // ПРОВЕРКА КНОПКИ №2 (Простой лог)
+                if (logBtn) {
+                    addToLog("Кнопка 'ПРОСТОЙ ЛОГ' найдена.");
+                    logBtn.addEventListener('click', function() {
+                        addToLog("!!! КНОПКА 'ПРОСТОЙ ЛОГ' НАЖАТА УСПЕШНО !!!");
+                        alert("Кнопка нажата!");
+                    });
+                }
+            });
         })();
-        
-        // --- ЛОГИКА ПРИЛОЖЕНИЯ ---
-        // Этот код выполнится только когда вся страница будет готова
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("Страница полностью загружена.");
-            lucide.createIcons();
-            console.log("Иконки Lucide загружены.");
-
-            // Находим кнопки по их ID
-            const playBtn = document.getElementById('play-host-btn');
-            const joinBtn = document.getElementById('join-p2-btn');
-
-            if (playBtn) {
-                console.log("Кнопка 'PLAY (HOST)' найдена.");
-                // Вешаем обработчик нажатия
-                playBtn.addEventListener('click', function() {
-                    console.log("!!! Кнопка 'PLAY (HOST)' была НАЖАТА! Если ты видишь это, значит кнопки работают!");
-                    alert("Кнопка PLAY сработала!");
-                });
-            } else {
-                console.log("ОШИБКА: Кнопка 'PLAY (HOST)' не найдена на странице.");
-            }
-
-            if (joinBtn) {
-                console.log("Кнопка 'JOIN P2' найдена.");
-                joinBtn.addEventListener('click', function() {
-                    console.log("!!! Кнопка 'JOIN P2' была НАЖАТА!");
-                    alert("Кнопка JOIN сработала!");
-                });
-            } else {
-                console.log("ОШИБКА: Кнопка 'JOIN P2' не найдена на странице.");
-            }
-        });
     </script>
 </body>
 </html>
