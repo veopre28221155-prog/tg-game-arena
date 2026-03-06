@@ -9,7 +9,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- Firebase 8 SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -21,27 +20,30 @@
         .pixel-border { border: 2px solid rgba(0, 240, 255, 0.2); }
         .tab-btn { font-size: 10px; font-weight: bold; color: #71717a; text-transform: uppercase; padding: 12px 0; border-bottom: 2px solid transparent; width: 100%; }
         .tab-btn.active { color: #00f0ff; border-color: #00f0ff; background: rgba(0, 240, 255, 0.05); }
+        
+        /* Жесткая фиксация контейнера игры */
+        #game-wrapper { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; background: #000; }
+        #game-container { width: 100%; height: 100%; }
+        
         .dpad-btn { width: 55px; height: 55px; background: #27272a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
-        .action-btn { width: 65px; height: 65px; border-radius: 50%; font-weight: bold; font-size: 24px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
-        #game-container { width: 100%; height: 100%; background: #000; position: relative; }
+        .action-btn { width: 65px; height: 65px; border-radius: 50%; font-weight: bold; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
     <!-- HEADER -->
-    <div class="p-4 border-b border-white/5 bg-zinc-900 flex justify-between items-center z-10">
+    <div id="ui-header" class="h-[60px] p-4 border-b border-white/5 bg-zinc-900 flex justify-between items-center z-10">
         <div>
             <h1 class="text-[#00f0ff] font-bold text-lg tracking-tighter italic">PIXEL KOMBAT</h1>
-            <p class="text-[8px] text-gray-500 uppercase">Multiplayer v2.5</p>
         </div>
-        <div class="flex items-center gap-2 bg-black/40 px-3 py-1 rounded border border-white/10">
-            <i data-lucide="star" class="w-3 h-3 text-[#00f0ff]"></i>
-            <span id="ui-balance" class="text-xs font-bold text-[#00f0ff]">...</span>
+        <div class="flex items-center gap-2 bg-black/40 px-3 py-1 rounded border border-white/10 text-[#00f0ff]">
+            <i data-lucide="star" class="w-3 h-3"></i>
+            <span id="ui-balance" class="text-xs font-bold">...</span>
         </div>
     </div>
 
     <!-- TABS -->
-    <div class="flex bg-zinc-900 border-b border-white/5 z-10">
+    <div id="ui-tabs" class="flex bg-zinc-900 border-b border-white/5 z-10">
         <button id="tab-arcade" class="tab-btn active">Arcade</button>
         <button id="tab-profile" class="tab-btn">Profile</button>
     </div>
@@ -49,8 +51,8 @@
     <!-- ARCADE SCREEN -->
     <div id="screen-arcade" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="bg-zinc-900 rounded-lg overflow-hidden pixel-border">
-            <div class="h-32 bg-gradient-to-br from-blue-700 to-zinc-900 flex items-center justify-center">
-                <span class="text-5xl drop-shadow-lg">🦔</span>
+            <div class="h-32 bg-gradient-to-br from-blue-900 to-black flex items-center justify-center relative">
+                <span class="text-5xl">🦔</span>
             </div>
             <div class="p-4">
                 <h3 class="font-bold text-white mb-4 uppercase italic">Sonic The Hedgehog</h3>
@@ -58,7 +60,7 @@
                     <button id="btn-solo" class="arcade-btn py-3 text-[10px]">SOLO PLAY</button>
                     <button id="btn-host" class="arcade-btn py-3 text-[10px] bg-pink-600 text-white">HOST LOBBY</button>
                 </div>
-                <button id="btn-join" class="w-full border border-white/10 text-gray-500 py-3 text-[9px] rounded font-bold uppercase hover:bg-white/5">JOIN AS P2</button>
+                <button id="btn-join" class="w-full border border-white/10 text-gray-500 py-3 text-[9px] rounded font-bold uppercase hover:bg-white/5">JOIN PLAYER 2</button>
             </div>
         </div>
     </div>
@@ -66,51 +68,53 @@
     <!-- PROFILE SCREEN -->
     <div id="screen-profile" class="hidden flex-1 p-6 space-y-6">
         <div class="bg-zinc-900 p-8 rounded-lg pixel-border flex flex-col items-center text-center">
-            <div class="w-20 h-20 rounded-full bg-cyan-500/10 flex items-center justify-center mb-4 border border-cyan-500/50">
-                <i data-lucide="user" class="w-10 h-10 text-cyan-400"></i>
+            <div class="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-4 border border-cyan-500/50">
+                <i data-lucide="user" class="w-8 h-8 text-cyan-400"></i>
             </div>
-            <h2 id="prof-name" class="text-xl font-bold text-white uppercase tracking-tighter italic">GUEST PLAYER</h2>
-            <p id="prof-id" class="text-[8px] text-gray-500 mt-1 uppercase">Telegram Warrior</p>
+            <h2 id="prof-name" class="text-lg font-bold text-white uppercase italic">GUEST</h2>
+            <p id="prof-id" class="text-[8px] text-gray-600 mt-1 uppercase tracking-widest">---</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
-            <div class="bg-zinc-900 p-4 rounded-lg border border-white/5">
-                <p class="text-[8px] text-gray-400 uppercase font-bold">Balance</p>
-                <p id="prof-balance" class="text-xl font-bold text-[#00f0ff]">...</p>
+            <div class="bg-zinc-900 p-4 rounded border border-white/5">
+                <p class="text-[8px] text-gray-500 uppercase font-bold">Coins</p>
+                <p id="prof-balance" class="text-lg font-bold text-cyan-400">...</p>
             </div>
-            <div class="bg-zinc-900 p-4 rounded-lg border border-white/5 text-center">
-                <p class="text-[8px] text-gray-400 uppercase font-bold">Status</p>
-                <p class="text-xl font-bold text-white italic">PRO</p>
+            <div class="bg-zinc-900 p-4 rounded border border-white/5">
+                <p class="text-[8px] text-gray-500 uppercase font-bold">Rank</p>
+                <p class="text-lg font-bold text-white uppercase italic">Pro</p>
             </div>
         </div>
     </div>
 
-    <!-- OVERLAY -->
-    <div id="game-overlay" class="hidden fixed inset-0 bg-black z-[100] flex flex-col">
-        <div class="p-3 bg-zinc-900 border-b border-[#00f0ff]/30 flex justify-between items-center">
+    <!-- EMULATOR OVERLAY -->
+    <div id="game-overlay" class="hidden fixed inset-0 bg-black z-[100]">
+        <div class="h-[60px] p-4 bg-zinc-900 border-b border-primary/20 flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <span id="mode-badge" class="text-[8px] font-bold bg-[#00f0ff]/20 text-[#00f0ff] px-2 py-1 rounded">SOLO</span>
-                <span id="lobby-display" class="hidden text-[10px] text-white font-bold bg-white/10 px-2 rounded tracking-widest"></span>
+                <span id="mode-badge" class="text-[8px] font-bold bg-[#00f0ff]/20 text-[#00f0ff] px-2 py-1 rounded tracking-tighter uppercase">Solo</span>
+                <span id="lobby-display" class="hidden text-[10px] text-white font-bold bg-white/10 px-2 rounded"></span>
             </div>
             <button onclick="location.reload()" class="text-white/40"><i data-lucide="x-circle"></i></button>
         </div>
-        <div id="game-container"></div>
+        <div id="game-wrapper">
+            <div id="game-container"></div>
+        </div>
     </div>
 
-    <!-- CONTROLLER (P2) -->
+    <!-- P2 CONTROLLER SCREEN -->
     <div id="screen-controller" class="hidden fixed inset-0 bg-zinc-950 z-[200] flex flex-col p-6">
         <div class="flex justify-between items-center w-full max-w-md mx-auto h-full">
             <div class="grid grid-cols-3 gap-1">
-                <div></div><button id="p-up" class="dpad-btn text-white">▲</button><div></div>
-                <button id="p-left" class="dpad-btn text-white">◀</button>
+                <div></div><button id="p-up" class="dpad-btn">▲</button><div></div>
+                <button id="p-left" class="dpad-btn">◀</button>
                 <div class="w-[55px] h-[55px] bg-black rounded-full border-4 border-zinc-900"></div>
-                <button id="p-right" class="dpad-btn text-white">▶</button>
-                <div></div><button id="p-down" class="dpad-btn text-white">▼</button><div></div>
+                <button id="p-right" class="dpad-btn">▶</button>
+                <div></div><button id="p-down" class="dpad-btn">▼</button><div></div>
             </div>
             <div class="flex flex-col gap-6">
-                <button id="p-b" class="action-btn bg-yellow-500 shadow-lg">B</button>
+                <button id="p-b" class="action-btn bg-yellow-500">B</button>
                 <div class="flex gap-4">
-                    <button id="p-a" class="action-btn bg-red-600 shadow-lg">A</button>
-                    <button id="p-c" class="action-btn bg-blue-600 shadow-lg">C</button>
+                    <button id="p-a" class="action-btn bg-red-600">A</button>
+                    <button id="p-c" class="action-btn bg-blue-600">C</button>
                 </div>
             </div>
         </div>
@@ -122,7 +126,6 @@
             var db, currentLobby = null, isHost = false;
             var p2map = { UP: "KeyI", DOWN: "KeyK", LEFT: "KeyJ", RIGHT: "KeyL", A: "KeyF", B: "KeyG", C: "KeyH", START: "KeyV" };
 
-            // ✅ ТВОИ КЛЮЧИ FIREBASE (ИНТЕГРИРОВАНО) ✅
             var firebaseConfig = {
                 projectId: "studio-8235565247-f8a50",
                 appId: "1:924081428998:web:8c62d7a8df8676cb7e8187",
@@ -134,23 +137,19 @@
             document.addEventListener('DOMContentLoaded', function() {
                 lucide.createIcons();
 
-                // Табы
-                var arcTab = document.getElementById('tab-arcade'), profTab = document.getElementById('tab-profile');
-                var arcScr = document.getElementById('screen-arcade'), profScr = document.getElementById('screen-profile');
-                
-                arcTab.onclick = function() {
-                    arcTab.classList.add('active'); profTab.classList.remove('active');
-                    arcScr.classList.remove('hidden'); profScr.classList.add('hidden');
+                // Navigation
+                document.getElementById('tab-arcade').onclick = function() {
+                    this.classList.add('active'); document.getElementById('tab-profile').classList.remove('active');
+                    document.getElementById('screen-arcade').classList.remove('hidden'); document.getElementById('screen-profile').classList.add('hidden');
                 };
-                profTab.onclick = function() {
-                    profTab.classList.add('active'); arcTab.classList.remove('active');
-                    profScr.classList.remove('hidden'); arcScr.classList.add('hidden');
+                document.getElementById('tab-profile').onclick = function() {
+                    this.classList.add('active'); document.getElementById('tab-arcade').classList.remove('active');
+                    document.getElementById('screen-profile').classList.remove('hidden'); document.getElementById('screen-arcade').classList.add('hidden');
                 };
 
-                // Инициализация Firebase
-                try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); console.log("Firebase OK"); } catch(e) { console.log("Firebase Init Error"); }
+                try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e) {}
 
-                // Данные MongoDB
+                // Load User Data (MongoDB)
                 if (window.Telegram && window.Telegram.WebApp) {
                     window.Telegram.WebApp.expand();
                     fetch('/api/user-data', {
@@ -164,36 +163,37 @@
                             document.getElementById('ui-balance').innerText = data.user.balance;
                             document.getElementById('prof-balance').innerText = data.user.balance;
                             document.getElementById('prof-name').innerText = data.user.username;
-                            document.getElementById('prof-id').innerText = "WARRIOR ID: " + data.user.telegramId;
+                            document.getElementById('prof-id').innerText = "TG-ID: " + data.user.telegramId;
                         }
                     });
                 }
 
-                // EmulatorJS Integration
-                function loadEmulator(romFile) {
+                // EmulatorJS Initialization
+                function initEmulator(rom) {
+                    // Чистим контейнер перед запуском
+                    document.getElementById('game-container').innerHTML = '';
+                    
                     window.EJS_player = '#game-container';
                     window.EJS_core = 'sega';
-                    window.EJS_gameUrl = romFile;
-                    window.EJS_pathtodata = '/data/'; // EmulatorJS folder
+                    window.EJS_gameUrl = rom; 
+                    window.EJS_pathtodata = 'data'; // Указываем на папку data без слеша
                     
-                    var script = document.createElement('script');
-                    script.src = '/loader.js';
-                    document.body.appendChild(script);
+                    var loader = document.createElement('script');
+                    loader.src = 'loader.js';
+                    document.body.appendChild(loader);
                 }
 
-                // Кнопки управления
                 document.getElementById('btn-solo').onclick = function() {
                     document.getElementById('game-overlay').classList.remove('hidden');
-                    loadEmulator('/sonic.bin');
+                    initEmulator('sonic.bin');
                 };
 
                 document.getElementById('btn-host').onclick = function() {
-                    if(!db) return alert("Database error");
+                    if(!db) return;
                     isHost = true;
                     currentLobby = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    
                     document.getElementById('game-overlay').classList.remove('hidden');
-                    document.getElementById('mode-badge').innerText = "MULTIPLAYER HOST";
+                    document.getElementById('mode-badge').innerText = "Lobby Host";
                     document.getElementById('lobby-display').classList.remove('hidden');
                     document.getElementById('lobby-display').innerText = currentLobby;
 
@@ -207,7 +207,7 @@
                             }
                         }
                     });
-                    loadEmulator('/sonic.bin');
+                    initEmulator('sonic.bin');
                 };
 
                 document.getElementById('btn-join').onclick = function() {
@@ -219,7 +219,7 @@
                     }
                 };
 
-                // P2 Controller Logic
+                // Input Bindings
                 function bind(id, btn) {
                     var el = document.getElementById(id);
                     function send(s) {
