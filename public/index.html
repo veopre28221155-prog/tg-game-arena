@@ -1,147 +1,174 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>Retro Arena Solo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Arena Multiplayer</title>
+    <!-- Подключаем Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Подключаем Tailwind для красивого дизайна -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
-        :root { --neon: #00f0ff; --gold: #ffd700; --pink: #ff0055; }
-        body { margin: 0; background: #050505; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 8px; overflow-x: hidden; }
-        .screen { display: none; padding: 20px; flex-direction: column; align-items: center; }
-        .screen.active { display: flex; }
-        h1 { color: var(--neon); font-size: 14px; text-shadow: 0 0 10px var(--neon); margin-bottom: 20px; }
-        
-        .game-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            width: 100%; 
-            max-width: 340px; 
-            padding-bottom: 100px;
-        }
-        
-        .game-card { 
-            background: #111; 
-            border: 3px solid #222; 
-            padding: 10px; 
-            text-align: center; 
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            height: 80px;
-        }
-        .game-card:active { border-color: var(--neon); transform: scale(0.95); }
-        .game-card span { font-size: 6px; line-height: 1.4; pointer-events: none; }
-
-        .btn-dev { 
-            background: #111; color: #555; border: 3px solid #222; 
-            padding: 12px; width: 280px; margin-top: 10px; cursor: not-allowed; 
-            font-family: inherit; font-size: 7px;
-        }
-
-        #emulator-layer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; }
-        #ejs-container { width: 100%; height: 100%; }
-        #exit-btn { position: absolute; top: 10px; right: 10px; z-index: 10000; background: red; color: #fff; border: none; padding: 10px; font-family: inherit; font-size: 8px; cursor: pointer; }
+        body { background-color: #121212; color: white; touch-action: none; user-select: none; }
+        .arcade-btn { background: #00f0ff; color: black; font-weight: bold; padding: 10px 20px; border-radius: 5px; text-transform: uppercase; cursor: pointer; }
+        .arcade-btn:active { transform: scale(0.95); }
+        .dpad-btn { width: 50px; height: 50px; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .dpad-btn:active { background: #00f0ff; color: black; }
+        .action-btn { width: 60px; height: 60px; border-radius: 50%; font-weight: bold; font-size: 20px; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen overflow-hidden font-mono">
 
-<div id="emulator-layer">
-    <button id="exit-btn" onclick="location.reload()">EXIT GAME</button>
-    <div id="ejs-container"></div>
-</div>
-
-<div id="app">
-    <div id="s-main" class="screen active">
-        <h1>RETRO ARENA</h1>
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="menu-screen" class="flex flex-col items-center justify-center h-full space-y-6 p-4">
+        <h1 class="text-2xl text-[#00f0ff] font-bold text-center">PIXEL ARENA<br><span class="text-sm text-gray-400">MULTIPLAYER</span></h1>
         
-        <div class="game-grid" id="lib-render">
-            <!-- Игры вставляются сюда -->
+        <div class="bg-gray-800 p-6 rounded-lg w-full max-w-sm space-y-4 border-2 border-[#00f0ff]">
+            <button onclick="createLobby()" class="arcade-btn w-full">🎮 CREATE GAME (HOST)</button>
+            <div class="text-center text-xs text-gray-400">OR</div>
+            <input type="text" id="lobby-id-input" placeholder="Enter Game ID..." class="w-full p-2 bg-gray-900 text-white rounded text-center uppercase">
+            <button onclick="joinLobby()" class="arcade-btn w-full bg-pink-500 text-white border-none">🕹️ JOIN GAME (P2)</button>
+        </div>
+        <p id="tg-user-name" class="text-xs text-gray-500"></p>
+    </div>
+
+    <!-- ЭКРАН ХОСТА (ИГРОК 1 - ЭКРАН) -->
+    <div id="host-screen" class="hidden flex-col items-center w-full h-full relative">
+        <div class="w-full p-2 bg-gray-900 flex justify-between items-center text-xs">
+            <span class="text-[#00f0ff]">HOSTING GAME</span>
+            <span id="display-lobby-id" class="bg-gray-700 px-2 py-1 rounded font-bold tracking-widest text-white select-all"></span>
+        </div>
+        <!-- Сюда загрузится эмулятор -->
+        <div id="game-container" class="w-full h-full max-w-3xl bg-black relative"></div>
+    </div>
+
+    <!-- ЭКРАН КОНТРОЛЛЕРА (ИГРОК 2 - ГЕЙМПАД) -->
+    <div id="controller-screen" class="hidden flex-col items-center justify-center w-full h-full bg-gray-900 p-4">
+        <div class="mb-8 text-center">
+            <span class="bg-pink-500 text-white text-xs px-2 py-1 rounded uppercase animate-pulse">P2 Controller Connected</span>
         </div>
 
-        <button class="btn-dev" onclick="tg.showAlert('Hacking Sega in progress... Multiplayer coming soon!')">
-            🤝 MULTIPLAYER (IN DEV)
-        </button>
-        
-        <div style="height: 50px;"></div>
-    </div>
-</div>
-
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.ready(); tg.expand();
-
-    const GAMES = [
-        { n: "1200 in 1", f: "1200in1.nes" },
-        { n: "Battletoads", f: "battletoads.md" },
-        { n: "Battletoads DD", f: "btdd.md" },
-        { n: "Comix Zone", f: "comix.md" },
-        { n: "Jurassic Park", f: "jurassic.md" },
-        { n: "Lion King", f: "lionking.md" },
-        { n: "Real Monsters", f: "realmonsters.sfc" },
-        { n: "Road Rash", f: "roadrash.md" },
-        { n: "The Simpsons", f: "simpsons.md" },
-        { n: "Sonic 1", f: "sonic.bin" },
-        { n: "Sonic 2", f: "sonic2.md" },
-        { n: "Sunset Riders", f: "sunset.md" },
-        { n: "Tanks", f: "tanks.nes" },
-        { n: "Tiny Toon 1", f: "tinytoon1.nes" },
-        { n: "Tiny Toon 2", f: "tinytoon2.nes" },
-        { n: "Tiny Toon Sega", f: "tinytoon_sega.md" },
-        { n: "TMNT", f: "tmnt.md" },
-        { n: "UMK 3", f: "umk3.md" },
-        { n: "X-Men 2", f: "xmen2.md" }
-    ];
-
-    function init() {
-        const render = document.getElementById('lib-render');
-        render.innerHTML = GAMES.map(g => `
-            <div class="game-card" onclick="launchGame('${g.f}')">
-                <span>${g.n}</span>
+        <div class="flex justify-between w-full max-w-md px-4 mt-10">
+            <!-- D-PAD -->
+            <div class="grid grid-cols-3 gap-2">
+                <div></div>
+                <div class="dpad-btn" onpointerdown="sendBtn('UP', true)" onpointerup="sendBtn('UP', false)" onpointerleave="sendBtn('UP', false)">▲</div>
+                <div></div>
+                <div class="dpad-btn" onpointerdown="sendBtn('LEFT', true)" onpointerup="sendBtn('LEFT', false)" onpointerleave="sendBtn('LEFT', false)">◀</div>
+                <div class="w-[50px] h-[50px] bg-black rounded-full border-4 border-gray-800"></div>
+                <div class="dpad-btn" onpointerdown="sendBtn('RIGHT', true)" onpointerup="sendBtn('RIGHT', false)" onpointerleave="sendBtn('RIGHT', false)">▶</div>
+                <div></div>
+                <div class="dpad-btn" onpointerdown="sendBtn('DOWN', true)" onpointerup="sendBtn('DOWN', false)" onpointerleave="sendBtn('DOWN', false)">▼</div>
+                <div></div>
             </div>
-        `).join('');
-    }
-    init();
 
-    function launchGame(file) {
-        // Определение ядра
-        let core = 'segaMD';
-        if (file.endsWith('.nes')) core = 'nes';
-        if (file.endsWith('.sfc')) core = 'snes';
+            <!-- ABC Buttons -->
+            <div class="flex gap-2 items-end">
+                <div class="action-btn bg-red-600 text-white" onpointerdown="sendBtn('A', true)" onpointerup="sendBtn('A', false)" onpointerleave="sendBtn('A', false)">A</div>
+                <div class="action-btn bg-yellow-500 text-white mb-8" onpointerdown="sendBtn('B', true)" onpointerup="sendBtn('B', false)" onpointerleave="sendBtn('B', false)">B</div>
+                <div class="action-btn bg-blue-600 text-white" onpointerdown="sendBtn('C', true)" onpointerup="sendBtn('C', false)" onpointerleave="sendBtn('C', false)">C</div>
+            </div>
+        </div>
+        <div class="mt-12">
+            <button class="px-6 py-2 bg-gray-800 text-gray-400 rounded-full text-xs" onpointerdown="sendBtn('START', true)" onpointerup="sendBtn('START', false)">START</button>
+        </div>
+    </div>
 
-        // Показ слоя эмулятора
-        document.getElementById('app').style.display = 'none';
-        document.getElementById('emulator-layer').style.display = 'block';
+    <!-- Подключаем Firebase SDK v9 (Modular через CDN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        window.EJS_player = '#ejs-container';
-        window.EJS_core = core;
-        window.EJS_gameUrl = window.location.origin + '/' + file;
-        window.EJS_pathtodata = window.location.origin + '/data/';
-        window.EJS_startOnLoaded = true;
-        window.EJS_virtualGamepad = true;
-        
-        // Отключение лишних кнопок для чистого Solo
-        window.EJS_Buttons = {
-            saveState: true,
-            loadState: true,
-            fullscreen: false,
-            restart: true,
-            settings: true
+        // ==========================================
+        // ВНИМАНИЕ: ВСТАВЬ СЮДА СВОИ ДАННЫЕ FIREBASE
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "ТВОЙ_API_KEY",
+            authDomain: "ТВОЙ_PROJECT_ID.firebaseapp.com",
+            projectId: "ТВОЙ_PROJECT_ID",
+            storageBucket: "ТВОЙ_PROJECT_ID.appspot.com",
+            messagingSenderId: "ТВОЙ_SENDER_ID",
+            appId: "ТВОЙ_APP_ID"
         };
 
-        const script = document.createElement('script');
-        script.src = window.location.origin + '/data/loader.js';
-        document.body.appendChild(script);
-    }
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    function nav(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-</script>
+        // Telegram User Data
+        let tgUser = "Player";
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
+            tgUser = window.Telegram.WebApp.initDataUnsafe.user.first_name;
+            document.getElementById('tg-user-name').innerText = `Logged in as: ${tgUser}`;
+            window.Telegram.WebApp.expand();
+        }
+
+        let currentLobbyId = null;
+
+        // Карта кнопок для эмулятора
+        const P2_KEYMAP = { UP: "KeyI", DOWN: "KeyK", LEFT: "KeyJ", RIGHT: "KeyL", A: "KeyF", B: "KeyG", C: "KeyH", START: "KeyV" };
+
+        // --- СОЗДАНИЕ ИГРЫ (ХОСТ) ---
+        window.createLobby = async function() {
+            currentLobbyId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            await setDoc(doc(db, "lobbies", currentLobbyId), {
+                status: "waiting",
+                host: tgUser,
+                controller2: null
+            });
+
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('host-screen').classList.remove('hidden');
+            document.getElementById('display-lobby-id').innerText = currentLobbyId;
+
+            // Слушаем нажатия второго игрока
+            onSnapshot(doc(db, "lobbies", currentLobbyId), (docSnap) => {
+                const data = docSnap.data();
+                if (data && data.controller2) {
+                    const input = data.controller2;
+                    const keyCode = P2_KEYMAP[input.button];
+                    if (keyCode) {
+                        const eventType = input.state ? 'keydown' : 'keyup';
+                        window.dispatchEvent(new KeyboardEvent(eventType, { code: keyCode }));
+                    }
+                }
+            });
+
+            loadEmulator();
+        };
+
+        // --- ПОДКЛЮЧЕНИЕ К ИГРЕ (ДЖОЙСТИК P2) ---
+        window.joinLobby = async function() {
+            const inputId = document.getElementById('lobby-id-input').value.trim().toUpperCase();
+            if (!inputId) return alert("Enter Game ID!");
+            
+            currentLobbyId = inputId;
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('controller-screen').classList.remove('hidden');
+            document.getElementById('controller-screen').style.display = 'flex';
+        };
+
+        // --- ОТПРАВКА НАЖАТИЙ (ДЖОЙСТИК P2 -> FIREBASE) ---
+        window.sendBtn = async function(buttonName, isPressed) {
+            if (!currentLobbyId) return;
+            await updateDoc(doc(db, "lobbies", currentLobbyId), {
+                controller2: { button: buttonName, state: isPressed, timestamp: Date.now() }
+            });
+        };
+
+        // --- ЗАГРУЗКА ЭМУЛЯТОРА ---
+        function loadEmulator() {
+            window.EJS_player = '#game-container';
+            window.EJS_core = 'sega';
+            window.EJS_gameUrl = 'sonic.bin'; // Путь к рому
+            window.EJS_pathtodata = 'data/cores/'; // Путь к ядрам
+
+            const script = document.createElement('script');
+            script.src = 'loader.js';
+            document.body.appendChild(script);
+        }
+    </script>
 </body>
 </html>
