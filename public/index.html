@@ -14,6 +14,10 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- ИЗМЕНЕНИЕ: Загружаем совместимую (старую) версию Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         body { background-color: #09090b; color: white; font-family: 'Space Mono', monospace; touch-action: none; user-select: none; }
@@ -33,7 +37,7 @@
         <div class="flex justify-between items-center p-4 border-b border-primary/20 bg-card">
             <div>
                 <h1 class="text-primary font-bold text-lg tracking-wider">PIXEL KOMBAT</h1>
-                <p class="text-[8px] text-gray-400 uppercase">Arena v1.2.0 (Debug)</p>
+                <p class="text-[8px] text-gray-400 uppercase">Arena v2.0</p>
             </div>
             <div class="flex items-center gap-3">
                 <div class="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded border border-primary/30 text-primary text-xs">
@@ -50,10 +54,10 @@
                 <div class="p-4 space-y-4">
                     <h2 class="text-primary font-bold uppercase tracking-wider">Sonic SEGA</h2>
                     <div class="flex gap-2">
-                        <button onclick="startGame('sonic')" class="flex-1 arcade-button py-2 text-xs flex items-center justify-center gap-2 rounded">
+                        <button onclick="window.gameAPI.startGame('sonic')" class="flex-1 arcade-button py-2 text-xs flex items-center justify-center gap-2 rounded">
                             <i data-lucide="play" class="w-4 h-4"></i> PLAY (HOST)
                         </button>
-                        <button onclick="joinGamePrompt()" class="flex-1 bg-transparent border border-primary text-primary py-2 text-xs flex items-center justify-center gap-2 rounded">
+                        <button onclick="window.gameAPI.joinGamePrompt()" class="flex-1 bg-transparent border border-primary text-primary py-2 text-xs flex items-center justify-center gap-2 rounded">
                             <i data-lucide="gamepad-2" class="w-4 h-4"></i> JOIN P2
                         </button>
                     </div>
@@ -66,7 +70,7 @@
     <div id="game-overlay" class="hidden fixed inset-0 z-50 bg-background flex-col">
         <div class="p-4 border-b border-primary/30 flex justify-between items-center bg-card">
             <span class="text-xs text-primary uppercase font-bold">LIVE ARENA</span>
-            <button onclick="closeGame()" class="text-primary hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button onclick="window.gameAPI.closeGame()" class="text-primary hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
         <div id="emulator-zone" class="hidden flex-1 w-full bg-black relative flex items-center justify-center">
             <div class="absolute top-4 left-4 z-10 text-[10px] bg-black/80 text-primary border border-primary px-2 py-1 rounded">LOBBY ID: <b id="display-lobby-id" class="select-all">...</b></div>
@@ -77,30 +81,30 @@
                 <div class="flex justify-between items-center h-full">
                     <div class="grid grid-cols-3 gap-1">
                         <div></div>
-                        <button onpointerdown="sendInput('UP', true)" onpointerup="sendInput('UP', false)" class="dpad-btn"><i data-lucide="chevron-up"></i></button>
+                        <button onpointerdown="window.gameAPI.sendInput('UP', true)" onpointerup="window.gameAPI.sendInput('UP', false)" class="dpad-btn"><i data-lucide="chevron-up"></i></button>
                         <div></div>
-                        <button onpointerdown="sendInput('LEFT', true)" onpointerup="sendInput('LEFT', false)" class="dpad-btn"><i data-lucide="chevron-left"></i></button>
+                        <button onpointerdown="window.gameAPI.sendInput('LEFT', true)" onpointerup="window.gameAPI.sendInput('LEFT', false)" class="dpad-btn"><i data-lucide="chevron-left"></i></button>
                         <div class="w-[50px] h-[50px] bg-zinc-950 rounded-full border-[6px] border-zinc-800"></div>
-                        <button onpointerdown="sendInput('RIGHT', true)" onpointerup="sendInput('RIGHT', false)" class="dpad-btn"><i data-lucide="chevron-right"></i></button>
+                        <button onpointerdown="window.gameAPI.sendInput('RIGHT', true)" onpointerup="window.gameAPI.sendInput('RIGHT', false)" class="dpad-btn"><i data-lucide="chevron-right"></i></button>
                         <div></div>
-                        <button onpointerdown="sendInput('DOWN', true)" onpointerup="sendInput('DOWN', false)" class="dpad-btn"><i data-lucide="chevron-down"></i></button>
+                        <button onpointerdown="window.gameAPI.sendInput('DOWN', true)" onpointerup="window.gameAPI.sendInput('DOWN', false)" class="dpad-btn"><i data-lucide="chevron-down"></i></button>
                         <div></div>
                     </div>
                     <div class="flex gap-3 items-end">
-                        <button onpointerdown="sendInput('A', true)" onpointerup="sendInput('A', false)" class="action-btn btn-a">A</button>
-                        <button onpointerdown="sendInput('B', true)" onpointerup="sendInput('B', false)" class="action-btn btn-b mb-6">B</button>
-                        <button onpointerdown="sendInput('C', true)" onpointerup="sendInput('C', false)" class="action-btn btn-c">C</button>
+                        <button onpointerdown="window.gameAPI.sendInput('A', true)" onpointerup="window.gameAPI.sendInput('A', false)" class="action-btn btn-a">A</button>
+                        <button onpointerdown="window.gameAPI.sendInput('B', true)" onpointerup="window.gameAPI.sendInput('B', false)" class="action-btn btn-b mb-6">B</button>
+                        <button onpointerdown="window.gameAPI.sendInput('C', true)" onpointerup="window.gameAPI.sendInput('C', false)" class="action-btn btn-c">C</button>
                     </div>
                 </div>
                 <div class="absolute left-1/2 -translate-x-1/2 bottom-12">
-                     <button onpointerdown="sendInput('START', true)" onpointerup="sendInput('START', false)" class="px-6 py-2 bg-zinc-800 text-zinc-400 rounded-full text-[10px] font-bold">START</button>
+                     <button onpointerdown="window.gameAPI.sendInput('START', true)" onpointerup="window.gameAPI.sendInput('START', false)" class="px-6 py-2 bg-zinc-800 text-zinc-400 rounded-full text-[10px] font-bold">START</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- КНОПКА ДИАГНОСТИКИ -->
-    <button onclick="showDebug()" style="position: fixed; bottom: 10px; right: 10px; z-index: 1000;" class="bg-yellow-500 text-black w-12 h-12 rounded-full flex items-center justify-center shadow-lg">
+    <button onclick="window.debug.show()" style="position: fixed; bottom: 10px; right: 10px; z-index: 1000;" class="bg-yellow-500 text-black w-12 h-12 rounded-full flex items-center justify-center shadow-lg">
         <i data-lucide="bug" class="w-6 h-6"></i>
     </button>
     <div id="debug-overlay" class="hidden" style="position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.8); padding: 20px; display: flex; flex-direction: column;">
@@ -110,141 +114,140 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- СКРИПТЫ С ДИАГНОСТИКОЙ -->
+    <!-- СКРИПТЫ СОВМЕСТИМОЙ ВЕРСИИ -->
     <!-- ============================================== -->
-    <script type="module">
-        const errorLogs = [];
-        const originalConsoleLog = console.log;
+    <script>
+        // --- 0. СИСТЕМА ДИАГНОСТИКИ ---
+        (function() {
+            const errorLogs = [];
+            window.debug = { logs: errorLogs };
+            const originalConsoleLog = console.log;
+            
+            window.onerror = function(message, source, lineno, colno, error) {
+                const formattedError = `[ОШИБКА]: ${message}`;
+                errorLogs.push(formattedError);
+                return true;
+            };
+            console.log = function(...args) {
+                const formattedLog = `[ЛОГ]: ${args.map(a => JSON.stringify(a)).join(' ')}`;
+                errorLogs.push(formattedLog);
+                originalConsoleLog.apply(console, args);
+            };
+
+            window.debug.show = function() {
+                const output = document.getElementById('debug-output');
+                output.value = errorLogs.length > 0 ? errorLogs.join('\n\n') : "Ошибок не найдено.";
+                document.getElementById('debug-overlay').classList.remove('hidden');
+            };
+
+            console.log("Диагностика запущена.");
+        })();
         
-        // Перехватываем все ошибки на странице
-        window.onerror = function(message, source, lineno, colno, error) {
-            const formattedError = `[ОШИБКА]: ${message} в ${source.split('/').pop()}:${lineno}`;
-            errorLogs.push(formattedError);
-            originalConsoleLog(formattedError); // Показываем в настоящей консоли, если она есть
-            return true;
-        };
-        // Перехватываем все сообщения из console.log
-        console.log = function(...args) {
-            const formattedLog = `[ЛОГ]: ${args.map(a => JSON.stringify(a)).join(' ')}`;
-            errorLogs.push(formattedLog);
-            originalConsoleLog.apply(console, args);
-        };
+        // --- 1. ИГРОВАЯ ЛОГИКА ---
+        (function() {
+            console.log("Инициализация игрового API...");
+            lucide.createIcons();
+            
+            let db;
+            let currentLobbyId = null;
+            let isHost = true;
+            const P2_KEYMAP = { UP: "KeyI", DOWN: "KeyK", LEFT: "KeyJ", RIGHT: "KeyL", A: "KeyF", B: "KeyG", C: "KeyH", START: "KeyV" };
+            
+            // ❌❌❌ ВСТАВЬ СЮДА СВОИ КЛЮЧИ, ИНАЧЕ НИЧЕГО НЕ ЗАРАБОТАЕТ ❌❌❌
+            const firebaseConfig = {
+                apiKey: "ВСТАВЬ_СЮДА_API_KEY",
+                authDomain: "ВСТАВЬ_СЮДА_PROJECT_ID.firebaseapp.com",
+                projectId: "ВСТАВЬ_СЮДА_PROJECT_ID",
+                storageBucket: "ВСТАВЬ_СЮДА_PROJECT_ID.appspot.com",
+                messagingSenderId: "ВСТАВЬ_СЮДА_SENDER_ID",
+                appId: "ВСТАВЬ_СЮДА_APP_ID"
+            };
 
-        console.log("Система диагностики запущена.");
-
-        // Функция для нашей кнопки
-        window.showDebug = function() {
-            const output = document.getElementById('debug-output');
-            if (errorLogs.length > 0) {
-                output.value = errorLogs.join('\n\n');
-            } else {
-                output.value = "Пока ошибок не найдено. Если что-то не работает, попробуйте нажать на кнопки.";
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                console.log("Firebase успешно инициализирован.");
+            } catch (e) {
+                console.log("КРИТИЧЕСКАЯ ОШИБКА FIREBASE:", e.message);
             }
-            document.getElementById('debug-overlay').classList.remove('hidden');
-        };
 
-        lucide.createIcons();
-        console.log("Иконки Lucide загружены.");
+            // Загрузка данных из MongoDB
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.expand();
+                fetch('/api/user-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.user) {
+                        console.log("Данные из MongoDB:", data.user.balance);
+                        document.getElementById('user-balance').innerText = data.user.balance;
+                    } else { throw new Error("Ответ от /api/user-data не успешен"); }
+                })
+                .catch(err => console.log("Ошибка MongoDB:", err.message));
+            }
 
-        // --- 1. ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ ИЗ MONGODB ---
-        if (window.Telegram && window.Telegram.WebApp) {
-            console.log("Telegram WebApp SDK найден.");
-            window.Telegram.WebApp.expand();
-            
-            fetch('/api/user-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.user) {
-                    console.log("Данные из MongoDB получены:", data.user);
-                    document.getElementById('user-balance').innerText = data.user.balance;
-                } else { throw new Error("Ошибка ответа от /api/user-data"); }
-            })
-            .catch(err => console.log("Ошибка при загрузке данных MongoDB:", err));
-        } else { console.log("Telegram WebApp SDK не найден (запуск в браузере?)."); }
+            // Экспортируем функции в глобальный объект, чтобы кнопки их видели
+            window.gameAPI = {
+                startGame: async function(gameId) {
+                    if (!db) return window.debug.show();
+                    console.log("Создание игры...");
+                    isHost = true;
+                    currentLobbyId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    
+                    await db.collection("lobbies").doc(currentLobbyId).set({
+                        game: gameId, status: "playing", controller2: null
+                    });
+                    
+                    document.getElementById('main-app').classList.add('hidden');
+                    document.getElementById('game-overlay').classList.remove('hidden');
+                    document.getElementById('game-overlay').classList.add('flex');
+                    document.getElementById('emulator-zone').classList.remove('hidden');
+                    document.getElementById('display-lobby-id').innerText = currentLobbyId;
 
-        // --- 2. ПОДКЛЮЧЕНИЕ К FIREBASE ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+                    db.collection("lobbies").doc(currentLobbyId).onSnapshot((doc) => {
+                        const data = doc.data();
+                        if (data && data.controller2) {
+                            const input = data.controller2;
+                            const keyCode = P2_KEYMAP[input.button];
+                            if (keyCode) window.dispatchEvent(new KeyboardEvent(input.state ? 'keydown' : 'keyup', { code: keyCode }));
+                        }
+                    });
 
-        // ❌❌❌ ВСТАВЬ СЮДА СВОИ КЛЮЧИ, ИНАЧЕ НИЧЕГО НЕ ЗАРАБОТАЕТ ❌❌❌
-        const firebaseConfig = {
-            apiKey: "ВСТАВЬ_СЮДА_API_KEY",
-            authDomain: "ВСТАВЬ_СЮДА_PROJECT_ID.firebaseapp.com",
-            projectId: "ВСТАВЬ_СЮДА_PROJECT_ID",
-            storageBucket: "ВСТАВЬ_СЮДА_PROJECT_ID.appspot.com",
-            messagingSenderId: "ВСТАВЬ_СЮДА_SENDER_ID",
-            appId: "ВСТАВЬ_СЮДА_APP_ID"
-        };
+                    console.log("Загрузка эмулятора...");
+                    window.EJS_player = '#game-container'; window.EJS_core = 'sega'; window.EJS_gameUrl = 'sonic.bin'; window.EJS_pathtodata = 'data/cores/';
+                    const script = document.createElement('script'); script.src = 'loader.js'; document.body.appendChild(script);
+                },
 
-        let db;
-        try {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            console.log("Firebase успешно инициализирован.");
-        } catch (e) {
-            console.log("КРИТИЧЕСКАЯ ОШИБКА FIREBASE:", e);
-        }
+                joinGamePrompt: function() {
+                    if (!db) return window.debug.show();
+                    const code = prompt("Enter Game LOBBY ID from Host:");
+                    if (code) this.joinGame(code.toUpperCase());
+                },
 
-        let currentLobbyId = null, isHost = true;
-        const P2_KEYMAP = { UP: "KeyI", DOWN: "KeyK", LEFT: "KeyJ", RIGHT: "KeyL", A: "KeyF", B: "KeyG", C: "KeyH", START: "KeyV" };
+                joinGame: function(lobbyId) {
+                    console.log(`Подключение к ${lobbyId}...`);
+                    isHost = false; currentLobbyId = lobbyId;
+                    document.getElementById('main-app').classList.add('hidden');
+                    document.getElementById('game-overlay').classList.add('hidden');
+                    document.getElementById('game-overlay').classList.add('flex');
+                    document.getElementById('controller-zone').classList.remove('hidden');
+                    document.getElementById('controller-zone').classList.add('flex');
+                },
 
-        // --- 3. ИГРОВАЯ ЛОГИКА ---
-        window.startGame = async function(gameId) {
-            if (!db) return showDebug();
-            console.log("Создание игры (Host)...");
-            currentLobbyId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            await setDoc(doc(db, "lobbies", currentLobbyId), { game: gameId, status: "playing", controller2: null });
-            
-            document.getElementById('main-app').classList.add('hidden');
-            document.getElementById('game-overlay').classList.remove('hidden');
-            document.getElementById('game-overlay').classList.add('flex');
-            document.getElementById('emulator-zone').classList.remove('hidden');
-            document.getElementById('display-lobby-id').innerText = currentLobbyId;
+                sendInput: function(button, isPressed) {
+                    if (!currentLobbyId || isHost || !db) return;
+                    db.collection("lobbies").doc(currentLobbyId).update({
+                        controller2: { button: button, state: isPressed }
+                    });
+                },
 
-            onSnapshot(doc(db, "lobbies", currentLobbyId), (docSnap) => {
-                const data = docSnap.data();
-                if (data && data.controller2) {
-                    const input = data.controller2;
-                    const keyCode = P2_KEYMAP[input.button];
-                    if (keyCode) window.dispatchEvent(new KeyboardEvent(input.state ? 'keydown' : 'keyup', { code: keyCode }));
-                }
-            });
-
-            console.log("Загрузка эмулятора...");
-            window.EJS_player = '#game-container'; window.EJS_core = 'sega'; window.EJS_gameUrl = 'sonic.bin'; window.EJS_pathtodata = 'data/cores/';
-            const script = document.createElement('script'); script.src = 'loader.js'; document.body.appendChild(script);
-        };
-
-        window.joinGamePrompt = function() {
-            if (!db) return showDebug();
-            const code = prompt("Enter Game LOBBY ID from Host:");
-            if (code) joinGame(code.toUpperCase());
-        };
-
-        window.joinGame = function(lobbyId) {
-            console.log(`Подключение к игре ${lobbyId} (P2)...`);
-            isHost = false; currentLobbyId = lobbyId;
-            document.getElementById('main-app').classList.add('hidden');
-            document.getElementById('game-overlay').classList.remove('hidden');
-            document.getElementById('game-overlay').classList.add('flex');
-            document.getElementById('controller-zone').classList.remove('hidden');
-            document.getElementById('controller-zone').classList.add('flex');
-        };
-
-        window.sendInput = function(button, isPressed) {
-            if (!currentLobbyId || isHost || !db) return;
-            updateDoc(doc(db, "lobbies", currentLobbyId), {
-                controller2: { button: button, state: isPressed }
-            });
-        };
-
-
-
-        window.closeGame = () => window.location.reload();
+                closeGame: () => window.location.reload()
+            };
+            console.log("Игровое API готово.");
+        })();
     </script>
 </body>
 </html>
