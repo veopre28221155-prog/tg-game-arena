@@ -43,7 +43,7 @@
     <!-- ГЛАВНЫЙ ЭКРАН ПРИЛОЖЕНИЯ -->
     <div id="main-app" class="flex flex-col h-full overflow-y-auto pb-24">
         
-        <!-- HEADER (Профиль и баланс) -->
+        <!-- HEADER (Профиль и баланс MongoDB) -->
         <div class="flex justify-between items-center p-4 border-b border-primary/20 bg-card">
             <div>
                 <h1 class="text-primary font-bold text-lg tracking-wider">PIXEL KOMBAT</h1>
@@ -51,7 +51,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <div class="flex items-center gap-1 bg-primary/10 px-2 py-1 rounded border border-primary/30 text-primary text-xs">
-                    <i data-lucide="star" class="w-3 h-3"></i> <span id="user-balance">1000</span>
+                    <i data-lucide="star" class="w-3 h-3"></i> <span id="user-balance">...</span>
                 </div>
                 <div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary text-primary">
                     <i data-lucide="user" class="w-4 h-4"></i>
@@ -94,18 +94,10 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- TETRIS CARD (Заглушка) -->
-            <div class="bg-card border-2 border-primary/20 rounded-lg overflow-hidden opacity-50">
-                <div class="p-4 space-y-4">
-                    <h2 class="text-primary font-bold uppercase tracking-wider">Tetris Classic</h2>
-                    <p class="text-[10px] text-gray-400">Coming soon...</p>
-                </div>
-            </div>
         </div>
     </div>
 
-    <!-- ИГРОВОЙ ОВЕРЛЕЙ (Окно эмулятора или Джойстика) -->
+    <!-- ИГРОВОЙ ОВЕРЛЕЙ -->
     <div id="game-overlay" class="hidden fixed inset-0 z-50 bg-background flex-col animate-in fade-in zoom-in duration-200">
         <!-- Шапка оверлея -->
         <div class="p-4 border-b border-primary/30 flex justify-between items-center bg-card">
@@ -137,7 +129,6 @@
 
             <div class="p-6 bg-zinc-900 border-4 border-zinc-800 rounded-[2rem] shadow-2xl w-full max-w-sm aspect-[4/3] flex flex-col justify-between">
                 <div class="flex justify-between items-center h-full">
-                    <!-- D-PAD -->
                     <div class="grid grid-cols-3 gap-1">
                         <div></div>
                         <button onpointerdown="sendInput('UP', true)" onpointerup="sendInput('UP', false)" onpointerleave="sendInput('UP', false)" class="dpad-btn"><i data-lucide="chevron-up"></i></button>
@@ -149,15 +140,12 @@
                         <button onpointerdown="sendInput('DOWN', true)" onpointerup="sendInput('DOWN', false)" onpointerleave="sendInput('DOWN', false)" class="dpad-btn"><i data-lucide="chevron-down"></i></button>
                         <div></div>
                     </div>
-
-                    <!-- ABC Buttons -->
                     <div class="flex gap-3 items-end">
                         <button onpointerdown="sendInput('A', true)" onpointerup="sendInput('A', false)" onpointerleave="sendInput('A', false)" class="action-btn btn-a">A</button>
                         <button onpointerdown="sendInput('B', true)" onpointerup="sendInput('B', false)" onpointerleave="sendInput('B', false)" class="action-btn btn-b mb-6">B</button>
                         <button onpointerdown="sendInput('C', true)" onpointerup="sendInput('C', false)" onpointerleave="sendInput('C', false)" class="action-btn btn-c">C</button>
                     </div>
                 </div>
-                
                 <div class="absolute left-1/2 -translate-x-1/2 bottom-12">
                      <button onpointerdown="sendInput('START', true)" onpointerup="sendInput('START', false)" onpointerleave="sendInput('START', false)" class="px-6 py-2 bg-zinc-800 text-zinc-400 rounded-full text-[10px] font-bold tracking-widest shadow-inner">START</button>
                 </div>
@@ -165,18 +153,39 @@
         </div>
     </div>
 
-
     <!-- ============================================== -->
-    <!-- ЛОГИКА ПРИЛОЖЕНИЯ И FIREBASE -->
+    <!-- СКРИПТЫ: MONGODB + FIREBASE + ЭМУЛЯТОР -->
     <!-- ============================================== -->
     <script type="module">
-        lucide.createIcons(); // Инициализация иконок
+        lucide.createIcons(); // Иконки
 
+        // --- 1. ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ ИЗ MONGODB (ТВОЙ SERVER.JS) ---
+        let tgUser = "Player_" + Math.floor(Math.random() * 1000);
+        
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.expand();
+            
+            // Отправляем данные в твой server.js (как было в твоем старом проекте)
+            fetch('/api/user-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    tgUser = data.user.username;
+                    document.getElementById('user-balance').innerText = data.user.balance;
+                }
+            })
+            .catch(err => console.error("Ошибка MongoDB:", err));
+        }
+
+        // --- 2. ПОДКЛЮЧЕНИЕ К FIREBASE (ДЛЯ МУЛЬТИПЛЕЕРА) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ❌ ВНИМАНИЕ! БЕЗ ЭТИХ КЛЮЧЕЙ КНОПКИ РАБОТАТЬ НЕ БУДУТ! ❌
-        // Открой свой Firebase Console -> Project Settings и скопируй данные сюда:
+        // ❌ ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE ❌
         const firebaseConfig = {
             apiKey: "ВСТАВЬ_СЮДА_API_KEY",
             authDomain: "ВСТАВЬ_СЮДА_PROJECT_ID.firebaseapp.com",
@@ -191,7 +200,7 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
         } catch (e) {
-            console.error("FIREBASE ERROR. ПРОПИШИ КЛЮЧИ!", e);
+            console.error("FIREBASE ОШИБКА. ПРОПИШИ КЛЮЧИ!", e);
         }
 
         let currentLobbyId = null;
@@ -200,26 +209,17 @@
         // Карта кнопок Sega
         const P2_KEYMAP = { UP: "KeyI", DOWN: "KeyK", LEFT: "KeyJ", RIGHT: "KeyL", A: "KeyF", B: "KeyG", C: "KeyH", START: "KeyV" };
 
-        // Инициализация Telegram
-        let tgUser = "Player_" + Math.floor(Math.random() * 1000);
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
-            tgUser = window.Telegram.WebApp.initDataUnsafe.user.first_name;
-            window.Telegram.WebApp.expand();
-        }
-
-        // --- ЛОГИКА ХОСТА (ЭКРАН ИГРЫ) ---
+        // --- 3. ИГРОВАЯ ЛОГИКА ---
         window.startGame = async function(gameId) {
             if (!db) return alert("ОШИБКА: Заполни ключи Firebase в index.html!");
 
             isHost = true;
             currentLobbyId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            // Создаем комнату в БД
             await setDoc(doc(db, "lobbies", currentLobbyId), {
                 game: gameId, host: tgUser, status: "playing", controller2: null
             });
 
-            // Настраиваем UI
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('game-overlay').classList.remove('hidden');
             document.getElementById('game-overlay').classList.add('flex');
@@ -227,7 +227,7 @@
             document.getElementById('display-lobby-id').innerText = currentLobbyId;
             document.getElementById('lobby-badge').innerText = 'HOSTING P1';
 
-            // Слушаем нажатия джойстика P2
+            // Слушаем джойстик P2
             onSnapshot(doc(db, "lobbies", currentLobbyId), (docSnap) => {
                 const data = docSnap.data();
                 if (data && data.controller2) {
@@ -240,21 +240,19 @@
                 }
             });
 
-            // ЗАПУСК ЭМУЛЯТОРА
+            // Запуск эмулятора
             window.EJS_player = '#game-container';
             window.EJS_core = 'sega';
-            window.EJS_gameUrl = 'sonic.bin'; // Проверь что файл лежит в public/
-            window.EJS_pathtodata = 'data/cores/'; // Проверь что папка лежит в public/
+            window.EJS_gameUrl = 'sonic.bin';
+            window.EJS_pathtodata = 'data/cores/';
 
             const script = document.createElement('script');
             script.src = 'loader.js';
             document.body.appendChild(script);
         };
 
-        // --- ЛОГИКА ДЖОЙСТИКА (P2) ---
         window.joinGamePrompt = function() {
             if (!db) return alert("ОШИБКА: Заполни ключи Firebase в index.html!");
-            
             const code = prompt("Enter Game LOBBY ID from Host:");
             if (code) joinGame(code.toUpperCase());
         };
@@ -263,7 +261,6 @@
             isHost = false;
             currentLobbyId = lobbyId;
 
-            // Настраиваем UI
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('game-overlay').classList.remove('hidden');
             document.getElementById('game-overlay').classList.add('flex');
@@ -275,14 +272,13 @@
 
         window.sendInput = function(button, isPressed) {
             if (!currentLobbyId || isHost || !db) return;
-            // Отправляем объект с нажатием в Firebase
             updateDoc(doc(db, "lobbies", currentLobbyId), {
                 controller2: { button: button, state: isPressed, timestamp: Date.now() }
-            }).catch(e => console.log(e));
+            });
         };
 
         window.closeGame = function() {
-            window.location.reload(); // Простой способ сбросить всё
+            window.location.reload();
         };
     </script>
 </body>
