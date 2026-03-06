@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pixel Arena</title>
+    <title>Pixel Arena - AI RAM Hook</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -65,14 +65,16 @@
         </div>
     </main>
 
-    <!-- GAME OVERLAY (Эмулятор + Кнопка ИИ-Судьи) -->
+    <!-- GAME OVERLAY (Эмулятор + AI Referee) -->
     <div id="game-overlay">
         <div class="h-14 bg-zinc-950 border-b border-[#00f0ff]/20 flex justify-between items-center px-4">
-            <span id="game-tag" class="text-[9px] font-bold text-[#00f0ff] uppercase tracking-widest bg-[#00f0ff]/10 px-2 py-1 rounded">Engine Ready</span>
+            <div class="flex items-center gap-2">
+                <span id="game-tag" class="text-[9px] font-bold text-[#00f0ff] uppercase tracking-widest bg-[#00f0ff]/10 px-2 py-1 rounded">Engine Ready</span>
+                <span id="ram-status" class="hidden text-[8px] text-green-400 uppercase animate-pulse">● Rec RAM</span>
+            </div>
             
             <div class="flex gap-4 items-center">
-                <!-- Кнопка Финиша (Отправка ИИ) -->
-                <button onclick="window.app.finishMatch()" class="bg-yellow-500 text-black px-3 py-1 text-[9px] font-bold uppercase rounded animate-pulse">Finish & Verify</button>
+                <button onclick="window.app.finishAndVerify()" class="bg-yellow-500 text-black px-3 py-1 text-[9px] font-bold uppercase rounded shadow-[0_0_10px_rgba(234,179,8,0.5)]">AI Verify</button>
                 <button onclick="location.reload()" class="text-zinc-500"><i data-lucide="x-circle" class="w-6 h-6"></i></button>
             </div>
         </div>
@@ -104,14 +106,33 @@
     <script>
         (function() {
             var db, user = null, currentLobby = null, isHost = false;
-            var matchStartTime = 0; // Для телеметрии ИИ
-            var currentGameId = "";
-
             var p2map = { UP: "ArrowUp", DOWN: "ArrowDown", LEFT: "ArrowLeft", RIGHT: "ArrowRight", A: "KeyX", B: "KeyZ", C: "KeyC", START: "Enter" };
 
+            // === AI TELEMETRY SYSTEM ===
+            var telemetryLog = [];
+            var telemetryInterval = null;
+            var currentGameId = "";
+            var matchStartTime = 0;
+
+            // Карта памяти игр (RAM Offsets). 
+            // Sega M68K RAM (64KB) обычно маппится как 0xFF0000 - 0xFFFFFF.
+            // Смещение в буфере = Адрес & 0xFFFF.
+            const MEMORY_MAPS = {
+                'battletoads.md': {
+                    hp: 0xFE44,     // 0xFFFE44
+                    lives: 0xFE4B,  // 0xFFFE4B
+                    score: 0xFE1C,  // 0xFFFE1C
+                    level: 0xFE00   // 0xFFFE00
+                },
+                'sonic.bin': {
+                    rings: 0xFE20,  // Пример адреса колец Соника
+                    time_sec: 0xFE24 // Пример адреса секунд
+                }
+            };
+
             const MULTI_GAMES = [
-                { id: 'umk3.md', title: 'Mortal Kombat 3', core: 'sega', color: '#ff003c' },
-                { id: 'roadrash.md', title: 'Road Rash', core: 'sega', color: '#00f0ff' }
+                { id: 'battletoads.md', title: 'Battletoads', core: 'sega', color: '#10b981' },
+                { id: 'umk3.md', title: 'Mortal Kombat 3', core: 'sega', color: '#ff003c' }
             ];
             const SOLO_GAMES = [
                 { id: 'sonic.bin', title: 'Sonic Hedgehog', core: 'sega', color: '#0055ff' }
@@ -128,11 +149,10 @@
 
             document.addEventListener('DOMContentLoaded', function() {
                 lucide.createIcons();
-                
-                try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e) { console.error("Firebase Error"); }
+                try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e) {}
 
-                // Авторизация Telegram -> Твой MongoDB Сервер
-                let tgUserPayload = { id: 123456789, first_name: "TestUser" }; // Фолбек для браузера
+                // Авторизация Telegram
+                let tgUserPayload = { id: 123456789, first_name: "TestWarrior" };
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
                     window.Telegram.WebApp.expand();
                     tgUserPayload = window.Telegram.WebApp.initDataUnsafe.user;
@@ -142,9 +162,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegramUser: tgUserPayload })
-                })
-                .then(res => res.json())
-                .then(data => {
+                }).then(res => res.json()).then(data => {
                     if(data.success) {
                         user = data.user;
                         document.getElementById('ui-balance').innerText = user.balance;
@@ -160,7 +178,7 @@
                                 <p class="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-1">${g.core} ENGINE</p>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="window.app.playSolo('${g.id}', '${g.core}', '${g.id.split('.')[0]}')" class="btn-action btn-p1 px-5 py-3">SOLO</button>
+                                <button onclick="window.app.playSolo('${g.id}', '${g.core}')" class="btn-action btn-p1 px-5 py-3">SOLO</button>
                                 ${isMulti ? `<button onclick="window.app.createLobby('${g.id}', '${g.title}', '${g.core}')" class="btn-action btn-p2 px-5 py-3">HOST</button>` : ''}
                             </div>
                         </div>
@@ -179,30 +197,72 @@
                         document.getElementById('tab-' + t).classList.add('active');
                     },
                     
-                    playSolo: function(rom, core, gameIdForAi) {
-                        currentGameId = gameIdForAi;
-                        matchStartTime = Date.now(); // Старт телеметрии
+                    // --- ЛОГИКА ЧТЕНИЯ RAM ИЗ WEBASSEMBLY ---
+                    startRAMReader: function(romId) {
+                        if (!MEMORY_MAPS[romId]) {
+                            console.warn("Нет карты памяти для этой игры. Телеметрия RAM отключена.");
+                            return;
+                        }
                         
+                        document.getElementById('ram-status').classList.remove('hidden');
+                        telemetryLog = [];
+                        matchStartTime = Date.now();
+                        const map = MEMORY_MAPS[romId];
+
+                        // Читаем RAM 2 раза в секунду (каждые 500мс)
+                        telemetryInterval = setInterval(() => {
+                            try {
+                                // Пытаемся получить доступ к памяти Libretro/EmulatorJS
+                                // window.EJS_emulator.Module - стандартный объект WASM модуля
+                                if (window.EJS_emulator && window.EJS_emulator.Module && window.EJS_emulator.Module.HEAPU8) {
+                                    
+                                    // 0 = RETRO_MEMORY_SYSTEM_RAM
+                                    const ramPointer = window.EJS_emulator.Module._retro_get_memory_data(0); 
+                                    const heap = window.EJS_emulator.Module.HEAPU8;
+
+                                    if (ramPointer > 0) {
+                                        let stateVector = { time_offset: Date.now() - matchStartTime };
+                                        
+                                        // Читаем каждый байт по карте памяти
+                                        for (const [key, offset] of Object.entries(map)) {
+                                            stateVector[key] = heap[ramPointer + offset];
+                                        }
+                                        
+                                        telemetryLog.push(stateVector);
+                                        // Ограничиваем лог, чтобы не перегрузить сеть (оставляем последние 1000 записей)
+                                        if (telemetryLog.length > 1000) telemetryLog.shift();
+                                    }
+                                }
+                            } catch (err) {
+                                // Подавляем ошибки, если эмулятор еще не прогрузил WASM
+                            }
+                        }, 500); 
+                    },
+
+                    playSolo: function(rom, core) {
+                        currentGameId = rom;
                         document.getElementById('game-overlay').style.display = 'flex';
+                        
                         window.EJS_player = '#game-container';
                         window.EJS_core = core;
                         window.EJS_gameUrl = '/' + rom; 
                         window.EJS_pathtodata = '/data/';
+                        
+                        // Запускаем сборщик телеметрии через 3 секунды (даем WASM загрузиться)
+                        setTimeout(() => this.startRAMReader(rom), 3000);
+
                         var s = document.createElement('script'); 
                         s.src = '/data/loader.js';
                         document.body.appendChild(s);
                     },
 
                     createLobby: function(rom, title, core) {
-                        if(!db) return alert("Firebase error");
-                        
+                        if(!db) return;
                         isHost = true;
                         currentLobby = Math.random().toString(36).substring(2, 8).toUpperCase();
-                        document.getElementById('game-tag').innerText = "HOST ID: " + currentLobby;
+                        document.getElementById('game-tag').innerText = "HOST: " + currentLobby;
                         
-                        db.collection("lobbies").doc(currentLobby).set({
-                            title: title, rom: rom, core: core, status: "open", controller2: null
-                        });
+                        db.collection("lobbies").doc(currentLobby).set({ title, rom, core, status: "open", controller2: null });
 
                         db.collection("lobbies").doc(currentLobby).onSnapshot(doc => {
                             var d = doc.data();
@@ -214,56 +274,50 @@
                                 }
                             }
                         });
-                        this.playSolo(rom, core, rom.split('.')[0]);
+                        this.playSolo(rom, core);
                     },
 
                     joinLobby: function(id) {
-                        currentLobby = id; 
-                        isHost = false;
+                        currentLobby = id; isHost = false;
                         document.getElementById('screen-controller').classList.remove('hidden');
                         document.getElementById('screen-controller').style.display = 'flex';
                     },
 
-                    // 🤖 ИНТЕГРАЦИЯ AI-СУДЬИ (Срабатывает по кнопке "Finish & Verify")
-                    finishMatch: function() {
+                    // 🤖 ОТПРАВКА RAM ВЕКТОРОВ ИИ-СУДЬЕ
+                    finishAndVerify: function() {
                         if(!user) return alert("User not loaded");
+                        if(telemetryInterval) clearInterval(telemetryInterval);
                         
                         const timeSpentMs = Date.now() - matchStartTime;
-                        
-                        // Собираем телеметрию (в реальности ее нужно доставать из RAM игры, пока эмулируем для ИИ)
-                        const mockTelemetry = [
-                            { time: 0, action: "start" },
-                            { time: Math.floor(timeSpentMs / 2), action: "checkpoint_reached" },
-                            { time: timeSpentMs, action: "finish" }
-                        ];
-
-                        alert("Анализ ИИ запущен! Ждем вердикт Судьи...");
+                        document.getElementById('ram-status').innerText = "● Uploading RAM...";
 
                         fetch('/api/verify-match', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 telegramId: user.telegramId,
-                                game: currentGameId, // "sonic" или "umk3"
-                                score: timeSpentMs,  // Для соника важна скорость
-                                telemetry: mockTelemetry
+                                game: currentGameId, 
+                                score: timeSpentMs, 
+                                telemetry: telemetryLog // Отправляем массив векторов из RAM
                             })
                         })
                         .then(res => res.json())
                         .then(data => {
+                            document.getElementById('ram-status').innerText = "● Verified";
                             if (data.status === 'approve') {
-                                alert("✅ VERIFIED! Честная игра. +50 монет.");
+                                alert("✅ ИИ-Судья: Вердикт чист. Награда зачислена!");
                                 document.getElementById('ui-balance').innerText = data.newBalance;
                             } else if (data.status === 'flag_for_review') {
-                                alert("⚠️ ПОДОЗРИТЕЛЬНО: Рекорд отправлен админу на ручную проверку.");
+                                alert("⚠️ ИИ-Судья: Подозрение на TAS. Отправлено на ручную проверку.");
                             } else {
-                                alert("❌ ЧИТЫ ОБНАРУЖЕНЫ!\nИИ Судья: " + data.reason);
+                                alert("❌ ИИ-Судья: ЧИТЫ ОБНАРУЖЕНЫ!\nПричина: " + data.reason);
                             }
                         })
-                        .catch(err => alert("Ошибка соединения с ИИ."));
+                        .catch(err => alert("Ошибка связи с ИИ."));
                     }
                 };
 
+                // Firebase Lobbies Sync
                 if(db) {
                     db.collection("lobbies").where("status", "==", "open").onSnapshot(qs => {
                         const list = document.getElementById('lobbies-list');
@@ -272,22 +326,20 @@
                             const l = doc.data();
                             list.innerHTML += `
                                 <div class="bg-zinc-900 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                                    <p class="text-[11px] font-bold text-white uppercase italic">${l.title}</p>
+                                    <div><p class="text-[11px] font-bold text-white uppercase italic">${l.title}</p></div>
                                     <button onclick="window.app.joinLobby('${doc.id}')" class="btn-action btn-p1 px-6 py-3">JOIN</button>
                                 </div>`;
                         });
                     });
                 }
 
+                // P2 Joystick Bindings
                 function bindButton(id, btnName) {
                     var el = document.getElementById(id);
                     el.addEventListener('pointerdown', function(e) {
                         e.preventDefault();
-                        if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                         if(currentLobby && db && !isHost) {
-                            db.collection("lobbies").doc(currentLobby).update({
-                                controller2: { btn: btnName, ts: Date.now() }
-                            });
+                            db.collection("lobbies").doc(currentLobby).update({ controller2: { btn: btnName, ts: Date.now() } });
                         }
                     });
                 }
